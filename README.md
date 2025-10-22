@@ -15,3 +15,19 @@
  Responsabilidad principal: Simulación de batallas por atributos y la persistencia de datos (guardado/carga) del juego.
  Conceptos Aplicados: Archivos Binarios (.bin) y de Texto (.txt), Lógica de Combate.
  Archivos modulares: sistema/sistema.c y sistema/sistema.h
+
+
+
+    Compilacion
+
+    Utiliza el compilador GCC para compilar los módulos y el archivo principal en un ejecutable:
+
+    gcc -o IslasEnGuerra src/main.c src/mapa/mapa.c src/recursos/recursos.c src/sistema/sistema.c
+
+    Ejecucion 
+
+    Una vez compilado, ejecuta el programa desde la terminal:
+    C:\Users\samue\OneDrive\Documents\GitHub\IslasEnGuerra_ProyectoC
+    gcc -o IslasEnGuerra.exe src/main.c src/mapa/mapa.c src/recursos/recursos.c src/sistema/sistema.c
+    .\IslasEnGuerra.exe
+    
