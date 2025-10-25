@@ -11,7 +11,7 @@ SRC = src/main.c \
 TARGET = IslasEnGuerra
 
 # 4. Banderas del Compilador (Flags)
-CFLAGS = -Wall -Iinclude
+CFLAGS = -Wall -Iinclude -Isrc/mapa
 
 # 5. Banderas del Enlazador (Linker)
 LDFLAGS = -Llib
