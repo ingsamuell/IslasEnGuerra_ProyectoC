@@ -1,14 +1,35 @@
-/* Contenido completo de src/mapa/mapa.h */
-
 #ifndef MAPA_H
 #define MAPA_H
 
-/* Definimos el tamaño del mapa (10x10) */
-#define FILAS 10
-#define COLUMNAS 10
+#include "raylib.h"
 
-/* Prototipos de las funciones que usará main.c */
+#define FILAS 20
+#define COLUMNAS 20
+
+// Estados de pantalla del juego
+typedef enum {
+    MENU_PRINCIPAL,
+    ISLA,
+    OPCIONES,
+    SALIR
+} GameScreen;
+
+// Estructura para botones del menú
+typedef struct {
+    Rectangle bounds;
+    const char *text;
+    bool hovered;
+} Button;
+
+// Funciones del mapa
 void inicializarMapa(char mapa[FILAS][COLUMNAS]);
 void dibujarMapa(char mapa[FILAS][COLUMNAS]);
 
-#endif /* MAPA_H */
+// Funciones del menú
+GameScreen MostrarMenu(void);
+Button CrearBoton(float x, float y, float width, float height, const char *text);
+void DibujarBoton(Button boton);
+void DibujarMenuPrincipal(void);
+
+#endif
+

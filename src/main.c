@@ -2,8 +2,7 @@
 #include "mapa/mapa.h" // Incluimos el header del mapa
 
 // Ancho y alto de la ventana
-// (10 celdas * 50 píxeles por celda = 500)
-const int screenWidth = 500; 
+const int screenWidth = 500;
 const int screenHeight = 500;
 
 // Declaramos el mapa
@@ -15,33 +14,34 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "Islas en Guerra - V1.0 Gráfica");
     SetTargetFPS(60);
 
-    // 2. Cargamos los datos del mapa (SOLO UNA VEZ)
-    inicializarMapa(mapaJuego); // Llamamos a la función de mapa.c
+    // 2. Mostrar menú y decidir qué hacer
+    GameScreen opcion = MostrarMenu();
 
-    // 3. Bucle principal del juego
-    while (!WindowShouldClose())
+    if (opcion == ISLA)
     {
-        // --- 4. ACTUALIZACIÓN (Lógica) ---
-        // (Aquí irá la lógica de exploración, etc.)
+        // 3. Cargamos los datos del mapa (SOLO UNA VEZ)
+        inicializarMapa(mapaJuego);
 
+        // 4. Bucle principal del juego
+        while (!WindowShouldClose())
+        {
+            // --- ACTUALIZACIÓN (Lógica) ---
+            // (Aquí irá la lógica de exploración, etc.)
 
-        // --- 5. DIBUJADO (Gráficos) ---
-        BeginDrawing();
+            // --- DIBUJADO (Gráficos) ---
+            BeginDrawing();
+                ClearBackground(BLACK);
+                dibujarMapa(mapaJuego);
+                DrawText("MAPA - ISLAS EN GUERRA", 10, 10, 20, WHITE);
+            EndDrawing();
 
-            // Limpiamos el fondo (aunque dibujarMapa lo cubre todo)
-            ClearBackground(BLACK);
-
-            // ¡Llamamos a nuestra función para dibujar el mapa!
-            dibujarMapa(mapaJuego);
-            
-            // (Opcional) Puedes añadir texto encima
-            DrawText("MAPA - ISLAS EN GUERRA", 10, 10, 20, WHITE);
-
-        EndDrawing();
+            // Salir con ESC
+            if (IsKeyPressed(KEY_ESCAPE)) break;
+        }
     }
 
-    // 6. Cierre
+    // 5. Cierre
     CloseWindow();
-
     return 0;
 }
+
