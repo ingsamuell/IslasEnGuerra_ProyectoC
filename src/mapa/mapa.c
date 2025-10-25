@@ -117,7 +117,7 @@ void DibujarMenuPrincipal(PartidaGuardada *partidaAnterior) {
     DrawText(subtitulo, 500 - anchoSubtitulo/2, 140, 18, SKYBLUE);
     
     // Botones del menú
-    float anchoBoton = 280;
+    float anchoBoton = 400;
     float altoBoton = 50;
     float inicioY = 200;
     float espacio = 15;
@@ -131,7 +131,7 @@ void DibujarMenuPrincipal(PartidaGuardada *partidaAnterior) {
     
     for (int i = 0; i < 4; i++) {
         Button boton = CrearBoton(500 - anchoBoton/2, inicioY + i * (altoBoton + espacio),
-                                 anchoBoton, altoBoton, textosBotones[i]);
+                                anchoBoton, altoBoton, textosBotones[i]);
         boton.hovered = CheckCollisionPointRec(GetMousePosition(), boton.bounds);
         DibujarBoton(boton);
     }
