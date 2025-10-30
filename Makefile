@@ -11,20 +11,20 @@ SRC = src/main.c \
 TARGET = IslasEnGuerra
 
 # 4. Banderas del Compilador (Flags)
-CFLAGS = -Wall -Iinclude -Isrc/mapa
+CFLAGS = -Wall -Iinclude -Isrc/mapa -Isrc/sistema -Isrc/recursos
 
 # 5. Banderas del Enlazador (Linker)
-LDFLAGS = -Llib
+LDFLAGS = 
 
-# 5b. Bibliotecas del Enlazador (ESTA ES LA LÍNEA CLAVE)
-LDLIBS = -lraylib -lopengl32 -lgdi32 -lwinmm
+# 6. Bibliotecas del Enlazador (solo API de Windows)
+LDLIBS = -lgdi32 -lwinmm
 
-# 6. Regla para construir el proyecto (ESTA LÍNEA ES DIFERENTE)
+# 7. Regla principal
 all: $(TARGET)
 
 $(TARGET): $(SRC)
 	$(CC) $(CFLAGS) -o $(TARGET) $(SRC) $(LDFLAGS) $(LDLIBS)
 
-# 7. Regla para limpiar los archivos compilados
+# 8. Limpieza
 clean:
 	-del $(TARGET).exe
