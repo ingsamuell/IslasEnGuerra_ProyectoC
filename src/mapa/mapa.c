@@ -1,49 +1,63 @@
-/* src/mapa/mapa.c (Versión GDI con Cámara) */
-
+/* src/mapa/mapa.c (Versión GDI con Viewport Dinámico) */
 #include "mapa.h"
 
 /* --- Lógica del Juego --- */
 
 void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     int i, j;
+
+    /* 1. Llenar todo el mundo de agua (~) */
     for (i = 0; i < MUNDO_FILAS; i++) {
         for (j = 0; j < MUNDO_COLUMNAS; j++) {
-            /* Océano por defecto */
             mapa[i][j] = '~';
         }
     }
-    
-    /* Dibuja una isla grande */
-    for (i = 5; i < 15; i++) {
-        for (j = 5; j < 15; j++) {
+
+    /* 2. ISLA 1 (Superior Izquierda - Spawn del Jugador) */
+    /* Coordenadas: (fila 10-24, col 10-29) */
+    for (i = 10; i < 25; i++) {
+        for (j = 10; j < 30; j++) {
+            mapa[i][j] = '.'; /* Tierra */
+        }
+    }
+    /* ¡PUNTO DE SPAWN! */
+    mapa[17][20] = 'P'; 
+
+    /* 3. ISLA 2 (Superior Derecha) */
+    /* Coordenadas: (fila 15-34, col 70-89) */
+    for (i = 15; i < 35; i++) {
+        for (j = 70; j < 90; j++) {
             mapa[i][j] = '.';
         }
     }
-    mapa[6][7] = 'P'; /* Punto de spawn */
 
-    /* Dibuja una isla enemiga */
-    for (i = 20; i < 25; i++) {
-        for (j = 30; j < 40; j++) {
-            mapa[i][j] = 'E';
+    /* 4. ISLA 3 (Inferior Izquierda) */
+    /* Coordenadas: (fila 70-89, col 15-39) */
+    for (i = 70; i < 90; i++) {
+        for (j = 15; j < 40; j++) {
+            mapa[i][j] = '.';
         }
     }
     
-    /* Dibuja una isla de recursos */
-    mapa[10][30] = '$';
-    mapa[10][31] = '$';
-    mapa[11][30] = '$';
+    /* 5. ISLA 4 (Inferior Derecha) */
+    /* Coordenadas: (fila 65-84, col 65-84) */
+    for (i = 65; i < 85; i++) {
+        for (j = 65; j < 85; j++) {
+            mapa[i][j] = '.';
+        }
+    }
 }
+
 
 void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy) {
     int nuevoX = jugador->x + dx;
     int nuevoY = jugador->y + dy;
 
-    /* Límites del MUNDO */
     if (nuevoX < 0 || nuevoX >= MUNDO_COLUMNAS || nuevoY < 0 || nuevoY >= MUNDO_FILAS) {
         return;
     }
     if (mapa[nuevoY][nuevoX] == '~') {
-        return; /* No se puede mover al agua */
+        return;
     }
     
     jugador->x = nuevoX;
@@ -51,71 +65,49 @@ void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int 
 }
 
 /* --- Lógica de la Cámara --- */
+void actualizarCamara(Camera *camara, Jugador jugador, int pantallaFilas, int pantallaColumnas) {
+    camara->x = jugador.x - (pantallaColumnas / 2);
+    camara->y = jugador.y - (pantallaFilas / 2);
 
-/* Mueve la cámara para que el jugador esté en el centro */
-void actualizarCamara(Camera *camara, Jugador jugador) {
-    /* 1. Centra la cámara en el jugador */
-    camara->x = jugador.x - (PANTALLA_COLUMNAS / 2);
-    camara->y = jugador.y - (PANTALLA_FILAS / 2);
-
-    /* 2. "Clamping" - Evita que la cámara se salga del mundo */
-    if (camara->x < 0) {
-        camara->x = 0;
+    if (camara->x < 0) camara->x = 0;       
+    if (camara->y < 0) camara->y = 0;
+    
+    if (camara->x > MUNDO_COLUMNAS - pantallaColumnas) {
+        camara->x = MUNDO_COLUMNAS - pantallaColumnas;
     }
-    if (camara->y < 0) {
-        camara->y = 0;
-    }
-    if (camara->x > MUNDO_COLUMNAS - PANTALLA_COLUMNAS) {
-        camara->x = MUNDO_COLUMNAS - PANTALLA_COLUMNAS;
-    }
-    if (camara->y > MUNDO_FILAS - PANTALLA_FILAS) {
-        camara->y = MUNDO_FILAS - PANTALLA_FILAS;
+    if (camara->y > MUNDO_FILAS - pantallaFilas) {
+        camara->y = MUNDO_FILAS - pantallaFilas;
     }
 }
 
-/* --- Gráficos del Juego (GDI) --- */
+/* --- Gráficos del Juego --- */
 
-void dibujarMapa(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera camara) {
-    /* Variables GDI */
+void dibujarMapa(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera camara, int pantallaFilas, int pantallaColumnas) {
     HBRUSH hBrushAgua = CreateSolidBrush(RGB(0, 0, 255));
     HBRUSH hBrushTierra = CreateSolidBrush(RGB(139, 69, 19));
     HBRUSH hBrushEnemigo = CreateSolidBrush(RGB(255, 0, 0));
     HBRUSH hBrushRecurso = CreateSolidBrush(RGB(255, 255, 0));
     HBRUSH hBrushActual;
-    
-    /* Variables de bucle y GDI */
-    int y_pantalla, x_pantalla; /* Posición en la PANTALLA */
-    int y_mundo, x_mundo;       /* Posición en el MUNDO */
+    int y_pantalla, x_pantalla, y_mundo, x_mundo;
     RECT rectCelda;
 
-    /* Iteramos sobre la PANTALLA (ej. 0 a 15) */
-    for (y_pantalla = 0; y_pantalla < PANTALLA_FILAS; y_pantalla++) {
-        /* Iteramos sobre la PANTALLA (ej. 0 a 20) */
-        for (x_pantalla = 0; x_pantalla < PANTALLA_COLUMNAS; x_pantalla++) {
+    for (y_pantalla = 0; y_pantalla < pantallaFilas; y_pantalla++) {
+        for (x_pantalla = 0; x_pantalla < pantallaColumnas; x_pantalla++) {
             
-            /* Calculamos qué celda del MUNDO debemos dibujar */
             y_mundo = y_pantalla + camara.y;
             x_mundo = x_pantalla + camara.x;
             
-            /* Elegimos el pincel (color) basado en el MUNDO */
-            switch (mapa[y_mundo][x_mundo]) {
-                case 'P':
-                case '.':
-                    hBrushActual = hBrushTierra;
-                    break;
-                case 'E':
-                    hBrushActual = hBrushEnemigo;
-                    break;
-                case '$':
-                    hBrushActual = hBrushRecurso;
-                    break;
-                case '~':
-                default:
-                    hBrushActual = hBrushAgua;
-                    break;
+            if (y_mundo >= MUNDO_FILAS || x_mundo >= MUNDO_COLUMNAS) {
+                hBrushActual = hBrushAgua;
+            } else {
+                switch (mapa[y_mundo][x_mundo]) {
+                    case 'P': case '.': hBrushActual = hBrushTierra; break;
+                    case 'E': hBrushActual = hBrushEnemigo; break;
+                    case '$': hBrushActual = hBrushRecurso; break;
+                    case '~': default: hBrushActual = hBrushAgua; break;
+                }
             }
 
-            /* Definimos las coordenadas del rectángulo en la PANTALLA */
             rectCelda.left = x_pantalla * TAMANO_CELDA;
             rectCelda.top = y_pantalla * TAMANO_CELDA;
             rectCelda.right = (x_pantalla + 1) * TAMANO_CELDA;
@@ -132,11 +124,10 @@ void dibujarMapa(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera camara)
 }
 
 void dibujarJugador(HDC hdc, Jugador jugador, Camera camara) {
-    HBRUSH hBrushJugador = CreateSolidBrush(RGB(255, 255, 255)); /* Blanco */
+    HBRUSH hBrushJugador = CreateSolidBrush(RGB(255, 255, 255));
     RECT rectJugador;
     int x_pantalla, y_pantalla;
 
-    /* Calculamos la posición del jugador EN LA PANTALLA */
     x_pantalla = jugador.x - camara.x;
     y_pantalla = jugador.y - camara.y;
 
