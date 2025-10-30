@@ -1,16 +1,16 @@
 /* src/main.c */
 
-#include "global.h"
 #include "mapa/mapa.h"
 #include "recursos/recursos.h"
 #include "sistema/sistema.h"
 
 /* --- Variables Globales del Juego --- */
-char mapaJuego[FILAS][COLUMNAS];
+char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
 Jugador miJugador;
+Camera miCamara;
 
 
-/* Esta función maneja TODOS los eventos de la ventana */
+/* El cerebro de la aplicación */
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
@@ -19,42 +19,49 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             PostQuitMessage(0);
             return 0;
 
-        /* Evento de Teclado */
+        /* Evento de Teclado (¡Con WASD!) */
         case WM_KEYDOWN:
         {
             switch (wParam)
             {
-                case VK_LEFT:
-                    moverJugador(&miJugador, mapaJuego, -1, 0);
+                case VK_LEFT:   /* Flecha Izquierda */
+                case 'A':       /* Tecla A */
+                    moverJugador(&miJugador, mapaMundo, -1, 0);
                     break;
-                case VK_RIGHT:
-                    moverJugador(&miJugador, mapaJuego, 1, 0);
+                case VK_RIGHT:  /* Flecha Derecha */
+                case 'D':       /* Tecla D */
+                    moverJugador(&miJugador, mapaMundo, 1, 0);
                     break;
-                case VK_UP:
-                    moverJugador(&miJugador, mapaJuego, 0, -1);
+                case VK_UP:     /* Flecha Arriba */
+                case 'W':       /* Tecla W */
+                    moverJugador(&miJugador, mapaMundo, 0, -1);
                     break;
-                case VK_DOWN:
-                    moverJugador(&miJugador, mapaJuego, 0, 1);
+                case VK_DOWN:   /* Flecha Abajo */
+                case 'S':       /* Tecla S */
+                    moverJugador(&miJugador, mapaMundo, 0, 1);
                     break;
             }
             
-            /* Forzamos a Windows a redibujar la pantalla */
+            /* ¡NUEVO! Actualizamos la cámara después de movernos */
+            actualizarCamara(&miCamara, miJugador);
+            
+            /* Forzamos a Windows a redibujar */
             InvalidateRect(hwnd, NULL, TRUE);
             UpdateWindow(hwnd);
             return 0;
         }
 
-        /* Evento de Dibujado (el más importante) */
+        /* Evento de Dibujado */
         case WM_PAINT:
         {
             PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hwnd, &ps); /* Obtenemos el "lienzo" */
+            HDC hdc = BeginPaint(hwnd, &ps);
 
-            /* Llamamos a nuestras funciones de dibujado */
-            dibujarMapa(hdc, mapaJuego);
-            dibujarJugador(hdc, miJugador);
+            /* ¡NUEVO! Pasamos la cámara a las funciones de dibujado */
+            dibujarMapa(hdc, mapaMundo, miCamara);
+            dibujarJugador(hdc, miJugador, miCamara);
 
-            EndPaint(hwnd, &ps); /* Soltamos el "lienzo" */
+            EndPaint(hwnd, &ps);
         }
         return 0;
     }
@@ -64,6 +71,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 /* El punto de entrada de la aplicación */
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+    /* Variables de WinMain (C89) */
     WNDCLASS wc = { 0 };
     HWND hwnd;
     MSG msg;
@@ -74,16 +82,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     wc.lpszClassName = "IslasEnGuerraClase";
     RegisterClass(&wc);
 
-    /* 2. Crear la ventana */
-    /* (Calculamos el tamaño de la ventana + bordes) */
+    /* 2. Crear la ventana (basado en el tamaño de PANTALLA) */
     hwnd = CreateWindowEx(
         0,
         "IslasEnGuerraClase",
-        "Islas en Guerra - GDI",
+        "Islas en Guerra - GDI con Cámara",
         WS_OVERLAPPEDWINDOW | WS_VISIBLE,
         CW_USEDEFAULT, CW_USEDEFAULT, 
-        (COLUMNAS * TAMANO_CELDA) + 16, /* Ancho + bordes */
-        (FILAS * TAMANO_CELDA) + 39,    /* Alto + bordes */
+        (PANTALLA_COLUMNAS * TAMANO_CELDA) + 16, /* Ancho de Ventana */
+        (PANTALLA_FILAS * TAMANO_CELDA) + 39,    /* Alto de Ventana */
         NULL, NULL, hInstance, NULL
     );
 
@@ -93,9 +100,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
     /* 3. Inicializar el estado del juego */
-    inicializarMapa(mapaJuego);
-    miJugador.x = 1;
-    miJugador.y = 1;
+    inicializarMapa(mapaMundo);
+    miJugador.x = 5; /* Posición inicial en el mundo */
+    miJugador.y = 5;
+    actualizarCamara(&miCamara, miJugador); /* Centrar cámara al inicio */
 
     /* 4. Bucle de mensajes (el "Game Loop") */
     while (GetMessage(&msg, NULL, 0, 0))
