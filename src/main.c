@@ -13,6 +13,9 @@ EstadoJuego estadoJuego;
 /* El cerebro de la aplicación */
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    RECT rectCliente;
+    int pantallaFilas, pantallaColumnas;
+
     switch (uMsg)
     {
         case WM_DESTROY:
@@ -88,11 +91,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             return 0;
         }
 
-        /* Evento de Dibujado */
         case WM_PAINT:
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
+            
+            GetClientRect(hwnd, &rectCliente);
+            pantallaFilas = (rectCliente.bottom / TAMANO_CELDA) + 1;
+            pantallaColumnas = (rectCliente.right / TAMANO_CELDA) + 1;
 
             if (estadoJuego.mostrarMenu) {
                 dibujarMenu(hdc, hwnd, &estadoJuego);
@@ -119,6 +125,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     WNDCLASS wc = { 0 };
     HWND hwnd;
     MSG msg;
+    RECT rectCliente;
+    int pantallaFilas, pantallaColumnas;
+
+    int anchoInicial = (27 * TAMANO_CELDA);
+    int altoInicial = (20 * TAMANO_CELDA);
 
     wc.lpfnWndProc   = WindowProc;
     wc.hInstance     = hInstance;
@@ -149,10 +160,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         NULL, NULL, hInstance, NULL
     );
 
-    if (hwnd == NULL)
-    {
-        return 0;
-    }
+    if (hwnd == NULL) return 0;
 
     inicializarJuego(&miJugador, &estadoJuego, mapaMundo);
     actualizarCamara(&miCamara, miJugador);
@@ -165,6 +173,32 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
-
     return (int)msg.wParam;
+}
+
+/* --- Función de Pantalla Completa --- */
+void AlternarPantallaCompleta(HWND hwnd)
+{
+    DWORD dwEstilo = GetWindowLong(hwnd, GWL_STYLE);
+    if (g_esPantallaCompleta == FALSE)
+    {
+        g_esPantallaCompleta = TRUE;
+        GetWindowRect(hwnd, &g_rectVentanaAntigua);
+        SetWindowLong(hwnd, GWL_STYLE, (dwEstilo & ~WS_OVERLAPPEDWINDOW) | WS_POPUP);
+        SetWindowPos(hwnd, HWND_TOP, 0, 0,
+            GetSystemMetrics(SM_CXSCREEN),
+            GetSystemMetrics(SM_CYSCREEN),
+            SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+    }
+    else
+    {
+        g_esPantallaCompleta = FALSE;
+        SetWindowLong(hwnd, GWL_STYLE, (dwEstilo & ~WS_POPUP) | WS_OVERLAPPEDWINDOW);
+        SetWindowPos(hwnd, NULL,
+            g_rectVentanaAntigua.left,
+            g_rectVentanaAntigua.top,
+            g_rectVentanaAntigua.right - g_rectVentanaAntigua.left,
+            g_rectVentanaAntigua.bottom - g_rectVentanaAntigua.top,
+            SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+    }
 }

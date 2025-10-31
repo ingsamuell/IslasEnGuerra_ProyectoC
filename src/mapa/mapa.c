@@ -86,6 +86,7 @@ void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     }
 }
 
+
 void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy) {
     int nuevoX = jugador->x + dx;
     int nuevoY = jugador->y + dy;
