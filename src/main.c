@@ -1,5 +1,5 @@
 /* src/main.c */
-//#include "recursos/recursos.h"
+#include "recursos/recursos.h"
 //#include "sistema/sistema.h"
 #include <windows.h>
 #include "mapa/mapa.h"
@@ -155,6 +155,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
     inicializarJuego(&miJugador, &estadoJuego, mapaMundo);
+
+    if (!cargar_sprites()) {
+        MessageBox(NULL, TEXT("Error cargando sprite del jugador"), TEXT("Error"), MB_OK);
+        return 1;
+    }
+
     actualizarCamara(&miCamara, miJugador);
 
     ShowWindow(hwnd, nCmdShow);
@@ -165,6 +171,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
+
+    liberar_sprites();
 
     return (int)msg.wParam;
 }
