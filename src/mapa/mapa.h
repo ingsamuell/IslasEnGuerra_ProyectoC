@@ -1,46 +1,60 @@
 #ifndef MAPA_H
 #define MAPA_H
 
-#include <windows.h> /* Incluimos windows.h aquí */
+#include <windows.h>
 #include <wingdi.h>
 
 /* --- Definiciones del Juego --- */
-
-/* 1. TAMAÑO DEL MUNDO (El mapa completo) */
 #define MUNDO_FILAS 100
 #define MUNDO_COLUMNAS 100
-
-/* 2. TAMAÑO DE LA PANTALLA (Lo que ve la cámara, en celdas) */
 #define PANTALLA_FILAS 15
 #define PANTALLA_COLUMNAS 20
+#define TAMANO_CELDA 40  // Aumenté el tamaño para mejor visibilidad
 
-/* 3. TAMAÑO GRÁFICO (En píxeles) */
-#define TAMANO_CELDA 30
-
-/* Estructura para guardar la posición del jugador (en el MUNDO) */
+/* Estructuras del juego */
 typedef struct {
-    int x; /* Columna */
-    int y; /* Fila */
+    int x; 
+    int y;
+    int oro;
+    int madera;
+    int piedra;
+    int vida;
+    int vida_maxima;
 } Jugador;
 
-/* Estructura para la cámara (posición de su esquina superior-izquierda en el MUNDO) */
 typedef struct {
-    int x; /* Columna */
-    int y; /* Fila */
+    int x;
+    int y;
 } Camera;
 
+typedef struct {
+    int x;
+    int y;
+} PuntoMenu;
+
+typedef struct {
+    int mostrarMenu;
+    int enPartida;
+    int mostrarResumen;
+    int opcionSeleccionada;
+    PuntoMenu puntoMouse;
+} EstadoJuego;
 
 /* --- Prototipos de Funciones --- */
-
-/* Lógica del Juego */
 void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy);
-
-/* NUEVA: Actualiza la posición de la cámara para seguir al jugador */
 void actualizarCamara(Camera *camara, Jugador jugador);
-
-/* Gráficos del Juego (Ahora reciben la cámara) */
-void dibujarMapa(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera camara);
+void dibujarMapa(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera camara, int anchoVentana, int altoVentana);
 void dibujarJugador(HDC hdc, Jugador jugador, Camera camara);
+
+/* Funciones del sistema de menú mejorado */
+void dibujarMenu(HDC hdc, HWND hwnd, EstadoJuego *estado);
+void dibujarResumenRecursos(HDC hdc, Jugador jugador, EstadoJuego *estado);
+void dibujarBoton(HDC hdc, int x, int y, int ancho, int alto, const char* texto, BOOL seleccionado, BOOL activo);
+void dibujarFondoAnimado(HDC hdc, int ancho, int alto, int tiempo);
+int verificarColisionBoton(int mouseX, int mouseY, int btnX, int btnY, int btnAncho, int btnAlto);
+void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado);
+void procesarEnterMenu(HWND hwnd, EstadoJuego *estado);
+void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 
 #endif
