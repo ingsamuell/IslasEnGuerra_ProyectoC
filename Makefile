@@ -21,7 +21,7 @@ LDFLAGS =
 
 # 5b. Bibliotecas del Enlazador
 # ¡Necesitamos la biblioteca GDI (Graphics Device Interface)!
-LDLIBS = -lgdi32
+LDLIBS = -lgdi32 -lmsimg32
 
 # 6. Regla para construir el proyecto
 all: $(TARGET)

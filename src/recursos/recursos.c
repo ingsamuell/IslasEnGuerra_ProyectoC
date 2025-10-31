@@ -21,7 +21,7 @@ int cargar_sprites() {
     // Lista de rutas posibles a probar
     const char* rutas_posibles[] = {
         "assets/jugador_compatible.bmp",
-        "../assets/jugador_compatible.bmp",
+        "../assets/jugador_compatible.bmp", 
         "../../assets/jugador_compatible.bmp",
         "jugador_compatible.bmp",
         "src/recursos/assets/jugador_compatible.bmp",
@@ -93,8 +93,10 @@ void dibujar_sprite(HDC hdc, Sprite sprite, int x, int y) {
     HDC hdcMem = CreateCompatibleDC(hdc);
     SelectObject(hdcMem, sprite.bitmap);
     
-    // Dibujar con las dimensiones reales del sprite
-    BitBlt(hdc, x, y, sprite.ancho, sprite.alto, hdcMem, 0, 0, SRCCOPY);
+    // Usar TransparentBlt con color magenta (255, 0, 255) como transparente
+    TransparentBlt(hdc, x, y, sprite.ancho, sprite.alto,
+                  hdcMem, 0, 0, sprite.ancho, sprite.alto,
+                  RGB(255, 0, 255));  // Magenta transparente
     
     DeleteDC(hdcMem);
 }

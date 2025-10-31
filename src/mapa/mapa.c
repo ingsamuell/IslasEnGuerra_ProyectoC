@@ -649,7 +649,7 @@ void dibujarJugador(HDC hdc, Jugador jugador, Camera camara) {
     if (x_pantalla >= 0 && x_pantalla < PANTALLA_COLUMNAS * TAMANO_CELDA && 
         y_pantalla >= 0 && y_pantalla < PANTALLA_FILAS * TAMANO_CELDA) {
         
-        // Dibujar sprite con sus dimensiones reales
+        // Dibujar sprite con transparencia magenta
         dibujar_sprite(hdc, sprite_jugador, x_pantalla, y_pantalla);
     }
 }
