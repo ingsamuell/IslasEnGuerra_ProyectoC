@@ -136,8 +136,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     RegisterClass(&wc);
 
     // Calcular tamaño fijo de la ventana para el mapa
-    int anchoVentana = PANTALLA_COLUMNAS * TAMANO_CELDA;  // 25 * 32 = 800
-    int altoVentana = PANTALLA_FILAS * TAMANO_CELDA;      // 18 * 32 = 576
+    int anchoVentana = PANTALLA_COLUMNAS * TAMANO_CELDA;
+    int altoVentana = PANTALLA_FILAS * TAMANO_CELDA;
     
     // Ajustar para incluir bordes de la ventana
     RECT rect = {0, 0, anchoVentana, altoVentana};
