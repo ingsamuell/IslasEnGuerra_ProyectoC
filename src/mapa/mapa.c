@@ -1,5 +1,6 @@
 /* src/mapa/mapa.c (Versión GDI con Cámara) */
 #include "mapa.h"
+#include "recursos/recursos.h" 
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -645,34 +646,14 @@ void dibujarMapa(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera camara,
 }
 
 void dibujarJugador(HDC hdc, Jugador jugador, Camera camara) {
-    HBRUSH hBrushJugador = CreateSolidBrush(RGB(50, 205, 50));
-    HPEN hPenBorde = CreatePen(PS_SOLID, 2, RGB(0, 100, 0));
-    
-    int x_pantalla = jugador.x - camara.x;
-    int y_pantalla = jugador.y - camara.y;
+    int x_pantalla = (jugador.x - camara.x) * TAMANO_CELDA;
+    int y_pantalla = (jugador.y - camara.y) * TAMANO_CELDA;
 
     // Verificar si el jugador está dentro del área visible
-    if (x_pantalla >= 0 && x_pantalla < PANTALLA_COLUMNAS && 
-        y_pantalla >= 0 && y_pantalla < PANTALLA_FILAS) {
+    if (x_pantalla >= 0 && x_pantalla < PANTALLA_COLUMNAS * TAMANO_CELDA && 
+        y_pantalla >= 0 && y_pantalla < PANTALLA_FILAS * TAMANO_CELDA) {
         
-        RECT rectJugador;
-        rectJugador.left = x_pantalla * TAMANO_CELDA + 2;
-        rectJugador.top = y_pantalla * TAMANO_CELDA + 2;
-        rectJugador.right = (x_pantalla + 1) * TAMANO_CELDA - 2;
-        rectJugador.bottom = (y_pantalla + 1) * TAMANO_CELDA - 2;
-
-        // Dibujar borde
-        HPEN hOldPen = SelectObject(hdc, hPenBorde);
-        SelectObject(hdc, GetStockObject(NULL_BRUSH));
-        Ellipse(hdc, rectJugador.left, rectJugador.top, rectJugador.right, rectJugador.bottom);
-        SelectObject(hdc, hOldPen);
-        
-        // Dibujar jugador
-        SelectObject(hdc, hBrushJugador);
-        Ellipse(hdc, rectJugador.left + 2, rectJugador.top + 2, 
-                rectJugador.right - 2, rectJugador.bottom - 2);
+        // Usar sprite en lugar del círculo verde
+        dibujar_sprite(hdc, sprite_jugador, x_pantalla, y_pantalla);
     }
-    
-    DeleteObject(hBrushJugador);
-    DeleteObject(hPenBorde);
 }
