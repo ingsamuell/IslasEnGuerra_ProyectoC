@@ -1,8 +1,9 @@
 /* src/main.c */
-#include "recursos/recursos.h"
 //#include "sistema/sistema.h"
+#include "recursos/recursos.h"
 #include <windows.h>
 #include "mapa/mapa.h"
+#include <stdio.h> 
 
 /* --- Variables Globales del Juego --- */
 char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
@@ -116,6 +117,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 /* El punto de entrada de la aplicación */
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+    // ACTIVAR CONSOLA PARA VER MENSAJES
+    AllocConsole();
+    freopen("CONOUT$", "w", stdout);
+    freopen("CONOUT$", "w", stderr);
+    
+    printf("=== WAR ISLANDS - MODO DEBUG ===\n");
+
     WNDCLASS wc = { 0 };
     HWND hwnd;
     MSG msg;

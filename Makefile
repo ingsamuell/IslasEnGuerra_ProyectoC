@@ -17,7 +17,7 @@ CFLAGS = -Wall -Isrc
 
 # 5. Banderas del Enlazador (Linker)
 # -mwindows le dice al enlazador que es una app GUI (sin consola negra)
-LDFLAGS = -mwindows
+LDFLAGS = 
 
 # 5b. Bibliotecas del Enlazador
 # ¡Necesitamos la biblioteca GDI (Graphics Device Interface)!
