@@ -1,9 +1,9 @@
 /* src/main.c */
 //#include "sistema/sistema.h"
-#include "recursos/recursos.h"
 #include <windows.h>
+#include <stdio.h>
 #include "mapa/mapa.h"
-#include <stdio.h> 
+#include "recursos/recursos.h"
 
 /* --- Variables Globales del Juego --- */
 char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
@@ -24,20 +24,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         case WM_KEYDOWN:
         {
             if (estadoJuego.mostrarMenu) {
-                // Navegación del menú con flechas
                 switch (wParam)
                 {
                     case VK_UP:
                         estadoJuego.opcionSeleccionada--;
                         if (estadoJuego.opcionSeleccionada < 0) {
-                            estadoJuego.opcionSeleccionada = 2; // Volver a la última opción
+                            estadoJuego.opcionSeleccionada = 2;
                         }
                         InvalidateRect(hwnd, NULL, TRUE);
                         break;
                     case VK_DOWN:
                         estadoJuego.opcionSeleccionada++;
                         if (estadoJuego.opcionSeleccionada > 2) {
-                            estadoJuego.opcionSeleccionada = 0; // Volver a la primera opción
+                            estadoJuego.opcionSeleccionada = 0;
                         }
                         InvalidateRect(hwnd, NULL, TRUE);
                         break;
@@ -47,7 +46,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 }
             } 
             else if (estadoJuego.mostrarResumen) {
-                // En resumen, solo Enter para volver
                 if (wParam == VK_RETURN || wParam == VK_ESCAPE) {
                     estadoJuego.mostrarMenu = 1;
                     estadoJuego.mostrarResumen = 0;
@@ -56,7 +54,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 }
             }
             else if (estadoJuego.enPartida) {
-                // Movimiento del jugador en el juego
                 switch (wParam)
                 {
                     case VK_LEFT:
@@ -100,7 +97,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             } else if (estadoJuego.mostrarResumen) {
                 dibujarResumenRecursos(hdc, miJugador, &estadoJuego);
             } else if (estadoJuego.enPartida) {
-                // Obtener el tamaño del área cliente para el mapa
                 RECT rectClient;
                 GetClientRect(hwnd, &rectClient);
                 dibujarMapa(hdc, mapaMundo, miCamara, rectClient.right, rectClient.bottom);
@@ -117,12 +113,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 /* El punto de entrada de la aplicación */
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    // ACTIVAR CONSOLA PARA VER MENSAJES
+    // CONSOLA PARA DEBUG
     AllocConsole();
     freopen("CONOUT$", "w", stdout);
     freopen("CONOUT$", "w", stderr);
     
-    printf("=== WAR ISLANDS - MODO DEBUG ===\n");
+    printf("=== WAR ISLANDS INICIADO ===\n");
 
     WNDCLASS wc = { 0 };
     HWND hwnd;
@@ -139,7 +135,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     int anchoVentana = PANTALLA_COLUMNAS * TAMANO_CELDA;
     int altoVentana = PANTALLA_FILAS * TAMANO_CELDA;
     
-    // Ajustar para incluir bordes de la ventana
     RECT rect = {0, 0, anchoVentana, altoVentana};
     AdjustWindowRect(&rect, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE);
     
@@ -150,7 +145,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         0,
         TEXT("IslasEnGuerraClase"),
         TEXT("War Islands"),
-        // Quitar WS_OVERLAPPEDWINDOW y usar estilo personalizado sin redimensionar
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT, 
         anchoReal, altoReal,

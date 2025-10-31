@@ -43,7 +43,7 @@ void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     // Crear islas principales
     for (i = 10; i < 30; i++) {
         for (j = 10; j < 30; j++) {
-            if ((i-20)*(i-20) + (j-20)*(j-20) < 64) { // Isla circular
+            if ((i-20)*(i-20) + (j-20)*(j-20) < 64) {
                 mapa[i][j] = '.';
             }
         }
@@ -51,7 +51,7 @@ void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     
     for (i = 40; i < 60; i++) {
         for (j = 40; j < 60; j++) {
-            if ((i-50)*(i-50) + (j-50)*(j-50) < 100) { // Isla circular
+            if ((i-50)*(i-50) + (j-50)*(j-50) < 100) {
                 mapa[i][j] = '.';
             }
         }
@@ -128,20 +128,20 @@ void dibujarBoton(HDC hdc, int x, int y, int ancho, int alto, const char* texto,
     COLORREF colorFondo, colorTexto, colorBorde, colorSombra;
     
     if (seleccionado) {
-        colorFondo = RGB(100, 180, 255);   // Azul brillante seleccionado
-        colorTexto = RGB(255, 255, 255);   // Blanco
-        colorBorde = RGB(255, 215, 0);     // Dorado
-        colorSombra = RGB(30, 100, 180);   // Azul oscuro
+        colorFondo = RGB(100, 180, 255);
+        colorTexto = RGB(255, 255, 255);
+        colorBorde = RGB(255, 215, 0);
+        colorSombra = RGB(30, 100, 180);
     } else if (activo) {
-        colorFondo = RGB(70, 130, 180);    // Azul normal
-        colorTexto = RGB(255, 255, 255);   // Blanco
-        colorBorde = RGB(50, 100, 150);    // Azul borde
-        colorSombra = RGB(20, 60, 100);    // Sombra azul
+        colorFondo = RGB(70, 130, 180);
+        colorTexto = RGB(255, 255, 255);
+        colorBorde = RGB(50, 100, 150);
+        colorSombra = RGB(20, 60, 100);
     } else {
-        colorFondo = RGB(100, 100, 120);   // Gris azulado
-        colorTexto = RGB(200, 200, 200);   // Gris claro
-        colorBorde = RGB(80, 80, 100);     // Gris borde
-        colorSombra = RGB(50, 50, 70);     // Sombra gris
+        colorFondo = RGB(100, 100, 120);
+        colorTexto = RGB(200, 200, 200);
+        colorBorde = RGB(80, 80, 100);
+        colorSombra = RGB(50, 50, 70);
     }
     
     // Dibujar sombra
@@ -199,7 +199,6 @@ void dibujarBoton(HDC hdc, int x, int y, int ancho, int alto, const char* texto,
     } else if (strcmp(texto, "VOLVER AL MENÚ") == 0) {
         DrawText(hdc, TEXT("BACK TO MENU"), -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     } else {
-        // Para texto genérico, usar DrawTextA para ASCII
         DrawTextA(hdc, texto, -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     }
     
@@ -264,7 +263,7 @@ void dibujarMenu(HDC hdc, HWND hwnd, EstadoJuego *estado) {
     RECT rectTitulo = {ancho/2 - 150, 50, ancho/2 + 150, 130};
     DrawText(hdc, TEXT("WAR ISLANDS"), -1, &rectTitulo, DT_CENTER | DT_SINGLELINE);
     
-    // Subtítulo - Usando texto simple sin caracteres especiales
+    // Subtítulo
     HFONT hFontSubtitulo = CreateFont(16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
                                     DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
                                     CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
@@ -280,7 +279,7 @@ void dibujarMenu(HDC hdc, HWND hwnd, EstadoJuego *estado) {
     DeleteObject(hFontTitulo);
     DeleteObject(hFontSubtitulo);
     
-    // Botones interactivos - posición fija
+    // Botones interactivos
     int centroX = ancho / 2;
     int anchoBoton = 300;
     int altoBoton = 60;
@@ -312,7 +311,7 @@ void dibujarMenu(HDC hdc, HWND hwnd, EstadoJuego *estado) {
     DrawText(hdc, TEXT("Use UP/DOWN arrows to navigate and ENTER to select"), -1, &rectInstrucciones,
              DT_CENTER | DT_SINGLELINE);
     
-    // Créditos - Usando texto simple
+    // Créditos
     RECT rectCreditos = {0, alto - 30, ancho, alto};
     DrawText(hdc, TEXT("War Islands v1.0 - Developed with C - 2024"), -1, &rectCreditos,
              DT_CENTER | DT_SINGLELINE);
@@ -348,7 +347,7 @@ void dibujarResumenRecursos(HDC hdc, Jugador jugador, EstadoJuego *estado) {
     SelectObject(hdc, hOldFont);
     DeleteObject(hFontTitulo);
     
-    // Panel de recursos - posición fija
+    // Panel de recursos
     int panelAncho = 400;
     int panelAlto = 300;
     int panelX = (ancho - panelAncho) / 2;
@@ -367,7 +366,7 @@ void dibujarResumenRecursos(HDC hdc, Jugador jugador, EstadoJuego *estado) {
     DeleteObject(hBrushPanel);
     DeleteObject(hBrushBordePanel);
     
-    // Información de recursos - Usando funciones ASCII para evitar problemas UNICODE
+    // Información de recursos
     HFONT hFontRecursos = CreateFont(18, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
                                   DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
                                   CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
@@ -486,7 +485,7 @@ void actualizarPuntoMenu(EstadoJuego *estado, int x, int y, HWND hwnd) {
         }
     } else if (estado->mostrarResumen) {
         int btnVolverX = ancho/2 - 100;
-        int btnVolverY = 120 + 300 + 20; // panelY + panelAlto + 20
+        int btnVolverY = 120 + 300 + 20;
         
         estado->opcionSeleccionada = -1;
         if (verificarColisionBoton(x, y, btnVolverX, btnVolverY, 200, 50)) {
@@ -501,22 +500,22 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado) {
     if (estado->opcionSeleccionada != -1) {
         if (estado->mostrarMenu) {
             switch (estado->opcionSeleccionada) {
-                case 0: // START GAME
+                case 0:
                     estado->mostrarMenu = 0;
                     estado->enPartida = 1;
                     estado->mostrarResumen = 0;
                     break;
-                case 1: // RESOURCES
+                case 1:
                     estado->mostrarMenu = 0;
                     estado->enPartida = 0;
                     estado->mostrarResumen = 1;
                     break;
-                case 2: // EXIT
+                case 2:
                     PostQuitMessage(0);
                     return;
             }
         } else if (estado->mostrarResumen) {
-            if (estado->opcionSeleccionada == 0) { // BACK TO MENU
+            if (estado->opcionSeleccionada == 0) {
                 estado->mostrarMenu = 1;
                 estado->enPartida = 0;
                 estado->mostrarResumen = 0;
@@ -527,22 +526,21 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado) {
     }
 }
 
-// NUEVA FUNCIÓN: Procesar la tecla Enter en el menú
 void procesarEnterMenu(HWND hwnd, EstadoJuego *estado) {
     if (estado->opcionSeleccionada != -1) {
         if (estado->mostrarMenu) {
             switch (estado->opcionSeleccionada) {
-                case 0: // START GAME
+                case 0:
                     estado->mostrarMenu = 0;
                     estado->enPartida = 1;
                     estado->mostrarResumen = 0;
                     break;
-                case 1: // RESOURCES
+                case 1:
                     estado->mostrarMenu = 0;
                     estado->enPartida = 0;
                     estado->mostrarResumen = 1;
                     break;
-                case 2: // EXIT
+                case 2:
                     PostQuitMessage(0);
                     return;
             }
@@ -579,11 +577,10 @@ void dibujarMapa(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera camara,
     HBRUSH hBrushMontana = CreateSolidBrush(RGB(128, 128, 128));
     HBRUSH hBrushActual;
     
-    // Calcular celdas visibles basadas en el tamaño de la ventana
+    // Calcular celdas visibles
     int celdasX = anchoVentana / TAMANO_CELDA;
     int celdasY = altoVentana / TAMANO_CELDA;
     
-    // Asegurar que no excedamos los límites del mundo
     if (celdasX > PANTALLA_COLUMNAS) celdasX = PANTALLA_COLUMNAS;
     if (celdasY > PANTALLA_FILAS) celdasY = PANTALLA_FILAS;
     
@@ -596,25 +593,24 @@ void dibujarMapa(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera camara,
             y_mundo = y_pantalla + camara.y;
             x_mundo = x_pantalla + camara.x;
             
-            // Verificar límites del mundo
             if (y_mundo >= MUNDO_FILAS || x_mundo >= MUNDO_COLUMNAS) {
                 continue;
             }
             
             switch (mapa[y_mundo][x_mundo]) {
-                case 'P': // Montaña/Piedra
+                case 'P':
                     hBrushActual = hBrushMontana;
                     break;
-                case '.': // Tierra/Césped
+                case '.':
                     hBrushActual = hBrushCesped;
                     break;
-                case 'E': // Enemigo
+                case 'E':
                     hBrushActual = hBrushEnemigo;
                     break;
-                case '$': // Recurso
+                case '$':
                     hBrushActual = hBrushRecurso;
                     break;
-                case '~': // Agua
+                case '~':
                 default:
                     hBrushActual = hBrushAgua;
                     break;
@@ -653,7 +649,7 @@ void dibujarJugador(HDC hdc, Jugador jugador, Camera camara) {
     if (x_pantalla >= 0 && x_pantalla < PANTALLA_COLUMNAS * TAMANO_CELDA && 
         y_pantalla >= 0 && y_pantalla < PANTALLA_FILAS * TAMANO_CELDA) {
         
-        // Usar sprite en lugar del círculo verde
+        // Dibujar sprite con sus dimensiones reales
         dibujar_sprite(hdc, sprite_jugador, x_pantalla, y_pantalla);
     }
 }

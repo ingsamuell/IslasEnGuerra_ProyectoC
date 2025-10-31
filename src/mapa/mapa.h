@@ -7,9 +7,9 @@
 /* --- Definiciones del Juego --- */
 #define MUNDO_FILAS 100
 #define MUNDO_COLUMNAS 100
-#define PANTALLA_FILAS 18
-#define PANTALLA_COLUMNAS 25
-#define TAMANO_CELDA 32  // Aumenté el tamaño para mejor visibilidad
+#define PANTALLA_FILAS 50 
+#define PANTALLA_COLUMNAS 36
+#define TAMANO_CELDA 16  
 
 /* Estructuras del juego */
 typedef struct {
