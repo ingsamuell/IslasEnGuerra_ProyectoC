@@ -1,5 +1,6 @@
 /* src/main.c */
 //#include "sistema/sistema.h"
+/* src/main.c */
 #include <windows.h>
 #include <stdio.h>
 #include "mapa/mapa.h"
@@ -20,6 +21,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             PostQuitMessage(0);
             return 0;
 
+        /* Evitar que Windows borre el fondo (causa parpadeo) */
+        case WM_ERASEBKGND:
+            return 1;
+
         /* Evento de Teclado */
         case WM_KEYDOWN:
         {
@@ -31,14 +36,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                         if (estadoJuego.opcionSeleccionada < 0) {
                             estadoJuego.opcionSeleccionada = 2;
                         }
-                        InvalidateRect(hwnd, NULL, TRUE);
+                        InvalidateRect(hwnd, NULL, FALSE);
                         break;
                     case VK_DOWN:
                         estadoJuego.opcionSeleccionada++;
                         if (estadoJuego.opcionSeleccionada > 2) {
                             estadoJuego.opcionSeleccionada = 0;
                         }
-                        InvalidateRect(hwnd, NULL, TRUE);
+                        InvalidateRect(hwnd, NULL, FALSE);
                         break;
                     case VK_RETURN:
                         procesarEnterMenu(hwnd, &estadoJuego);
@@ -50,7 +55,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     estadoJuego.mostrarMenu = 1;
                     estadoJuego.mostrarResumen = 0;
                     estadoJuego.opcionSeleccionada = 0;
-                    InvalidateRect(hwnd, NULL, TRUE);
+                    InvalidateRect(hwnd, NULL, FALSE);
                 }
             }
             else if (estadoJuego.enPartida) {
@@ -81,28 +86,45 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 }
                 
                 actualizarCamara(&miCamara, miJugador);
-                InvalidateRect(hwnd, NULL, TRUE);
+                InvalidateRect(hwnd, NULL, FALSE);
             }
             return 0;
         }
 
-        /* Evento de Dibujado */
+        /* Evento de Dibujado CON DOBLE BÚFER */
         case WM_PAINT:
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
-
+            
+            RECT rectClient;
+            GetClientRect(hwnd, &rectClient);
+            int ancho = rectClient.right - rectClient.left;
+            int alto = rectClient.bottom - rectClient.top;
+            
+            // CREAR BÚFER EN MEMORIA
+            HDC hdcMem = CreateCompatibleDC(hdc);
+            HBITMAP hbmMem = CreateCompatibleBitmap(hdc, ancho, alto);
+            HBITMAP hbmOld = SelectObject(hdcMem, hbmMem);
+            
+            // DIBUJAR TODO EN EL BÚFER
             if (estadoJuego.mostrarMenu) {
-                dibujarMenu(hdc, hwnd, &estadoJuego);
+                dibujarMenuConSprites(hdcMem, hwnd, &estadoJuego);  // Nuevo menú con sprites
             } else if (estadoJuego.mostrarResumen) {
-                dibujarResumenRecursos(hdc, miJugador, &estadoJuego);
+                dibujarResumenRecursos(hdcMem, miJugador, &estadoJuego);
             } else if (estadoJuego.enPartida) {
-                RECT rectClient;
-                GetClientRect(hwnd, &rectClient);
-                dibujarMapa(hdc, mapaMundo, miCamara, rectClient.right, rectClient.bottom);
-                dibujarJugador(hdc, miJugador, miCamara);
+                dibujarMapa(hdcMem, mapaMundo, miCamara, ancho, alto);
+                dibujarJugador(hdcMem, miJugador, miCamara);
             }
-
+            
+            // COPIAR BÚFER COMPLETO A PANTALLA (INSTANTÁNEO)
+            BitBlt(hdc, 0, 0, ancho, alto, hdcMem, 0, 0, SRCCOPY);
+            
+            // LIMPIAR RECURSOS DEL BÚFER
+            SelectObject(hdcMem, hbmOld);
+            DeleteObject(hbmMem);
+            DeleteDC(hdcMem);
+            
             EndPaint(hwnd, &ps);
         }
         return 0;
@@ -118,7 +140,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     freopen("CONOUT$", "w", stdout);
     freopen("CONOUT$", "w", stderr);
     
-    printf("=== WAR ISLANDS INICIADO ===\n");
+    printf("=== WAR ISLANDS INICIADO (CON DOBLE BÚFER) ===\n");
 
     WNDCLASS wc = { 0 };
     HWND hwnd;

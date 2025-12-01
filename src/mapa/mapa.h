@@ -7,9 +7,9 @@
 /* --- Definiciones del Juego --- */
 #define MUNDO_FILAS 100
 #define MUNDO_COLUMNAS 100
-#define PANTALLA_FILAS 30 
-#define PANTALLA_COLUMNAS 36
-#define TAMANO_CELDA 16  
+#define PANTALLA_FILAS 35      
+#define PANTALLA_COLUMNAS 50    
+#define TAMANO_CELDA 16
 
 /* Estructuras del juego */
 typedef struct {
@@ -56,5 +56,15 @@ int verificarColisionBoton(int mouseX, int mouseY, int btnX, int btnY, int btnAn
 void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado);
 void procesarEnterMenu(HWND hwnd, EstadoJuego *estado);
 void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
+
+/* Funciones para manejo de estado global */
+EstadoJuego* obtenerEstadoJuego();
+void iniciarPartida();
+void volverAlMenu();
+
+/* Nuevas funciones con sprites */
+void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado);
+void dibujarFondoAnimadoMejorado(HDC hdc, int ancho, int alto, int tiempo);
+void dibujarBotonMejorado(HDC hdc, int x, int y, int ancho, int alto, const char* texto, BOOL seleccionado, BOOL activo);
 
 #endif

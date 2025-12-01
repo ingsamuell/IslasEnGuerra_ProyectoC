@@ -653,3 +653,228 @@ void dibujarJugador(HDC hdc, Jugador jugador, Camera camara) {
         dibujar_sprite(hdc, sprite_jugador, x_pantalla, y_pantalla);
     }
 }
+
+/* ========== NUEVAS FUNCIONES CON SPRITES ========== */
+
+void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado) {
+    RECT rectClient;
+    GetClientRect(hwnd, &rectClient);
+    int ancho = rectClient.right - rectClient.left;
+    int alto = rectClient.bottom - rectClient.top;
+    
+    printf("Dibujando menu con sprites - Ventana: %dx%d\n", ancho, alto);
+    
+    // 1. DIBUJAR FONDO CON SPRITE - CENTRADO
+    if (sprite_fondo_menu.bitmap) {
+        printf("Usando sprite de fondo: %dx%d\n", sprite_fondo_menu.ancho, sprite_fondo_menu.alto);
+        // Centrar el fondo exactamente
+        int x = (ancho - sprite_fondo_menu.ancho) / 2;
+        int y = (alto - sprite_fondo_menu.alto) / 2;
+        dibujar_sprite(hdc, sprite_fondo_menu, x, y);
+    } else {
+        printf("Usando fondo animado por código\n");
+        // Fallback: usar fondo animado por código
+        static int tiempo = 0;
+        tiempo++;
+        dibujarFondoAnimado(hdc, ancho, alto, tiempo);
+    }
+    
+    // 2. DIBUJAR TÍTULO CON SPRITE
+    if (sprite_titulo.bitmap) {
+        int tituloX = (ancho - sprite_titulo.ancho) / 2;
+        int tituloY = 50;
+        dibujar_sprite(hdc, sprite_titulo, tituloX, tituloY);
+    } else {
+        // Fallback: título por código
+        HFONT hFontTitulo = CreateFont(48, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+                                     DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
+                                     CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                                     VARIABLE_PITCH, TEXT("Arial"));
+        HFONT hOldFont = SelectObject(hdc, hFontTitulo);
+        
+        SetTextColor(hdc, RGB(255, 215, 0));
+        SetBkMode(hdc, TRANSPARENT);
+        RECT rectTitulo = {ancho/2 - 150, 50, ancho/2 + 150, 130};
+        DrawText(hdc, TEXT("WAR ISLANDS"), -1, &rectTitulo, DT_CENTER | DT_SINGLELINE);
+        
+        SelectObject(hdc, hOldFont);
+        DeleteObject(hFontTitulo);
+    }
+    
+    // 3. DIBUJAR BOTONES CON SPRITES
+    int centroX = ancho / 2;
+    int anchoBoton = 300;
+    int altoBoton = 70;
+    int espacioBoton = 25;
+    int yBase = 220;
+    
+    // Botones
+    for (int i = 0; i < 3; i++) {
+        int btnX = centroX - anchoBoton/2;
+        int btnY = yBase + i * (altoBoton + espacioBoton);
+        BOOL seleccionado = (estado->opcionSeleccionada == i);
+        
+        if (sprite_boton_normal.bitmap && sprite_boton_seleccionado.bitmap) {
+            // Usar sprites de botones
+            Sprite sprite_a_usar = seleccionado ? sprite_boton_seleccionado : sprite_boton_normal;
+            dibujar_sprite(hdc, sprite_a_usar, btnX, btnY);
+            
+            // Dibujar texto sobre el botón
+            HFONT hFont = CreateFont(20, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+                                   DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
+                                   CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                                   VARIABLE_PITCH, TEXT("Arial"));
+            HFONT hOldFont = SelectObject(hdc, hFont);
+            
+            SetTextColor(hdc, seleccionado ? RGB(255, 255, 200) : RGB(255, 255, 255));
+            SetBkMode(hdc, TRANSPARENT);
+            
+            RECT rectTexto = {btnX, btnY, btnX + anchoBoton, btnY + altoBoton};
+            const char* textos[] = {"START GAME", "RESOURCES", "EXIT GAME"};
+            DrawTextA(hdc, textos[i], -1, &rectTexto, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            
+            SelectObject(hdc, hOldFont);
+            DeleteObject(hFont);
+        } else {
+            // Fallback: botones por código
+            const char* textos[] = {"INICIAR PARTIDA", "RESUMEN RECURSOS", "SALIR"};
+            dibujarBoton(hdc, btnX, btnY, anchoBoton, altoBoton, textos[i], seleccionado, TRUE);
+        }
+    }
+    
+    // 4. INSTRUCCIONES Y CRÉDITOS (siempre por código)
+    HFONT hFontInstrucciones = CreateFont(14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                                       DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
+                                       CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                                       VARIABLE_PITCH, TEXT("Arial"));
+    SelectObject(hdc, hFontInstrucciones);
+    SetTextColor(hdc, RGB(200, 230, 255));
+    
+    RECT rectInstrucciones = {0, alto - 60, ancho, alto - 30};
+    DrawText(hdc, TEXT("Use ARROW KEYS to navigate • ENTER to select"), -1, &rectInstrucciones,
+             DT_CENTER | DT_SINGLELINE);
+    
+    RECT rectCreditos = {0, alto - 30, ancho, alto};
+    DrawText(hdc, TEXT("War Islands v1.0 • Developed in C • 2024"), -1, &rectCreditos,
+             DT_CENTER | DT_SINGLELINE);
+    
+    DeleteObject(hFontInstrucciones);
+    
+    printf("Menu con sprites dibujado exitosamente\n");
+}
+
+void dibujarFondoAnimadoMejorado(HDC hdc, int ancho, int alto, int tiempo) {
+    // Gradiente azul marino más profundo
+    for (int y = 0; y < alto; y++) {
+        int azul = 30 + (y * 40) / alto;
+        int verde = 10 + (y * 10) / alto;
+        HBRUSH hBrushLinea = CreateSolidBrush(RGB(5, verde, azul));
+        RECT rectLinea = {0, y, ancho, y + 1};
+        FillRect(hdc, &rectLinea, hBrushLinea);
+        DeleteObject(hBrushLinea);
+    }
+    
+    // Estrellas más dinámicas
+    srand(tiempo / 8);
+    for (int i = 0; i < 120; i++) {
+        int x = rand() % ancho;
+        int y = rand() % alto;
+        int brillo = 80 + (rand() % 175);
+        int tamano = 1 + (rand() % 3);
+        int parpadeo = (tiempo + i) % 100;
+        
+        if (parpadeo < 80) {  // Efecto de parpadeo
+            HBRUSH hBrushEstrella = CreateSolidBrush(RGB(brillo, brillo, brillo));
+            RECT rectEstrella = {x, y, x + tamano, y + tamano};
+            FillRect(hdc, &rectEstrella, hBrushEstrella);
+            DeleteObject(hBrushEstrella);
+        }
+    }
+}
+
+void dibujarBotonMejorado(HDC hdc, int x, int y, int ancho, int alto, const char* texto, BOOL seleccionado, BOOL activo) {
+    COLORREF colorFondo, colorTexto, colorBorde, colorSombra, colorBrillo;
+    
+    if (seleccionado) {
+        colorFondo = RGB(80, 160, 240);
+        colorTexto = RGB(255, 255, 255);
+        colorBorde = RGB(255, 225, 50);
+        colorSombra = RGB(20, 80, 160);
+        colorBrillo = RGB(120, 200, 255);
+    } else if (activo) {
+        colorFondo = RGB(60, 120, 200);
+        colorTexto = RGB(255, 255, 255);
+        colorBorde = RGB(40, 90, 150);
+        colorSombra = RGB(15, 50, 100);
+        colorBrillo = RGB(90, 160, 220);
+    } else {
+        colorFondo = RGB(80, 80, 120);
+        colorTexto = RGB(200, 200, 200);
+        colorBorde = RGB(60, 60, 90);
+        colorSombra = RGB(40, 40, 70);
+        colorBrillo = RGB(100, 100, 140);
+    }
+    
+    // Dibujar sombra más suave
+    HBRUSH hBrushSombra = CreateSolidBrush(colorSombra);
+    RECT rectSombra = {x + 4, y + 4, x + ancho + 4, y + alto + 4};
+    FillRect(hdc, &rectSombra, hBrushSombra);
+    DeleteObject(hBrushSombra);
+    
+    // Dibujar borde
+    HBRUSH hBrushBorde = CreateSolidBrush(colorBorde);
+    RECT rectBorde = {x - 3, y - 3, x + ancho + 3, y + alto + 3};
+    FillRect(hdc, &rectBorde, hBrushBorde);
+    DeleteObject(hBrushBorde);
+    
+    // Dibujar fondo principal con gradiente
+    HBRUSH hBrushFondo = CreateSolidBrush(colorFondo);
+    RECT rectBoton = {x, y, x + ancho, y + alto};
+    FillRect(hdc, &rectBoton, hBrushFondo);
+    
+    // Efecto de gradiente superior
+    if (seleccionado || activo) {
+        HBRUSH hBrushGradiente = CreateSolidBrush(colorBrillo);
+        RECT rectGradiente = {x, y, x + ancho, y + alto/4};
+        FillRect(hdc, &rectGradiente, hBrushGradiente);
+        DeleteObject(hBrushGradiente);
+    }
+    
+    // Configurar texto
+    SetBkMode(hdc, TRANSPARENT);
+    SetTextColor(hdc, colorTexto);
+    
+    // Fuente del botón mejorada
+    HFONT hFont = CreateFont(
+        seleccionado ? 26 : 22,
+        0, 0, 0,
+        seleccionado ? FW_HEAVY : FW_BOLD,
+        FALSE, FALSE, FALSE,
+        DEFAULT_CHARSET,
+        OUT_OUTLINE_PRECIS,
+        CLIP_DEFAULT_PRECIS,
+        CLEARTYPE_QUALITY,
+        VARIABLE_PITCH,
+        TEXT("Arial")
+    );
+    
+    HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+    
+    // Dibujar texto
+    if (strcmp(texto, "INICIAR PARTIDA") == 0) {
+        DrawText(hdc, TEXT("START GAME"), -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    } else if (strcmp(texto, "RESUMEN RECURSOS") == 0) {
+        DrawText(hdc, TEXT("RESOURCES SUMMARY"), -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    } else if (strcmp(texto, "SALIR") == 0) {
+        DrawText(hdc, TEXT("EXIT GAME"), -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    } else if (strcmp(texto, "VOLVER AL MENÚ") == 0) {
+        DrawText(hdc, TEXT("BACK TO MENU"), -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    } else {
+        DrawTextA(hdc, texto, -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    }
+    
+    // Restaurar y limpiar
+    SelectObject(hdc, hOldFont);
+    DeleteObject(hFont);
+    DeleteObject(hBrushFondo);
+}
