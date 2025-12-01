@@ -180,7 +180,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     inicializarJuego(&miJugador, &estadoJuego, mapaMundo);
 
-    if (!cargar_sprites()) {
+    if (!cargar_sprites(hwnd)) {
         MessageBox(NULL, TEXT("Error cargando sprite del jugador"), TEXT("Error"), MB_OK);
         return 1;
     }
