@@ -1,7 +1,8 @@
+/* src/recursos/recursos.h */
 #ifndef RECURSOS_H
 #define RECURSOS_H
 
-#include <windows.h>
+#include "../global.h"
 
 /* ========== ESTRUCTURA PARA SPRITES ========== */
 typedef struct {
