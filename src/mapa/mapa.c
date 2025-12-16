@@ -12,8 +12,8 @@ static EstadoJuego estadoActual = {1, 0, 0, 0, {0, 0}};
 /* --- Lógica del Juego --- */
 
 void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
-    jugador->x = 15;
-    jugador->y = 15;
+    jugador->x = 50;
+    jugador->y = 50;
     jugador->oro = 150;
     jugador->madera = 80;
     jugador->piedra = 50;
@@ -28,98 +28,104 @@ void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FIL
     estado->puntoMouse.y = 100;
     
     inicializarMapa(mapa);
+    
+    // NOTA: miCamara se inicializa en main.c
+    printf("Juego inicializado. Jugador en (%d,%d)\n", jugador->x, jugador->y);
 }
 
 void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     int i, j;
     
-    // Inicializar todo como agua
+    // Inicializar todo como agua (océano)
     for (i = 0; i < MUNDO_FILAS; i++) {
         for (j = 0; j < MUNDO_COLUMNAS; j++) {
-            mapa[i][j] = '~';
+            mapa[i][j] = '~';  // Agua/océano
         }
     }
     
-    // Crear islas principales
-    for (i = 10; i < 30; i++) {
-        for (j = 10; j < 30; j++) {
-            if ((i-20)*(i-20) + (j-20)*(j-20) < 64) {
-                mapa[i][j] = '.';
+    // Área de la isla principal (50x50 celdas, centrada en 50,50)
+    int centro_x = 50;
+    int centro_y = 50;
+    int radio_celdas = 25;  // 500px / 10px/celda / 2 = 25 celdas
+    
+    for (i = 0; i < MUNDO_FILAS; i++) {
+        for (j = 0; j < MUNDO_COLUMNAS; j++) {
+            int dx = j - centro_x;
+            int dy = i - centro_y;
+            
+            // Si está dentro del círculo de la isla
+            if (dx*dx + dy*dy <= radio_celdas*radio_celdas) {
+                mapa[i][j] = '.';  // Tierra (transitable)
             }
         }
     }
     
-    for (i = 40; i < 60; i++) {
-        for (j = 40; j < 60; j++) {
-            if ((i-50)*(i-50) + (j-50)*(j-50) < 100) {
-                mapa[i][j] = '.';
-            }
-        }
-    }
-    
-    // Agregar montañas
-    mapa[15][15] = 'P';
-    mapa[16][15] = 'P';
-    mapa[15][16] = 'P';
-    mapa[45][45] = 'P';
-    mapa[46][45] = 'P';
-    mapa[45][46] = 'P';
-    
-    // Agregar recursos
-    mapa[12][18] = '$';
-    mapa[18][12] = '$';
-    mapa[22][22] = '$';
-    mapa[42][48] = '$';
-    mapa[48][42] = '$';
-    mapa[52][52] = '$';
-    
-    // Agregar áreas enemigas
-    for (i = 70; i < 80; i++) {
-        for (j = 70; j < 80; j++) {
-            mapa[i][j] = 'E';
-        }
-    }
-    
-    // Conectar islas con puentes de tierra
-    for (i = 25; i < 40; i++) {
-        mapa[i][25] = '.';
-        mapa[i][26] = '.';
-    }
+    printf("Mapa inicializado: Isla en centro (%d,%d) radio %d celdas\n", centro_x, centro_y, radio_celdas);
 }
 
 void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy) {
     int nuevoX = jugador->x + dx;
     int nuevoY = jugador->y + dy;
 
+    // Validar límites del mundo
     if (nuevoX < 0 || nuevoX >= MUNDO_COLUMNAS || nuevoY < 0 || nuevoY >= MUNDO_FILAS) {
         return;
     }
+    
+    // NO puede moverse al agua (a menos que tenga barco más adelante)
     if (mapa[nuevoY][nuevoX] == '~') {
+        printf("Movimiento bloqueado: Agua\n");
         return;
     }
     
+    // Actualizar posición
     jugador->x = nuevoX;
     jugador->y = nuevoY;
     
+    printf("Jugador movido a: (%d, %d) - Terreno: %c\n", nuevoX, nuevoY, mapa[nuevoY][nuevoX]);
+    
+    // Sistema de recursos (puedes expandir esto más adelante)
     if (mapa[nuevoY][nuevoX] == '$') {
         jugador->oro += 25;
         jugador->madera += 15;
         mapa[nuevoY][nuevoX] = '.';
+        printf("¡Recurso recolectado! Oro: %d, Madera: %d\n", jugador->oro, jugador->madera);
     }
 }
 
 void actualizarCamara(Camera *camara, Jugador jugador) {
-    // Centrar la cámara en el jugador
-    camara->x = jugador.x - (PANTALLA_COLUMNAS / 2);
-    camara->y = jugador.y - (PANTALLA_FILAS / 2);
-
-    // Mantener la cámara dentro de los límites del mundo
+    printf("DEBUG actualizarCamara: INICIO - Jugador(%d,%d) Zoom=%.1f\n", jugador.x, jugador.y, camara->zoom);
+    
+    // 1. Calcular tamaño de celda con zoom
+    camara->tamano_celda_actual = (int)(TAMANO_CELDA_BASE * camara->zoom);
+    
+    // 2. Calcular cuántas celdas caben en pantalla CON ESTE ZOOM
+    // Fórmula CORREGIDA: 
+    // Si zoom=2.0, las celdas son 2x más grandes, así que caben LA MITAD
+    float celdas_visibles_x = (float)PANTALLA_COLUMNAS / camara->zoom;
+    float celdas_visibles_y = (float)PANTALLA_FILAS / camara->zoom;
+    
+    printf("DEBUG: celdas_visibles=%.1fx%.1f (zoom=%.1f)\n", celdas_visibles_x, celdas_visibles_y, camara->zoom);
+    
+    // 3. Centrar EXACTAMENTE en el jugador
+    // El jugador debe quedar en el centro VISUAL de la pantalla
+    camara->x = jugador.x - (int)(celdas_visibles_x / 2);
+    camara->y = jugador.y - (int)(celdas_visibles_y / 2);
+    
+    // 4. Limitar a los bordes del mundo
     if (camara->x < 0) camara->x = 0;
     if (camara->y < 0) camara->y = 0;
-    if (camara->x > MUNDO_COLUMNAS - PANTALLA_COLUMNAS) 
-        camara->x = MUNDO_COLUMNAS - PANTALLA_COLUMNAS;
-    if (camara->y > MUNDO_FILAS - PANTALLA_FILAS) 
-        camara->y = MUNDO_FILAS - PANTALLA_FILAS;
+    
+    int max_x = MUNDO_COLUMNAS - (int)celdas_visibles_x;
+    int max_y = MUNDO_FILAS - (int)celdas_visibles_y;
+    
+    if (max_x < 0) max_x = 0;
+    if (max_y < 0) max_y = 0;
+    
+    if (camara->x > max_x) camara->x = max_x;
+    if (camara->y > max_y) camara->y = max_y;
+    
+    printf("DEBUG actualizarCamara: FIN - Cámara(%d,%d) Celda=%dpx\n", camara->x, camara->y, camara->tamano_celda_actual);
 }
 
 /* --- Sistema de Menú Mejorado --- */
@@ -272,8 +278,7 @@ void dibujarMenu(HDC hdc, HWND hwnd, EstadoJuego *estado) {
     SetTextColor(hdc, RGB(180, 220, 255));
     
     RECT rectSubtitulo = {0, 130, ancho, 170};
-    DrawText(hdc, TEXT("Conquer - Build - Survive"), -1, &rectSubtitulo,
-             DT_CENTER | DT_SINGLELINE);
+    DrawText(hdc, TEXT("Conquer - Build - Survive"), -1, &rectSubtitulo, DT_CENTER | DT_SINGLELINE);
     
     SelectObject(hdc, hOldFont);
     DeleteObject(hFontTitulo);
@@ -566,95 +571,7 @@ void volverAlMenu() {
     estadoActual.mostrarResumen = 0;
 }
 
-/* --- Gráficos del Juego --- */
-
-void dibujarMapa(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera camara, int anchoVentana, int altoVentana) {
-    HBRUSH hBrushAgua = CreateSolidBrush(RGB(30, 144, 255));
-    HBRUSH hBrushTierra = CreateSolidBrush(RGB(139, 115, 85));
-    HBRUSH hBrushCesped = CreateSolidBrush(RGB(34, 139, 34));
-    HBRUSH hBrushEnemigo = CreateSolidBrush(RGB(220, 20, 60));
-    HBRUSH hBrushRecurso = CreateSolidBrush(RGB(255, 215, 0));
-    HBRUSH hBrushMontana = CreateSolidBrush(RGB(128, 128, 128));
-    HBRUSH hBrushActual;
-    
-    // Calcular celdas visibles
-    int celdasX = anchoVentana / TAMANO_CELDA;
-    int celdasY = altoVentana / TAMANO_CELDA;
-    
-    if (celdasX > PANTALLA_COLUMNAS) celdasX = PANTALLA_COLUMNAS;
-    if (celdasY > PANTALLA_FILAS) celdasY = PANTALLA_FILAS;
-    
-    int y_pantalla, x_pantalla;
-    int y_mundo, x_mundo;
-    RECT rectCelda;
-
-    for (y_pantalla = 0; y_pantalla < celdasY; y_pantalla++) {
-        for (x_pantalla = 0; x_pantalla < celdasX; x_pantalla++) {
-            y_mundo = y_pantalla + camara.y;
-            x_mundo = x_pantalla + camara.x;
-            
-            if (y_mundo >= MUNDO_FILAS || x_mundo >= MUNDO_COLUMNAS) {
-                continue;
-            }
-            
-            switch (mapa[y_mundo][x_mundo]) {
-                case 'P':
-                    hBrushActual = hBrushMontana;
-                    break;
-                case '.':
-                    hBrushActual = hBrushCesped;
-                    break;
-                case 'E':
-                    hBrushActual = hBrushEnemigo;
-                    break;
-                case '$':
-                    hBrushActual = hBrushRecurso;
-                    break;
-                case '~':
-                default:
-                    hBrushActual = hBrushAgua;
-                    break;
-            }
-
-            rectCelda.left = x_pantalla * TAMANO_CELDA;
-            rectCelda.top = y_pantalla * TAMANO_CELDA;
-            rectCelda.right = (x_pantalla + 1) * TAMANO_CELDA;
-            rectCelda.bottom = (y_pantalla + 1) * TAMANO_CELDA;
-
-            FillRect(hdc, &rectCelda, hBrushActual);
-            
-            // Dibujar borde de la celda
-            HPEN hPenBorde = CreatePen(PS_SOLID, 1, RGB(50, 50, 50));
-            HPEN hOldPen = SelectObject(hdc, hPenBorde);
-            SelectObject(hdc, GetStockObject(NULL_BRUSH));
-            Rectangle(hdc, rectCelda.left, rectCelda.top, rectCelda.right, rectCelda.bottom);
-            SelectObject(hdc, hOldPen);
-            DeleteObject(hPenBorde);
-        }
-    }
-    
-    DeleteObject(hBrushAgua);
-    DeleteObject(hBrushTierra);
-    DeleteObject(hBrushCesped);
-    DeleteObject(hBrushEnemigo);
-    DeleteObject(hBrushRecurso);
-    DeleteObject(hBrushMontana);
-}
-
-void dibujarJugador(HDC hdc, Jugador jugador, Camera camara) {
-    int x_pantalla = (jugador.x - camara.x) * TAMANO_CELDA;
-    int y_pantalla = (jugador.y - camara.y) * TAMANO_CELDA;
-
-    // Verificar si el jugador está dentro del área visible
-    if (x_pantalla >= 0 && x_pantalla < PANTALLA_COLUMNAS * TAMANO_CELDA && 
-        y_pantalla >= 0 && y_pantalla < PANTALLA_FILAS * TAMANO_CELDA) {
-        
-        // Dibujar sprite con transparencia magenta
-        dibujar_sprite(hdc, sprite_jugador, x_pantalla, y_pantalla);
-    }
-}
-
-/* ========== NUEVAS FUNCIONES CON SPRITES ========== */
+/* ========== FUNCIONES CON SPRITES ========== */
 
 void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado) {
     RECT rectClient;
@@ -762,6 +679,162 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado) {
     
     printf("Menu con sprites dibujado exitosamente\n");
 }
+
+/* ========== DIBUJAR MAPA CON ZOOM (ÚNICA FUNCIÓN DE DIBUJADO) ========== */
+void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera camara, int anchoVentana, int altoVentana) {
+    printf("=== DIBUJANDO MAPA CON ZOOM (%.1fx) ===\n", camara.zoom);
+    printf("Tamaño celda: %dpx\n", camara.tamano_celda_actual);
+    printf("Cámara: (%d, %d)\n", camara.x, camara.y);
+    
+    // 1. FONDO AZUL DEL OCÉANO
+    HBRUSH hBrushAgua = CreateSolidBrush(RGB(30, 144, 255));
+    RECT rectFondo = {0, 0, anchoVentana, altoVentana};
+    FillRect(hdc, &rectFondo, hBrushAgua);
+    DeleteObject(hBrushAgua);
+    
+    // Calcular celdas visibles basado en zoom
+    int celdasX = anchoVentana / camara.tamano_celda_actual;
+    int celdasY = altoVentana / camara.tamano_celda_actual;
+    
+    // Asegurar que no excedamos los límites
+    if (celdasX > PANTALLA_COLUMNAS) celdasX = PANTALLA_COLUMNAS;
+    if (celdasY > PANTALLA_FILAS) celdasY = PANTALLA_FILAS;
+    
+    // 2. DIBUJAR ISLA PRINCIPAL CON ZOOM
+    if (sprite_isla_principal.bitmap) {
+        printf("Sprite isla: %dx%d\n", sprite_isla_principal.ancho, sprite_isla_principal.alto);
+        
+        // Centro de la isla en el mundo (posición 50,50)
+        int centro_mundo_x = 50;
+        int centro_mundo_y = 50;
+        
+        // Calcular dimensiones escaladas según zoom
+        int ancho_escalado = (int)(sprite_isla_principal.ancho * camara.zoom);
+        int alto_escalado = (int)(sprite_isla_principal.alto * camara.zoom);
+        
+        // Convertir a coordenadas de pantalla
+        // IMPORTANTE: Usar camara.tamano_celda_actual para conversión correcta
+        int centro_pantalla_x = (centro_mundo_x - camara.x) * camara.tamano_celda_actual;
+        int centro_pantalla_y = (centro_mundo_y - camara.y) * camara.tamano_celda_actual;
+        
+        // Calcular esquina superior izquierda para centrar
+        int isla_x = centro_pantalla_x - (ancho_escalado / 2);
+        int isla_y = centro_pantalla_y - (alto_escalado / 2);
+        
+        printf("DEBUG: Centro mundo(%d,%d) -> pantalla(%d,%d)\n", 
+               centro_mundo_x, centro_mundo_y, centro_pantalla_x, centro_pantalla_y);
+        printf("DEBUG: Isla escalada %dx%d en (%d,%d)\n", 
+               ancho_escalado, alto_escalado, isla_x, isla_y);
+        
+        // Verificar si es visible
+        if (isla_x + ancho_escalado > 0 && isla_x < anchoVentana &&
+            isla_y + alto_escalado > 0 && isla_y < altoVentana) {
+            
+            // Usar TransparentBlt con escalado
+            HDC hdcMem = CreateCompatibleDC(hdc);
+            SelectObject(hdcMem, sprite_isla_principal.bitmap);
+            
+            TransparentBlt(hdc, 
+                          isla_x, isla_y,                    // Destino (x,y)
+                          ancho_escalado, alto_escalado,    // Destino (ancho,alto)
+                          hdcMem, 0, 0,                     // Origen (0,0)
+                          sprite_isla_principal.ancho,      // Origen ancho
+                          sprite_isla_principal.alto,       // Origen alto
+                          RGB(255, 0, 255));                // Color transparente
+            
+            DeleteDC(hdcMem);
+            printf("Isla dibujada con zoom\n");
+        } else {
+            printf("DEBUG: Isla fuera de pantalla\n");
+        }
+    } else {
+        printf("ERROR: No se cargó sprite de isla\n");
+    }
+    
+    // 3. DIBUJAR ELEMENTOS INDIVIDUALES (opcional, para zoom cercano)
+    /* 
+      if (camara.zoom >= 2.0f) {  // Solo dibujar detalles si el zoom es alto
+        HBRUSH hBrushTierra = CreateSolidBrush(RGB(139, 115, 85));
+        HBRUSH hBrushRecurso = CreateSolidBrush(RGB(255, 215, 0));
+        
+        for (int y = 0; y < celdasY; y++) {
+            for (int x = 0; x < celdasX; x++) {
+                int mundo_y = y + camara.y;
+                int mundo_x = x + camara.x;
+                
+                if (mundo_y >= MUNDO_FILAS || mundo_x >= MUNDO_COLUMNAS) {
+                    continue;
+                }
+                
+                int pantalla_x = x * camara.tamano_celda_actual;
+                int pantalla_y = y * camara.tamano_celda_actual;
+                
+                RECT rectCelda = {
+                    pantalla_x, 
+                    pantalla_y, 
+                    pantalla_x + camara.tamano_celda_actual, 
+                    pantalla_y + camara.tamano_celda_actual
+                };
+                
+                switch (mapa[mundo_y][mundo_x]) {
+                    case '$':  // Recurso
+                        FillRect(hdc, &rectCelda, hBrushRecurso);
+                        break;
+                    case '.':  // Tierra
+                        FillRect(hdc, &rectCelda, hBrushTierra);
+                        break;
+                }
+            }
+        }
+        
+        DeleteObject(hBrushTierra);
+        DeleteObject(hBrushRecurso);
+    } 
+    */
+    
+    printf("=== FIN DIBUJO MAPA CON ZOOM ===\n\n");
+}
+
+/* ========== DIBUJAR JUGADOR CON ZOOM ========== */
+void dibujarJugador(HDC hdc, Jugador jugador, Camera camara) {
+    // Calcular posición en pantalla considerando zoom
+    int x_pantalla = (jugador.x - camara.x) * camara.tamano_celda_actual;
+    int y_pantalla = (jugador.y - camara.y) * camara.tamano_celda_actual;
+    
+    // Calcular tamaño escalado del jugador
+    int ancho_jugador = (int)(sprite_jugador.ancho * camara.zoom);
+    int alto_jugador = (int)(sprite_jugador.alto * camara.zoom);
+    
+    // Ajustar para centrar (el jugador está en el centro de su celda)
+    int ajuste_x = x_pantalla - (ancho_jugador - camara.tamano_celda_actual) / 2;
+    int ajuste_y = y_pantalla - (alto_jugador - camara.tamano_celda_actual) / 2;
+
+    // Verificar si está visible
+    if (ajuste_x + ancho_jugador > 0 && ajuste_x < PANTALLA_COLUMNAS * TAMANO_CELDA_BASE && 
+        ajuste_y + alto_jugador > 0 && ajuste_y < PANTALLA_FILAS * TAMANO_CELDA_BASE) {
+        
+        // Dibujar sprite escalado con zoom
+        HDC hdcMem = CreateCompatibleDC(hdc);
+        SelectObject(hdcMem, sprite_jugador.bitmap);
+        
+        TransparentBlt(hdc, 
+                      ajuste_x, ajuste_y,           // Destino
+                      ancho_jugador, alto_jugador,  // Destino escalado
+                      hdcMem, 0, 0,                 // Origen
+                      sprite_jugador.ancho,         // Origen ancho
+                      sprite_jugador.alto,          // Origen alto
+                      RGB(255, 0, 255));            // Transparente
+        
+        DeleteDC(hdcMem);
+        
+        printf("DEBUG dibujarJugador: Jugador en (%d,%d) -> pantalla(%d,%d) tamaño %dx%d\n",
+               jugador.x, jugador.y, ajuste_x, ajuste_y, ancho_jugador, alto_jugador);
+    } else {
+        printf("DEBUG: Jugador fuera de pantalla\n");
+    }
+}
+
+/* ========== FUNCIONES ADICIONALES (opcionales) ========== */
 
 void dibujarFondoAnimadoMejorado(HDC hdc, int ancho, int alto, int tiempo) {
     // Gradiente azul marino más profundo
