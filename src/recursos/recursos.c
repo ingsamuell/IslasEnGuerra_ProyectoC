@@ -1,4 +1,3 @@
-/* src/recursos/recursos.c */
 #include "recursos.h"
 #include <stdio.h>
 #include <windows.h>
@@ -39,7 +38,7 @@ int archivo_existe(const char* filename) {
         fclose(file);
         return 1;
     }
-    return s;
+    return 0;
 }
 
 /* Carga un bitmap desde archivo con búsqueda en múltiples rutas */

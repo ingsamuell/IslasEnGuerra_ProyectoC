@@ -1,8 +1,7 @@
-/* src/recursos/recursos.h */
 #ifndef RECURSOS_H
 #define RECURSOS_H
 
-#include "../global.h"
+#include <windows.h>
 
 /* ========== ESTRUCTURA PARA SPRITES ========== */
 typedef struct {
@@ -52,4 +51,4 @@ extern Sprite sprite_unidad_arquero;           // Unidad: Arquero (16×16) - FUT
 // #define RUTA_ASSETS "assets/"
 // #define RUTA_SPRITES "assets/sprites/"
 
-#endif /* RECURSOS_H */   
+#endif /* RECURSOS_H */    
