@@ -46,9 +46,4 @@ extern Sprite sprite_edificio_mina;            // Edificio: Mina (32×32) - FUTU
 extern Sprite sprite_unidad_soldado;           // Unidad: Soldado (16×16) - FUTURO
 extern Sprite sprite_unidad_arquero;           // Unidad: Arquero (16×16) - FUTURO
 
-/* ========== CONSTANTES PARA RUTAS DE ARCHIVOS ========== */
-// (Estas constantes pueden definirse en recursos.c si se necesitan)
-// #define RUTA_ASSETS "assets/"
-// #define RUTA_SPRITES "assets/sprites/"
-
-#endif /* RECURSOS_H */    
+#endif  /* RECURSOS_H */

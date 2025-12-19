@@ -193,12 +193,12 @@ int cargar_sprites() {
     else sprites_fallidos++;
     
     printf("  OK: Sprites de mapa cargados (%d/%d sprites)\n\n", 
-           (sprite_isla_principal.bitmap ? 1 : 0) + 
-           (sprite_isla_secundaria.bitmap ? 1 : 0) +
-           (sprite_montana.bitmap ? 1 : 0) +
-           (sprite_recurso.bitmap ? 1 : 0) +
-           (sprite_enemigo.bitmap ? 1 : 0) +
-           (sprite_agua.bitmap ? 1 : 0), 6);
+            (sprite_isla_principal.bitmap ? 1 : 0) + 
+            (sprite_isla_secundaria.bitmap ? 1 : 0) +
+            (sprite_montana.bitmap ? 1 : 0) +
+            (sprite_recurso.bitmap ? 1 : 0) +
+            (sprite_enemigo.bitmap ? 1 : 0) +
+            (sprite_agua.bitmap ? 1 : 0), 6);
     
     /* --- 4. SPRITES FUTUROS (OPCIONALES) --- */
     printf("4. Cargando sprites futuros (opcionales)...\n");
@@ -265,7 +265,7 @@ void liberar_sprites() {
     LIBERAR_SPRITE(sprite_edificio_mina);
     LIBERAR_SPRITE(sprite_unidad_soldado);
     LIBERAR_SPRITE(sprite_unidad_arquero);
-    
+
     #undef LIBERAR_SPRITE
     
     printf("Sprites liberados: %d\n", sprites_liberados);
