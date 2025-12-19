@@ -3,45 +3,7 @@
 
 #include <windows.h>
 #include <wingdi.h>
-
-/* --- Definiciones del Juego --- */
-#define MUNDO_FILAS 100
-#define MUNDO_COLUMNAS 100
-#define TAMANO_CELDA_BASE 10     // Tamaño base de celda para zoom
-#define PANTALLA_FILAS 60        // 600 / 10 = 60
-#define PANTALLA_COLUMNAS 80     // 800 / 10 = 80
-#define TAMANO_CELDA 10          // Tamaño actual de celda
-
-/* Estructuras del juego */
-typedef struct {
-    int x; 
-    int y;
-    int oro;
-    int madera;
-    int piedra;
-    int vida;
-    int vida_maxima;
-} Jugador;
-
-typedef struct {
-    int x;
-    int y;
-    float zoom;                 // factor de zoom (0.5x - 4.0x)
-    int tamano_celda_actual;    // tamaño actual considerando zoom
-} Camera;
-
-typedef struct {
-    int x;
-    int y;
-} PuntoMenu;
-
-typedef struct {
-    int mostrarMenu;
-    int enPartida;
-    int mostrarResumen;
-    int opcionSeleccionada;
-    PuntoMenu puntoMouse;
-} EstadoJuego;
+#include "../global.h" // <--- IMPORTANTE: Usamos la definición de global.h
 
 /* --- Prototipos de Funciones (SOLO las que usas) --- */
 

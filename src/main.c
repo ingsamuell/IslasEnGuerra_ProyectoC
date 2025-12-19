@@ -1,283 +1,150 @@
-//#include "sistema/sistema.h"
-/* src/main.c - PUNTO DE ENTRADA PRINCIPAL DEL JUEGO */
+/* src/main.c - CÓDIGO CORREGIDO Y LIMPIO */
 #include <windows.h>
 #include <stdio.h>
-#include "mapa/mapa.h"
-#include "recursos/recursos.h"
+#include "global.h"             // Estructuras del jugador y juego
+#include "mapa/mapa.h"          // Funciones del mapa
+#include "recursos/recursos.h"  
 
-/* ========== VARIABLES GLOBALES DEL JUEGO ========== */
-char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];  // Mapa del mundo 100x100
-Jugador miJugador;                            // Datos del jugador
-Camera miCamara;                              // Cámara del juego (con zoom)
-EstadoJuego estadoJuego;                      // Estado actual del juego
+/* ========== VARIABLES GLOBALES ========== */
+char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
+Jugador miJugador;
+Camera miCamara;
+EstadoJuego estadoJuego;
 
-/* ========== PROTOTIPOS DE FUNCIONES LOCALES ========== */
-void inicializarVentana(HINSTANCE hInstance, int nCmdShow);
-void mostrarInformacionDebug();
-
-/* ========== PROCEDIMIENTO DE VENTANA PRINCIPAL ========== */
+/* ========== PROCEDIMIENTO DE VENTANA (Eventos) ========== */
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
     {
-        /* --- Mensajes del sistema --- */
         case WM_DESTROY:
-            printf("Cerrando juego...\n");
-            PostQuitMessage(0);
-            return 0;
-            
         case WM_CLOSE:
-            printf("Ventana cerrada por usuario\n");
             PostQuitMessage(0);
             return 0;
-            
-        /* --- Evitar parpadeo (doble búfer) --- */
+
+        /* Evitar parpadeo de pantalla */
         case WM_ERASEBKGND:
-            return 1;  // Indicar que manejamos el fondo nosotros
-            
-        /* --- Eventos de teclado --- */
+            return 1;
+
+        /* --- CONTROLES (TECLADO) --- */
         case WM_KEYDOWN:
         {
-            printf("Tecla presionada: %d\n", (int)wParam);
-            
-            /* Menú principal activo */
+            /* 1. MENÚ PRINCIPAL */
             if (estadoJuego.mostrarMenu) {
-                switch (wParam)
-                {
-                    case VK_UP:      // Flecha arriba
+                switch (wParam) {
+                    case VK_UP:
                         estadoJuego.opcionSeleccionada--;
-                        if (estadoJuego.opcionSeleccionada < 0) {
-                            estadoJuego.opcionSeleccionada = 2;
-                        }
-                        printf("Menú: Opción %d seleccionada\n", estadoJuego.opcionSeleccionada);
+                        if (estadoJuego.opcionSeleccionada < 0) estadoJuego.opcionSeleccionada = 2;
                         InvalidateRect(hwnd, NULL, FALSE);
                         break;
-                        
-                    case VK_DOWN:    // Flecha abajo
+                    case VK_DOWN:
                         estadoJuego.opcionSeleccionada++;
-                        if (estadoJuego.opcionSeleccionada > 2) {
-                            estadoJuego.opcionSeleccionada = 0;
-                        }
-                        printf("Menú: Opción %d seleccionada\n", estadoJuego.opcionSeleccionada);
+                        if (estadoJuego.opcionSeleccionada > 2) estadoJuego.opcionSeleccionada = 0;
                         InvalidateRect(hwnd, NULL, FALSE);
                         break;
-                        
-                    case VK_RETURN:  // Enter
-                        printf("Menú: Confirmando opción %d\n", estadoJuego.opcionSeleccionada);
+                    case VK_RETURN:
                         procesarEnterMenu(hwnd, &estadoJuego);
                         break;
-                        
-                    case VK_ESCAPE:  // Escape
-                        if (estadoJuego.opcionSeleccionada == 2) {
-                            // Si ya está seleccionado "SALIR", salir
-                            printf("Menú: Saliendo del juego\n");
-                            PostQuitMessage(0);
-                        } else {
-                            // Si no, seleccionar opción SALIR
-                            printf("Menú: Seleccionando opción SALIR\n");
-                            estadoJuego.opcionSeleccionada = 2;
-                            InvalidateRect(hwnd, NULL, FALSE);
-                        }
+                    case VK_ESCAPE:
+                        PostQuitMessage(0);
                         break;
                 }
             } 
-            /* Panel de recursos activo */
+            /* 2. INVENTARIO (RESUMEN) */
             else if (estadoJuego.mostrarResumen) {
-                if (wParam == VK_RETURN || wParam == VK_ESCAPE) {
-                    printf("Recursos: Volviendo al menú\n");
-                    estadoJuego.mostrarMenu = 1;
-                    estadoJuego.mostrarResumen = 0;
-                    estadoJuego.opcionSeleccionada = 0;
-                    InvalidateRect(hwnd, NULL, FALSE);
+                // Con cualquier tecla cerramos el inventario
+                if (wParam == VK_ESCAPE || wParam == 'I' || wParam == VK_RETURN) {
+                     estadoJuego.mostrarResumen = 0;
+                     miJugador.inventarioAbierto = 0;
+                     InvalidateRect(hwnd, NULL, FALSE);
                 }
             }
-            /* Partida en curso */
+            /* 3. JUGANDO (EN PARTIDA) */
             else if (estadoJuego.enPartida) {
-                switch (wParam)
-                {
-                    /* Movimiento del jugador */
-                    case VK_LEFT:
-                    case 'A':
-                        printf("Movimiento: Izquierda\n");
-                        moverJugador(&miJugador, mapaMundo, -1, 0);
+                switch (wParam) {
+                    // Movimiento WASD y Flechas
+                    case VK_LEFT:  case 'A': moverJugador(&miJugador, mapaMundo, -1, 0); break;
+                    case VK_RIGHT: case 'D': moverJugador(&miJugador, mapaMundo, 1, 0); break;
+                    case VK_UP:    case 'W': moverJugador(&miJugador, mapaMundo, 0, -1); break;
+                    case VK_DOWN:  case 'S': moverJugador(&miJugador, mapaMundo, 0, 1); break;
+                    
+                    // Abrir Inventario
+                    case 'I': 
+                        estadoJuego.mostrarResumen = 1;
+                        miJugador.inventarioAbierto = 1;
+                        InvalidateRect(hwnd, NULL, FALSE);
                         break;
-                        
-                    case VK_RIGHT:
-                    case 'D':
-                        printf("Movimiento: Derecha\n");
-                        moverJugador(&miJugador, mapaMundo, 1, 0);
-                        break;
-                        
-                    case VK_UP:
-                    case 'W':
-                        printf("Movimiento: Arriba\n");
-                        moverJugador(&miJugador, mapaMundo, 0, -1);
-                        break;
-                        
-                    case VK_DOWN:
-                    case 'S':
-                        printf("Movimiento: Abajo\n");
-                        moverJugador(&miJugador, mapaMundo, 0, 1);
-                        break;
-                        
-                    /* Sistema de zoom - CON DEBUG MEJORADO */
-                    case VK_ADD:       // Tecla +
-                    case 0xBB:         // = (Shift++)
-                        if (miCamara.zoom < 4.0f) {
-                            printf("\n=== ANTES DEL ZOOM IN ===\n");
-                            printf("Jugador: (%d,%d)\n", miJugador.x, miJugador.y);
-                            printf("Cámara: (%d,%d) Zoom: %.1f\n", miCamara.x, miCamara.y, miCamara.zoom);
-                            
-                            miCamara.zoom += 0.5f;
-                            printf("Nuevo zoom: %.1fx\n", miCamara.zoom);
-                            
-                            actualizarCamara(&miCamara, miJugador);
-                            
-                            printf("=== DESPUÉS DEL ZOOM IN ===\n");
-                            printf("Cámara nueva: (%d,%d)\n", miCamara.x, miCamara.y);
-                            printf("Centro teórico: jugador(%d,%d)\n", miJugador.x, miJugador.y);
-                            printf("Tamaño celda: %dpx\n", miCamara.tamano_celda_actual);
-                            
-                            InvalidateRect(hwnd, NULL, TRUE);
-                        }
-                        break;
-                        
-                    case VK_SUBTRACT:  // Tecla -
-                    case 0xBD:         // - (guión)
-                        if (miCamara.zoom > 0.5f) {
-                            printf("\n=== ANTES DEL ZOOM OUT ===\n");
-                            printf("Jugador: (%d,%d)\n", miJugador.x, miJugador.y);
-                            printf("Cámara: (%d,%d) Zoom: %.1f\n", miCamara.x, miCamara.y, miCamara.zoom);
-                            
-                            miCamara.zoom -= 0.5f;
-                            printf("Nuevo zoom: %.1fx\n", miCamara.zoom);
-                            
-                            actualizarCamara(&miCamara, miJugador);
-                            
-                            printf("=== DESPUÉS DEL ZOOM OUT ===\n");
-                            printf("Cámara nueva: (%d,%d)\n", miCamara.x, miCamara.y);
-                            printf("Centro teórico: jugador(%d,%d)\n", miJugador.x, miJugador.y);
-                            printf("Tamaño celda: %dpx\n", miCamara.tamano_celda_actual);
-                            
-                            InvalidateRect(hwnd, NULL, TRUE);
-                        }
-                        break;
-                        
-                    case 'Z':          // Resetear zoom
-                        printf("\n=== RESET ZOOM ===\n");
-                        miCamara.zoom = 1.0f;
-                        printf("Zoom: Reseteado a 1.0x\n");
+
+                    // Zoom (+ y -)
+                    case VK_ADD: case 0xBB:
+                        if (miCamara.zoom < 4.0f) miCamara.zoom += 0.5f;
                         actualizarCamara(&miCamara, miJugador);
                         InvalidateRect(hwnd, NULL, TRUE);
                         break;
-                        
-                    /* Menú de pausa/salir */
+                    case VK_SUBTRACT: case 0xBD:
+                        if (miCamara.zoom > 0.5f) miCamara.zoom -= 0.5f;
+                        actualizarCamara(&miCamara, miJugador);
+                        InvalidateRect(hwnd, NULL, TRUE);
+                        break;
+
+                    // Pausa / Volver al menú
                     case VK_ESCAPE:
-                        printf("Partida: Pausa - Volviendo al menú\n");
                         estadoJuego.mostrarMenu = 1;
                         estadoJuego.enPartida = 0;
-                        estadoJuego.mostrarResumen = 0;
-                        estadoJuego.opcionSeleccionada = 0;
-                        InvalidateRect(hwnd, NULL, TRUE);  // FIX: Añadido para redibujar
-                        break;
-                        
-                    /* Teclas de debug/información - MEJORADO */
-                    case 'I':
-                        printf("\n=== INFORMACIÓN DEL JUEGO ===\n");
-                        printf("Jugador: Posición (%d, %d)\n", miJugador.x, miJugador.y);
-                        printf("Cámara: Posición (%d, %d) Zoom: %.1fx\n", 
-                                miCamara.x, miCamara.y, miCamara.zoom);
-                        printf("Tamaño celda: %dpx (base: %dpx)\n", 
-                                miCamara.tamano_celda_actual, TAMANO_CELDA_BASE);
-                        
-                        // Calcular celdas visibles
-                        float visible_x = (float)PANTALLA_COLUMNAS / miCamara.zoom;
-                        float visible_y = (float)PANTALLA_FILAS / miCamara.zoom;
-                        printf("Celdas visibles: %.1f x %.1f\n", visible_x, visible_y);
-                        
-                        printf("Recursos: Oro=%d, Madera=%d, Piedra=%d\n",
-                                miJugador.oro, miJugador.madera, miJugador.piedra);
-                        printf("Vida: %d/%d\n", miJugador.vida, miJugador.vida_maxima);
-                        printf("============================\n");
+                        InvalidateRect(hwnd, NULL, TRUE);
                         break;
                 }
                 
-                // Actualizar cámara y redibujar después de movimiento
-                if (wParam == VK_LEFT || wParam == 'A' ||
-                    wParam == VK_RIGHT || wParam == 'D' ||
-                    wParam == VK_UP || wParam == 'W' ||
-                    wParam == VK_DOWN || wParam == 'S') {
+                // Actualizar cámara si nos movimos
+                if (wParam == 'A' || wParam == 'D' || wParam == 'W' || wParam == 'S' ||
+                    wParam == VK_LEFT || wParam == VK_RIGHT || wParam == VK_UP || wParam == VK_DOWN) {
                     actualizarCamara(&miCamara, miJugador);
                     InvalidateRect(hwnd, NULL, FALSE);
                 }
             }
             return 0;
         }
-        
-        /* --- Evento de redibujado (con doble búfer) --- */
+
+        /* --- DIBUJADO (RENDER) --- */
         case WM_PAINT:
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
             
-            // Obtener dimensiones del área cliente
             RECT rectClient;
             GetClientRect(hwnd, &rectClient);
-            int ancho = rectClient.right - rectClient.left;
-            int alto = rectClient.bottom - rectClient.top;
-            
-            printf("DEBUG WM_PAINT: Estado - Menu=%d, Partida=%d, Resumen=%d\n",
-                   estadoJuego.mostrarMenu, estadoJuego.enPartida, estadoJuego.mostrarResumen);
-            
-            // === CREAR BÚFER EN MEMORIA (DOBLE BÚFER) ===
+            int ancho = rectClient.right;
+            int alto = rectClient.bottom;
+
+            // --- DOBLE BUFFER (Para que no parpadee) ---
             HDC hdcMem = CreateCompatibleDC(hdc);
             HBITMAP hbmMem = CreateCompatibleBitmap(hdc, ancho, alto);
             HBITMAP hbmOld = SelectObject(hdcMem, hbmMem);
-            
-            // === DIBUJAR TODO EN EL BÚFER DE MEMORIA ===
-            
-            /* Menú principal */
+
+            // 1. Dibujar Menú
             if (estadoJuego.mostrarMenu) {
-                printf("Dibujando menú principal...\n");
                 dibujarMenuConSprites(hdcMem, hwnd, &estadoJuego);
             }
-            /* Panel de recursos */
+            // 2. Dibujar Inventario (Esto lo haremos luego en hud.c)
             else if (estadoJuego.mostrarResumen) {
-                printf("Dibujando panel de recursos...\n");
-                dibujarResumenRecursos(hdcMem, miJugador, &estadoJuego);
+                // Por ahora dibujamos el fondo negro para que no falle
+                // Cuando creemos hud.c, aquí pondremos: dibujarInventario(...);
+                HBRUSH brochaNegra = CreateSolidBrush(RGB(20, 20, 20));
+                FillRect(hdcMem, &rectClient, brochaNegra);
+                DeleteObject(brochaNegra);
             }
-            /* Partida en curso */
+            // 3. Dibujar Juego
             else if (estadoJuego.enPartida) {
-                printf("Dibujando partida (Zoom: %.1fx)...\n", miCamara.zoom);
-                
-                // Dibujar mapa con sistema de zoom
                 dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto);
-                
-                // Dibujar jugador (con zoom aplicado)
                 dibujarJugador(hdcMem, miJugador, miCamara);
                 
-                // Mostrar información de debug en consola (cada 30 frames)
-                static int frameCount = 0;
-                frameCount++;
-                if (frameCount % 30 == 0) {  // Cada 30 frames
-                    printf("Frame %d: Jugador en (%d, %d) Cámara en (%d, %d) Zoom: %.1fx\n",
-                            frameCount, miJugador.x, miJugador.y,
-                            miCamara.x, miCamara.y, miCamara.zoom);
-                }
+                // AQUÍ DIBUJAREMOS EL HUD (Vida, XP) MÁS ADELANTE
+                // dibujarHUD(...);
             }
-            /* Estado inesperado (debería dibujar algo) */
-            else {
-                printf("ERROR: Estado inválido - dibujando fondo negro\n");
-                HBRUSH hBrushNegro = CreateSolidBrush(RGB(0, 0, 0));
-                RECT rectFondo = {0, 0, ancho, alto};
-                FillRect(hdcMem, &rectFondo, hBrushNegro);
-                DeleteObject(hBrushNegro);
-            }
-            
-            // === COPIAR BÚFER COMPLETO A PANTALLA (INSTANTÁNEO) ===
+
+            // Copiar memoria a pantalla
             BitBlt(hdc, 0, 0, ancho, alto, hdcMem, 0, 0, SRCCOPY);
             
-            // === LIMPIAR RECURSOS DEL BÚFER ===
+            // Limpieza memoria gráfica
             SelectObject(hdcMem, hbmOld);
             DeleteObject(hbmMem);
             DeleteDC(hdcMem);
@@ -285,176 +152,70 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             EndPaint(hwnd, &ps);
             return 0;
         }
-        
-        /* --- Evento de cambio de tamaño --- */
+
         case WM_SIZE:
-            printf("Ventana redimensionada\n");
             InvalidateRect(hwnd, NULL, TRUE);
             return 0;
-            
-        /* --- Evento de activación de ventana --- */
-        case WM_ACTIVATE:
-            if (wParam != WA_INACTIVE) {
-                printf("Ventana activada\n");
-            }
-            return 0;
     }
-    
-    // Mensajes no manejados pasan al procedimiento por defecto
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-/* ========== INICIALIZACIÓN DE VENTANA ========== */
-void inicializarVentana(HINSTANCE hInstance, int nCmdShow) {
-    // Registrar clase de ventana
+/* ========== PUNTO DE ENTRADA PRINCIPAL (MAIN) ========== */
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+    // 1. Configurar la Clase de Ventana
     WNDCLASS wc = { 0 };
     wc.lpfnWndProc   = WindowProc;
     wc.hInstance     = hInstance;
-    wc.lpszClassName = TEXT("IslasEnGuerraClase");
+    wc.lpszClassName = "ClaseIslasGuerra";
     wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wc.style         = CS_HREDRAW | CS_VREDRAW;  // Redibujar al cambiar tamaño
+    wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     
-    if (!RegisterClass(&wc)) {
-        printf("ERROR: No se pudo registrar clase de ventana\n");
-        return;
-    }
-    
-    // Calcular tamaño de ventana (800x600 área cliente + bordes)
-    int anchoCliente = 800;
-    int altoCliente = 600;
-    
-    RECT rect = {0, 0, anchoCliente, altoCliente};
-    AdjustWindowRect(&rect, 
-                    WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-                    FALSE);
-    
-    int anchoVentana = rect.right - rect.left;
-    int altoVentana = rect.bottom - rect.top;
-    
-    printf("Creando ventana: Cliente=%dx%d, Total=%dx%d\n",
-           anchoCliente, altoCliente, anchoVentana, altoVentana);
-    
-    // Crear ventana
-    HWND hwnd = CreateWindowEx(
-        0,                                  // Estilos extendidos
-        TEXT("IslasEnGuerraClase"),         // Clase
-        TEXT("War Islands v1.0 - 800x600"), // Título (con resolución)
-        WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, // Estilos
-        CW_USEDEFAULT, CW_USEDEFAULT,       // Posición
-        anchoVentana, altoVentana,          // Tamaño
-        NULL,                               // Ventana padre
-        NULL,                               // Menú
-        hInstance,                          // Instancia
-        NULL                                // Datos adicionales
-    );
-    
-    if (hwnd == NULL) {
-        printf("ERROR: No se pudo crear ventana\n");
-        return;
-    }
-    
-    // Mostrar y actualizar ventana
-    ShowWindow(hwnd, nCmdShow);
-    UpdateWindow(hwnd);
-    
-    // Inicializar juego
-    printf("\n=== INICIALIZANDO JUEGO ===\n");
+    if (!RegisterClass(&wc)) return -1;
+
+    // 2. OBTENER RESOLUCIÓN DE TU PANTALLA
+    int anchoPantalla = GetSystemMetrics(SM_CXSCREEN);
+    int altoPantalla  = GetSystemMetrics(SM_CYSCREEN);
+
+    // 3. CREAR VENTANA "POPUP" (INVISIBLE AL PRINCIPIO)
+    HWND hwnd = CreateWindow("ClaseIslasGuerra", "Islas en Guerra",
+                             WS_POPUP, // Sin bordes
+                             0, 0, anchoPantalla, altoPantalla,
+                             NULL, NULL, hInstance, NULL);
+
+    if (hwnd == NULL) return 0;
+
+    // 4. CARGAR RECURSOS (Imágenes, sonidos...)
+    CargarRecursos(); 
+
+    // 5. INICIALIZAR DATOS
+    // ¡AQUÍ ESTÁ LA MAGIA!
+    // Esta función ya pone al jugador en (1600, 1600), le da vida, oro y carga las islas.
+    // No hace falta poner nada más aquí.
     inicializarJuego(&miJugador, &estadoJuego, mapaMundo);
     
-    // Inicializar cámara con zoom
-    miCamara.x = 0;
-    miCamara.y = 0;
-    miCamara.zoom = 1.0f;
-    miCamara.tamano_celda_actual = TAMANO_CELDA_BASE;
-    
-    // Posicionar cámara centrada en el jugador
+    // 6. CONFIGURAR CÁMARA INICIAL
+    // Queremos empezar con Zoom para ver bien los detalles
+    miCamara.zoom = 2.0f;  // <--- ZOOM INICIAL (2x)
+
+    // Sincronizar cámara con jugador (que ya está en 1600,1600 gracias a la función de arriba)
+    miCamara.x = miJugador.x;
+    miCamara.y = miJugador.y;
     actualizarCamara(&miCamara, miJugador);
-    
-    printf("Juego inicializado. Jugador en posición (%d, %d)\n", miJugador.x, miJugador.y);
-    printf("Cámara centrada en (%d, %d) Zoom: %.1fx\n", miCamara.x, miCamara.y, miCamara.zoom);
-    printf("Tamaño celda: %dpx\n", miCamara.tamano_celda_actual);
-    
-    // Cargar recursos gráficos
-    printf("\n=== CARGANDO RECURSOS GRÁFICOS ===\n");
-    if (!cargar_sprites()) {
-        MessageBox(NULL, 
-                  TEXT("Error cargando recursos gráficos\nEl juego puede no mostrarse correctamente."), 
-                  TEXT("Advertencia"), 
-                  MB_OK | MB_ICONWARNING);
-    }
-    
-    // === FIX CRÍTICO: FORZAR PRIMER DIBUJADO ===
-    printf("\n=== FORZANDO PRIMER DIBUJADO DEL MENÚ ===\n");
-    InvalidateRect(hwnd, NULL, TRUE);    // Marcar toda el área como "sucio"
-    UpdateWindow(hwnd);                  // Procesar WM_PAINT INMEDIATAMENTE
-    
-    // Bucle principal de mensajes
+
+    // 7. MOSTRAR LA VENTANA (EL GRAN ESTRENO)
+    // Ahora que todo está cargado y posicionado, mostramos la ventana.
+    ShowWindow(hwnd, nCmdShow); 
+    UpdateWindow(hwnd);         
+
+    // 8. BUCLE DEL JUEGO
     MSG msg = {0};
-    printf("\n=== JUEGO INICIADO - ESPERANDO EVENTOS ===\n");
-    printf("Controles:\n");
-    printf("  Menú: Flechas + Enter • ESC para salir\n");
-    printf("  Movimiento: WASD o Flechas\n");
-    printf("  Zoom: + / - (teclas numéricas)\n");
-    printf("  Reset Zoom: Z\n");
-    printf("  Información: I\n");
-    printf("  Volver al menú desde partida: ESC\n\n");
-    
     while (GetMessage(&msg, NULL, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
-    
-    // Limpiar antes de salir
-    printf("\n=== LIMPIANDO RECURSOS ===\n");
-    liberar_sprites();
-    printf("Recursos liberados. Saliendo...\n");
-}
 
-/* ========== PUNTO DE ENTRADA DE WINDOWS ========== */
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, 
-                   LPSTR lpCmdLine, int nCmdShow)
-{
-    // Inicializar consola para debug
-    #ifdef _DEBUG
-    AllocConsole();
-    freopen("CONOUT$", "w", stdout);
-    freopen("CONOUT$", "w", stderr);
-    #endif
-    
-    printf("========================================\n");
-    printf("        WAR ISLANDS v1.0\n");
-    printf("        Desarrollado en C\n");
-    printf("        Resolución: 800x600\n");
-    printf("        Celdas: 10px (%dx%d visibles)\n", 
-           PANTALLA_COLUMNAS, PANTALLA_FILAS);
-    printf("        Sistema de zoom: 0.5x - 4.0x\n");
-    printf("========================================\n\n");
-    
-    // Inicializar ventana y comenzar juego
-    inicializarVentana(hInstance, nCmdShow);
-    
-    #ifdef _DEBUG
-    FreeConsole();
-    #endif
+    LiberarRecursos();
     
     return 0;
-}
-
-/* ========== FUNCIONES AUXILIARES ========== */
-
-void mostrarInformacionDebug() {
-    printf("\n=== INFORMACIÓN DEL SISTEMA ===\n");
-    printf("Tamaño de celda: %dpx\n", TAMANO_CELDA);
-    printf("Celdas visibles: %dx%d\n", PANTALLA_COLUMNAS, PANTALLA_FILAS);
-    printf("Mundo: %dx%d celdas\n", MUNDO_COLUMNAS, MUNDO_FILAS);
-    printf("Zoom actual: %.1fx\n", miCamara.zoom);
-    printf("Celda con zoom: %dpx\n", miCamara.tamano_celda_actual);
-    
-    // Calcular celdas visibles actuales
-    float visible_x = (float)PANTALLA_COLUMNAS / miCamara.zoom;
-    float visible_y = (float)PANTALLA_FILAS / miCamara.zoom;
-    printf("Celdas visibles actuales: %.1f x %.1f\n", visible_x, visible_y);
-    
-    printf("===============================\n");
 }
