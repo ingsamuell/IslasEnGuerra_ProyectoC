@@ -51,7 +51,7 @@ void CargarRecursos() {
     if (hBmpFondoMenu == NULL) {
         MessageBox(NULL, "¡No encuentro assets/imagen_menu.bmp!", "Error de Carga", MB_OK | MB_ICONERROR);
     }
-    hBmpJugador   = CargarImagen("assets/jugador.bmp");
+    hBmpJugador   = CargarImagen("assets/jugador_compatible.bmp");
     hBmpIsla      = CargarImagen("assets/isla_principal.bmp");
     // Si no tienes botón/título, el juego dibujará negro, no crasheará
     hBmpTitulo    = CargarImagen("assets/titulo.bmp"); 

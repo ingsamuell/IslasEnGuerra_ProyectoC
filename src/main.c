@@ -25,6 +25,38 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         case WM_ERASEBKGND:
             return 1;
 
+        /* --- NUEVO: CONTROLES DE RATÓN (CLICS) --- */
+        case WM_LBUTTONDOWN:
+        {
+            int mouseX = LOWORD(lParam);
+            int mouseY = HIWORD(lParam);
+
+            // 1. Lógica del Menú
+            if (estadoJuego.mostrarMenu) {
+                procesarClickMenu(mouseX, mouseY, hwnd, &estadoJuego);
+            }
+            // 2. Lógica del Juego (Mochila)
+            else if (estadoJuego.enPartida) {
+                
+                // --- NUEVAS COORDENADAS DEL BOTÓN (Deben coincidir con dibujarHUD) ---
+                // Ya no necesitamos GetClientRect porque la posición es fija arriba.
+                
+                int tamanoBolso = 64;
+                int btnX = 20;   // Misma X que Vida/Escudo
+                int btnY = 140;  // Debajo del Escudo
+
+                // Detectar colisión en la nueva zona
+                if (mouseX >= btnX && mouseX <= btnX + tamanoBolso &&
+                    mouseY >= btnY && mouseY <= btnY + tamanoBolso) {
+                    
+                    // Alternar inventario
+                    miJugador.inventarioAbierto = !miJugador.inventarioAbierto;
+                    InvalidateRect(hwnd, NULL, FALSE);
+                }
+            }
+            return 0;
+        }
+
         /* --- CONTROLES (TECLADO) --- */
         case WM_KEYDOWN:
         {
@@ -67,10 +99,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     case VK_UP:    case 'W': moverJugador(&miJugador, mapaMundo, 0, -1); break;
                     case VK_DOWN:  case 'S': moverJugador(&miJugador, mapaMundo, 0, 1); break;
                     
-                    // Abrir Inventario
+                    // Abrir Inventario con tecla
                     case 'I': 
-                        estadoJuego.mostrarResumen = 1;
-                        miJugador.inventarioAbierto = 1;
+                        miJugador.inventarioAbierto = !miJugador.inventarioAbierto; // Alternar
                         InvalidateRect(hwnd, NULL, FALSE);
                         break;
 
@@ -105,50 +136,43 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         }
 
         /* --- DIBUJADO (RENDER) --- */
-        case WM_PAINT:
-        {
+        case WM_PAINT: {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
-            
-            RECT rectClient;
-            GetClientRect(hwnd, &rectClient);
-            int ancho = rectClient.right;
-            int alto = rectClient.bottom;
 
-            // --- DOBLE BUFFER (Para que no parpadee) ---
+            // --- DOBLE BUFFER ---
             HDC hdcMem = CreateCompatibleDC(hdc);
+            RECT rect;
+            GetClientRect(hwnd, &rect);
+            int ancho = rect.right;
+            int alto = rect.bottom;
+            
             HBITMAP hbmMem = CreateCompatibleBitmap(hdc, ancho, alto);
             HBITMAP hbmOld = SelectObject(hdcMem, hbmMem);
 
-            // 1. Dibujar Menú
+            // --- DIBUJAR ---
             if (estadoJuego.mostrarMenu) {
                 dibujarMenuConSprites(hdcMem, hwnd, &estadoJuego);
-            }
-            // 2. Dibujar Inventario (Esto lo haremos luego en hud.c)
-            else if (estadoJuego.mostrarResumen) {
-                // Por ahora dibujamos el fondo negro para que no falle
-                // Cuando creemos hud.c, aquí pondremos: dibujarInventario(...);
-                HBRUSH brochaNegra = CreateSolidBrush(RGB(20, 20, 20));
-                FillRect(hdcMem, &rectClient, brochaNegra);
-                DeleteObject(brochaNegra);
-            }
-            // 3. Dibujar Juego
-            else if (estadoJuego.enPartida) {
+            } else {
+                // 1. DIBUJAR MUNDO (Primero)
                 dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto);
+                
+                // 2. DIBUJAR JUGADOR (¡AQUÍ ESTÁ LA CLAVE!)
+                // Asegúrate de que esta línea exista y esté DESPUÉS del mapa
                 dibujarJugador(hdcMem, miJugador, miCamara);
                 
-                // AQUÍ DIBUJAREMOS EL HUD (Vida, XP) MÁS ADELANTE
-                // dibujarHUD(...);
+                // 3. DIBUJAR HUD (Al final, encima de todo)
+                dibujarHUD(hdcMem, &miJugador, ancho, alto);
             }
 
-            // Copiar memoria a pantalla
+            // Copiar a pantalla
             BitBlt(hdc, 0, 0, ancho, alto, hdcMem, 0, 0, SRCCOPY);
-            
-            // Limpieza memoria gráfica
+
+            // Limpieza
             SelectObject(hdcMem, hbmOld);
             DeleteObject(hbmMem);
             DeleteDC(hdcMem);
-            
+
             EndPaint(hwnd, &ps);
             return 0;
         }

@@ -18,6 +18,7 @@ void actualizarCamara(Camera *camara, Jugador jugador);
 /* ========== DIBUJADO DEL JUEGO (ÚNICA FUNCIÓN) ========== */
 void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera camara, int anchoVentana, int altoVentana);
 void dibujarJugador(HDC hdc, Jugador jugador, Camera camara);
+void dibujarHUD(HDC hdc, Jugador* jugador, int anchoVentana, int altoVentana);
 
 /* ========== SISTEMA DE MENÚ ========== */
 void dibujarMenu(HDC hdc, HWND hwnd, EstadoJuego *estado);

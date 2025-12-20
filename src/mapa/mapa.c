@@ -642,6 +642,172 @@ void dibujarJugador(HDC hdc, Jugador jugador, Camera cam)
     DibujarImagen(hdc, hBmpJugador, centroX, centroY, tamano, tamano);
 }
 
+/* ========== DIBUJAR HUD (VIDA, ESCUDO E INVENTARIO) ========== */
+void dibujarHUD(HDC hdc, Jugador* jugador, int anchoVentana, int altoVentana) {
+    
+    // =========================================================
+    // 1. VIDA (SISTEMA DE 5 CORAZONES)
+    // =========================================================
+    // Configuración: 5 corazones totales. Cada uno vale 20 de vida (100 / 5 = 20).
+    int maxCorazones = 5;
+    int vidaPorCorazon = 20; 
+    int separacion = 32; // Distancia entre corazones (píxeles)
+
+    for (int i = 0; i < maxCorazones; i++) {
+        // 1. Calcular la posición X de ESTE corazón (uno al lado del otro)
+        int xPos = 20 + (i * separacion);
+        int yPos = 20;
+
+        // 2. Calcular cuánta vida le queda a ESTE corazón específico
+        // Ejemplo: Si tengo 30 de vida:
+        // - Corazón 0: 30 - 0 = 30 (Lleno, topa en 20)
+        // - Corazón 1: 30 - 20 = 10 (Mitad)
+        // - Corazón 2: 30 - 40 = -10 (Vacío)
+        int vidaRestante = jugador->vidaActual - (i * vidaPorCorazon);
+
+        // 3. Decidir qué imagen usar
+        HBITMAP bmpAUsar = hBmpCorazon0; // Por defecto vacío
+
+        if (vidaRestante >= 20) {
+            bmpAUsar = hBmpCorazon100; // Lleno total
+        } 
+        else if (vidaRestante >= 15) {
+            bmpAUsar = hBmpCorazon75;  // 3/4
+        } 
+        else if (vidaRestante >= 10) {
+            bmpAUsar = hBmpCorazon50;  // Mitad
+        } 
+        else if (vidaRestante >= 5) {
+            bmpAUsar = hBmpCorazon25;  // 1/4 (A punto de romperse)
+        } 
+        else {
+            bmpAUsar = hBmpCorazon0;   // Vacío
+        }
+
+        // 4. Dibujar el corazón (Tamaño 32x32 queda bien para fila)
+        if (bmpAUsar) {
+            DibujarImagen(hdc, bmpAUsar, xPos, yPos, 32, 32);
+        }
+    }
+
+    // =========================================================
+    // 2. ARMADURA (Escudos dinámicos)
+    // =========================================================
+    HBITMAP bmpEscudo = hBmpEscudo0;
+    
+    float porcentajeEscudo = 0;
+    if (jugador->armaduraMax > 0) {
+        porcentajeEscudo = (float)jugador->armaduraActual / (float)jugador->armaduraMax;
+    }
+
+    if (porcentajeEscudo >= 0.8) bmpEscudo = hBmpEscudo100;
+    else if (porcentajeEscudo >= 0.6) bmpEscudo = hBmpEscudo75;
+    else if (porcentajeEscudo >= 0.4) bmpEscudo = hBmpEscudo50;
+    else if (porcentajeEscudo > 0)    bmpEscudo = hBmpEscudo25;
+
+    // Dibujar Escudo debajo de la vida (Y=80)
+    if (bmpEscudo) DibujarImagen(hdc, bmpEscudo, 20, 80, 48, 48);
+
+    // Texto numérico escudo
+    char textoEscudo[32];
+    sprintf(textoEscudo, "%d", jugador->armaduraActual);
+    SetBkMode(hdc, TRANSPARENT);
+    SetTextColor(hdc, RGB(255, 255, 255));
+    TextOut(hdc, 75, 95, textoEscudo, strlen(textoEscudo));
+
+    // =========================================================
+    // 3. BOTÓN MOCHILA (Debajo del escudo)
+    // =========================================================
+    int tamanoBolso = 64;
+    int bolsoX = 20;   // Alineado a la izquierda
+    int bolsoY = 140;  // Debajo del escudo (80 + 48 + margen)
+
+    // Lógica visual: Si está abierto usa una imagen, si no la otra
+    HBITMAP bmpBolsoActual = (jugador->inventarioAbierto) ? hBmpInvAbierto : hBmpInvCerrado;
+
+    // Dibujar botón
+    if (bmpBolsoActual) {
+        DibujarImagen(hdc, bmpBolsoActual, bolsoX, bolsoY, tamanoBolso, tamanoBolso);
+    }
+
+    // =========================================================
+    // 4. PANEL DE INVENTARIO (LISTA DE RECURSOS)
+    // =========================================================
+    if (jugador->inventarioAbierto) {
+        int panW = 220;
+        int panH = 350; // Más alto para que quepan los 6 items
+        
+        // Posición: A la derecha del botón
+        int panX = bolsoX + tamanoBolso + 10; 
+        int panY = bolsoY;
+
+        // --- FONDO DEL PANEL ---
+        HBRUSH brochaFondo = CreateSolidBrush(RGB(40, 40, 40));   // Gris oscuro
+        HBRUSH brochaBorde = CreateSolidBrush(RGB(200, 200, 200)); // Borde claro
+        RECT rectInv = {panX, panY, panX + panW, panY + panH};
+        
+        FillRect(hdc, &rectInv, brochaFondo);
+        FrameRect(hdc, &rectInv, brochaBorde);
+        
+        DeleteObject(brochaFondo); 
+        DeleteObject(brochaBorde);
+
+        // --- TÍTULO ---
+        SetTextColor(hdc, RGB(255, 255, 255));
+        TextOut(hdc, panX + 15, panY + 15, "MOCHILA", 7);
+
+        // --- LISTA DE MATERIALES ---
+        int lineaY = panY + 50;
+        int saltoLinea = 40;
+        char buffer[32];
+        int iconSize = 32;
+
+        // 1. MADERA
+        SetTextColor(hdc, RGB(255, 255, 255)); // Blanco
+        if (hBmpIconoMadera) DibujarImagen(hdc, hBmpIconoMadera, panX + 20, lineaY, iconSize, iconSize);
+        sprintf(buffer, "x %d", jugador->madera);
+        TextOut(hdc, panX + 60, lineaY + 8, buffer, strlen(buffer));
+
+        lineaY += saltoLinea;
+
+        // 2. PIEDRA
+        if (hBmpIconoPiedra) DibujarImagen(hdc, hBmpIconoPiedra, panX + 20, lineaY, iconSize, iconSize);
+        sprintf(buffer, "x %d", jugador->piedra);
+        TextOut(hdc, panX + 60, lineaY + 8, buffer, strlen(buffer));
+
+        lineaY += saltoLinea;
+
+        // 3. ORO
+        SetTextColor(hdc, RGB(255, 215, 0)); // Dorado
+        if (hBmpIconoOro) DibujarImagen(hdc, hBmpIconoOro, panX + 20, lineaY, iconSize, iconSize);
+        sprintf(buffer, "x %d", jugador->oro);
+        TextOut(hdc, panX + 60, lineaY + 8, buffer, strlen(buffer));
+
+        lineaY += saltoLinea;
+
+        // 4. HIERRO
+        SetTextColor(hdc, RGB(192, 192, 192)); // Gris Plata
+        if (hBmpIconoHierro) DibujarImagen(hdc, hBmpIconoHierro, panX + 20, lineaY, iconSize, iconSize);
+        sprintf(buffer, "x %d", jugador->hierro);
+        TextOut(hdc, panX + 60, lineaY + 8, buffer, strlen(buffer));
+
+        lineaY += saltoLinea;
+
+        // 5. COMIDA
+        SetTextColor(hdc, RGB(255, 120, 100)); // Rojizo
+        if (hBmpIconoComida) DibujarImagen(hdc, hBmpIconoComida, panX + 20, lineaY, iconSize, iconSize);
+        sprintf(buffer, "x %d", jugador->comida);
+        TextOut(hdc, panX + 60, lineaY + 8, buffer, strlen(buffer));
+
+        lineaY += saltoLinea;
+
+        // 6. HOJAS
+        SetTextColor(hdc, RGB(144, 238, 144)); // Verde claro
+        if (hBmpIconoHoja) DibujarImagen(hdc, hBmpIconoHoja, panX + 20, lineaY, iconSize, iconSize);
+        sprintf(buffer, "x %d", jugador->hojas);
+        TextOut(hdc, panX + 60, lineaY + 8, buffer, strlen(buffer));
+    }
+}
 /* ========== FUNCIONES ADICIONALES (opcionales) ========== */
 
 void dibujarFondoAnimadoMejorado(HDC hdc, int ancho, int alto, int tiempo)
