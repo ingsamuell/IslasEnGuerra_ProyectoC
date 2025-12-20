@@ -32,8 +32,9 @@ void inicializarIslas()
     // misIslas[1].x = 2000; ... ¡Así de fácil será añadirla!
 }
 
-void inicializarJuego(Jugador* jugador, EstadoJuego* estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
-    
+void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
+{
+
     inicializarIslas();
 
     // 1. LIMPIEZA
@@ -47,10 +48,10 @@ void inicializarJuego(Jugador* jugador, EstadoJuego* estado, char mapa[MUNDO_FIL
     jugador->velocidad = 5;
     jugador->vidaActual = 100;
     jugador->vidaMax = 100;
-    
+
     // 4. ESTADO
     estado->enPartida = 0; // OJO: Si pones 1, arranca sin menú. Si pones 0, sale el menú primero.
-    estado->mostrarMenu = 1; 
+    estado->mostrarMenu = 1;
 }
 
 void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
@@ -134,19 +135,25 @@ void actualizarCamara(Camera *camara, Jugador jugador)
     // --- CLAMPING (Limitar movimiento) ---
 
     // No salir por la izquierda/arriba
-    if (camara->x < 0) camara->x = 0;
-    if (camara->y < 0) camara->y = 0;
+    if (camara->x < 0)
+        camara->x = 0;
+    if (camara->y < 0)
+        camara->y = 0;
 
     // No salir por la derecha
-    if (camara->x > limiteMundoX - mundoVisibleX) {
+    if (camara->x > limiteMundoX - mundoVisibleX)
+    {
         camara->x = limiteMundoX - mundoVisibleX;
-        if (camara->x < 0) camara->x = 0; // Por si la pantalla es más grande que el mundo
+        if (camara->x < 0)
+            camara->x = 0; // Por si la pantalla es más grande que el mundo
     }
 
     // No salir por abajo
-    if (camara->y > limiteMundoY - mundoVisibleY) {
+    if (camara->y > limiteMundoY - mundoVisibleY)
+    {
         camara->y = limiteMundoY - mundoVisibleY;
-        if (camara->y < 0) camara->y = 0;
+        if (camara->y < 0)
+            camara->y = 0;
     }
 }
 
@@ -432,9 +439,14 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
                 estado->mostrarResumen = 0;
                 break;
             case 1:
-                estado->mostrarMenu = 0;
-                estado->enPartida = 0;
-                estado->mostrarResumen = 1;
+                // --- ESTO ES LO QUE TE LLEVABA A LA PANTALLA NEGRA ---
+                // COMENTA ESTAS LÍNEAS ASÍ:
+                // estado->mostrarMenu = 0;
+                // estado->enPartida = 0;
+                // estado->mostrarResumen = 1;
+
+                // OPCIONAL: Puedes poner un mensajito temporal
+                MessageBox(hwnd, "Esta funcion estara disponible pronto.", "En Construccion", MB_OK | MB_ICONINFORMATION);
                 break;
             case 2:
                 PostQuitMessage(0);
@@ -469,9 +481,9 @@ void procesarEnterMenu(HWND hwnd, EstadoJuego *estado)
                 estado->mostrarResumen = 0;
                 break;
             case 1:
-                estado->mostrarMenu = 0;
-                estado->enPartida = 0;
-                estado->mostrarResumen = 1;
+                //estado->mostrarMenu = 0;
+                //estado->enPartida = 0;
+                //estado->mostrarResumen = 1;
                 break;
             case 2:
                 PostQuitMessage(0);
@@ -578,7 +590,8 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
 }
 
 /* ========== DIBUJAR MAPA CON ZOOM (ÚNICA FUNCIÓN DE DIBUJADO) ========== */
-void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int anchoVentana, int altoVentana) {
+void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int anchoVentana, int altoVentana)
+{
     // 1. Fondo Azul
     HBRUSH brochaAgua = CreateSolidBrush(RGB(0, 100, 180));
     RECT rectTotal = {0, 0, anchoVentana, altoVentana};
@@ -587,8 +600,10 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
 
     // 2. Usar el sistema de Islas (Array) en lugar de coordenadas fijas
     // Esto asegura que lo que ves coincida con la colisión
-    for (int i = 0; i < MAX_ISLAS; i++) {
-        if (!misIslas[i].activa) continue;
+    for (int i = 0; i < MAX_ISLAS; i++)
+    {
+        if (!misIslas[i].activa)
+            continue;
 
         // Coordenadas lógicas (1350, 1350)
         int worldX = misIslas[i].x;
@@ -598,11 +613,12 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
         // Simplemente: (PosiciónMundo - Cámara) * Zoom
         int screenX = (worldX - cam.x) * cam.zoom;
         int screenY = (worldY - cam.y) * cam.zoom;
-        
+
         int wPantalla = misIslas[i].ancho * cam.zoom;
         int hPantalla = misIslas[i].alto * cam.zoom;
 
-        if (hBmpIsla != NULL) {
+        if (hBmpIsla != NULL)
+        {
             // DIBUJAR
             DibujarImagen(hdc, hBmpIsla, screenX, screenY, wPantalla, hPantalla);
         }

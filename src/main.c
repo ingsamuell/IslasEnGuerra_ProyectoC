@@ -179,8 +179,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // 3. CREAR VENTANA "POPUP" (INVISIBLE AL PRINCIPIO)
     HWND hwnd = CreateWindow("ClaseIslasGuerra", "Islas en Guerra",
-                             WS_POPUP, // Sin bordes
-                             0, 0, anchoPantalla, altoPantalla,
+                             WS_OVERLAPPEDWINDOW, // <--- CAMBIO CLAVE
+                             CW_USEDEFAULT, CW_USEDEFAULT, // Dejamos que Windows decida la posición inicial
+                             anchoPantalla, altoPantalla,  // Tamaño inicial
                              NULL, NULL, hInstance, NULL);
 
     if (hwnd == NULL) return 0;
@@ -203,10 +204,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     miCamara.y = miJugador.y;
     actualizarCamara(&miCamara, miJugador);
 
-    // 7. MOSTRAR LA VENTANA (EL GRAN ESTRENO)
-    // Ahora que todo está cargado y posicionado, mostramos la ventana.
-    ShowWindow(hwnd, nCmdShow); 
-    UpdateWindow(hwnd);         
+    // 7. MOSTRAR LA VENTANA 
+    ShowWindow(hwnd, SW_MAXIMIZE); 
+    UpdateWindow(hwnd);   
 
     // 8. BUCLE DEL JUEGO
     MSG msg = {0};
