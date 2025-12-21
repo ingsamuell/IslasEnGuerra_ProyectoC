@@ -11,6 +11,13 @@
 #define PANTALLA_COLUMNAS 80     // 800 / 10 = 80
 #define TAMANO_CELDA 32   
 
+
+// Definimos direcciones para usar nombres en lugar de números
+#define DIR_ABAJO     0
+#define DIR_ARRIBA    1
+#define DIR_IZQUIERDA 2
+#define DIR_DERECHA   3
+
 // --- ESTRUCTURA DEL JUGADOR (DEFINIDA SOLO AQUÍ) ---
 typedef struct {
     // 1. Posición
@@ -40,6 +47,10 @@ typedef struct {
     int comida;
     int hojas;
 
+    // --- ANIMACIÓN ---
+    int direccion;      // 0, 1, 2, 3
+    int frameAnim;      // 0=Base, 1=PieIzq, 2=PieDer
+    int pasoAnimacion;  // Contador para velocidad de animación
 } Jugador;
 
 // Otras estructuras globales si las tienes (como EstadoJuego)

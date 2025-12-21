@@ -2,6 +2,8 @@
 #define RECURSOS_H
 
 #include <windows.h>
+// Necesitamos las definiciones globales (DIR_ABAJO, etc.)
+#include "../global.h"
 
 // ==========================================
 //   VARIABLES GLOBALES (HBITMAP)
@@ -9,7 +11,7 @@
 
 // --- MENÚ Y JUEGO (Lo que faltaba) ---
 extern HBITMAP hBmpFondoMenu;
-extern HBITMAP hBmpJugador;
+extern HBITMAP hBmpJugadorAnim[4][3]; // 4 direcciones, 3 frames cada una
 extern HBITMAP hBmpIsla;       // Isla principal
 extern HBITMAP hBmpTitulo;     // Título del juego (si lo tienes)
 extern HBITMAP hBmpBoton;      // Botón normal

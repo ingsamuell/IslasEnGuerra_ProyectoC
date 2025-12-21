@@ -8,7 +8,7 @@ HBITMAP hBmpIsla = NULL;
 HBITMAP hBmpTitulo = NULL;
 HBITMAP hBmpBoton = NULL;
 HBITMAP hBmpBotonSel = NULL;
-
+HBITMAP hBmpJugadorAnim[4][3];
 HBITMAP hBmpInvCerrado = NULL;
 HBITMAP hBmpInvAbierto = NULL;
 
@@ -52,6 +52,26 @@ void CargarRecursos() {
         MessageBox(NULL, "¡No encuentro assets/imagen_menu.bmp!", "Error de Carga", MB_OK | MB_ICONERROR);
     }
     hBmpJugador   = CargarImagen("assets/jugador_compatible.bmp");
+    // FRENTE (Abajo)
+    hBmpJugadorAnim[DIR_ABAJO][0] = CargarImagen("assets/p_frente_base.bmp");
+    hBmpJugadorAnim[DIR_ABAJO][1] = CargarImagen("assets/p_frente_pie1.bmp");
+    hBmpJugadorAnim[DIR_ABAJO][2] = CargarImagen("assets/p_frente_pie2.bmp");
+
+    // ESPALDA (Arriba)
+    hBmpJugadorAnim[DIR_ARRIBA][0] = CargarImagen("assets/p_esp_base.bmp");
+    hBmpJugadorAnim[DIR_ARRIBA][1] = CargarImagen("assets/p_esp_pie1.bmp");
+    hBmpJugadorAnim[DIR_ARRIBA][2] = CargarImagen("assets/p_esp_pie2.bmp");
+
+    // IZQUIERDA
+    hBmpJugadorAnim[DIR_IZQUIERDA][0] = CargarImagen("assets/p_izq_base.bmp");
+    hBmpJugadorAnim[DIR_IZQUIERDA][1] = CargarImagen("assets/p_izq_pie1.bmp");
+    hBmpJugadorAnim[DIR_IZQUIERDA][2] = CargarImagen("assets/p_izq_pie2.bmp");
+
+    // DERECHA
+    hBmpJugadorAnim[DIR_DERECHA][0] = CargarImagen("assets/p_der_base.bmp");
+    hBmpJugadorAnim[DIR_DERECHA][1] = CargarImagen("assets/p_der_pie1.bmp");
+    hBmpJugadorAnim[DIR_DERECHA][2] = CargarImagen("assets/p_der_pie2.bmp");
+
     hBmpIsla      = CargarImagen("assets/isla_principal.bmp");
     // Si no tienes botón/título, el juego dibujará negro, no crasheará
     hBmpTitulo    = CargarImagen("assets/titulo.bmp"); 
@@ -86,9 +106,12 @@ void CargarRecursos() {
 }
 
 void LiberarRecursos() {
+    for(int i=0; i<4; i++) 
+        for(int j=0; j<3; j++) 
+            if(hBmpJugadorAnim[i][j]) DeleteObject(hBmpJugadorAnim[i][j]);
+
     // Borramos todo para no dejar basura en RAM
     DeleteObject(hBmpFondoMenu);
-    DeleteObject(hBmpJugador);
     DeleteObject(hBmpIsla);
     DeleteObject(hBmpTitulo);
     DeleteObject(hBmpBoton);
