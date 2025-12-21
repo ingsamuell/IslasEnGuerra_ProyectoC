@@ -99,12 +99,31 @@ int EsSuelo(int x, int y)
 
 void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy)
 {
+    // 1. ACTUALIZAR DIRECCIÓN
+    if (dy > 0) jugador->direccion = DIR_ABAJO;
+    else if (dy < 0) jugador->direccion = DIR_ARRIBA;
+    else if (dx < 0) jugador->direccion = DIR_IZQUIERDA;
+    else if (dx > 0) jugador->direccion = DIR_DERECHA;
+
+    // 2. CALCULAR ANIMACIÓN (Caminar)
+    // Aumentamos el contador
+    jugador->pasoAnimacion++;
+    
+    // Cada 4 "ticks" cambiamos de imagen (ajusta este número para velocidad)
+    int velocidad = 4; 
+    int estado = (jugador->pasoAnimacion / velocidad) % 4;
+
+    // Ciclo: Pie1 -> Base -> Pie2 -> Base
+    if (estado == 0) jugador->frameAnim = 1;      // Pie Izq
+    else if (estado == 1) jugador->frameAnim = 0; // Base
+    else if (estado == 2) jugador->frameAnim = 2; // Pie Der
+    else if (estado == 3) jugador->frameAnim = 0; // Base
+
+    // 3. MOVER FÍSICAMENTE
     int futuraX = jugador->x + (dx * jugador->velocidad);
     int futuraY = jugador->y + (dy * jugador->velocidad);
 
-    // Solo le preguntamos al Gestor de Islas
-    if (EsSuelo(futuraX, futuraY))
-    {
+    if (EsSuelo(futuraX, futuraY)) {
         jugador->x = futuraX;
         jugador->y = futuraY;
     }
@@ -386,26 +405,29 @@ void actualizarPuntoMenu(EstadoJuego *estado, int x, int y, HWND hwnd)
     RECT rectClient;
     GetClientRect(hwnd, &rectClient);
     int ancho = rectClient.right;
-
     if (estado->mostrarMenu)
     {
-        int centroX = ancho / 2;
-        int anchoBoton = 300;
-        int altoBoton = 70;
-        int espacioBoton = 30;
-        int yBase = 220;
+        // Usar las mismas coordenadas que utiliza dibujarMenuConSprites
+        RECT rc; GetClientRect(hwnd, &rc);
+        int anchoVentana = rc.right;
+        int altoVentana  = rc.bottom;
+
+        int btnAncho = 300;
+        int btnAlto = 60;
+        int startY = (altoVentana / 2) - 50;
+        int btnX = (anchoVentana - btnAncho) / 2;
 
         estado->opcionSeleccionada = -1;
 
-        if (verificarColisionBoton(x, y, centroX - anchoBoton / 2, yBase, anchoBoton, altoBoton))
+        if (verificarColisionBoton(x, y, btnX, startY + (0 * 80), btnAncho, btnAlto))
         {
             estado->opcionSeleccionada = 0;
         }
-        else if (verificarColisionBoton(x, y, centroX - anchoBoton / 2, yBase + altoBoton + espacioBoton, anchoBoton, altoBoton))
+        else if (verificarColisionBoton(x, y, btnX, startY + (1 * 80), btnAncho, btnAlto))
         {
             estado->opcionSeleccionada = 1;
         }
-        else if (verificarColisionBoton(x, y, centroX - anchoBoton / 2, yBase + (altoBoton + espacioBoton) * 2, anchoBoton, altoBoton))
+        else if (verificarColisionBoton(x, y, btnX, startY + (2 * 80), btnAncho, btnAlto))
         {
             estado->opcionSeleccionada = 2;
         }
@@ -628,18 +650,20 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
 /* ========== DIBUJAR JUGADOR CON ZOOM ========== */
 void dibujarJugador(HDC hdc, Jugador jugador, Camera cam)
 {
-    // Tamaño del jugador ajustado al zoom
     int tamano = 32 * cam.zoom;
+    
+    // Centrar en pantalla
+    RECT rect; GetClipBox(hdc, &rect); 
+    int cx = (rect.right / 2) - (tamano/2);
+    int cy = (rect.bottom / 2) - (tamano/2);
 
-    // Calcular posición en pantalla (siempre centro si la cámara sigue al jugador)
-    // Pero lo calculamos bien por si acaso
-    RECT rect;
-    GetClipBox(hdc, &rect); // Truco para obtener ancho pantalla
-    int centroX = (rect.right / 2) - (tamano / 2);
-    int centroY = (rect.bottom / 2) - (tamano / 2);
+    // Obtener imagen correcta de la matriz
+    HBITMAP sprite = hBmpJugadorAnim[jugador.direccion][jugador.frameAnim];
+    
+    // Seguridad por si no cargó
+    if (!sprite) sprite = hBmpJugadorAnim[0][0];
 
-    // Usar la nueva función
-    DibujarImagen(hdc, hBmpJugador, centroX, centroY, tamano, tamano);
+    DibujarImagen(hdc, sprite, cx, cy, tamano, tamano);
 }
 
 /* ========== DIBUJAR HUD (VIDA, ESCUDO E INVENTARIO) ========== */
