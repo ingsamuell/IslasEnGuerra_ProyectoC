@@ -15,21 +15,32 @@ static EstadoJuego estadoActual = {1, 0, 0, 0, {0, 0}};
 
 void inicializarIslas()
 {
-    // Limpiamos el array (desactivamos todas)
+    // Limpiamos el array
     for (int i = 0; i < MAX_ISLAS; i++)
         misIslas[i].activa = 0;
 
-    // --- ISLA 1 (LA PRINCIPAL) ---
+    // --- ISLA 0: CENTRAL (ISLA_1.bmp) ---
     misIslas[0].activa = 1;
-    misIslas[0].x = 1350; // Donde empieza la imagen
+    misIslas[0].x = 1350; 
     misIslas[0].y = 1350;
-    misIslas[0].ancho = 500;
-    misIslas[0].alto = 500;
-    misIslas[0].margen = 60; // El borde de arena/agua que calculamos
+    // NUEVAS DIMENSIONES (700x700)
+    misIslas[0].ancho = 700; 
+    misIslas[0].alto = 700;
+    misIslas[0].margen = 60; // Zona de playa donde no se puede caminar (ajusta si es necesario)
 
-    // --- ISLA 2 (FUTURA) ---
-    // misIslas[1].activa = 1;
-    // misIslas[1].x = 2000; ... ¡Así de fácil será añadirla!
+    // --- ISLA 1: VECINA (isla_principal.bmp) ---
+    misIslas[1].activa = 1;
+    
+    // CÁLCULO DE POSICIÓN:
+    // Isla 0 termina en: 1350 + 700 = 2050.
+    // Ponemos esta en 2100 para dejar un pequeño "canal" de agua de 50px.
+    misIslas[1].x = 2200;  
+    misIslas[1].y = 800;  // Un poco más al norte para que se vea diagonal
+    
+    // DIMENSIONES ORIGINALES (500x500)
+    misIslas[1].ancho = 500;
+    misIslas[1].alto = 500;
+    misIslas[1].margen = 60;
 }
 
 void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
@@ -639,10 +650,14 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
         int wPantalla = misIslas[i].ancho * cam.zoom;
         int hPantalla = misIslas[i].alto * cam.zoom;
 
-        if (hBmpIsla != NULL)
+        // SELECCIONAR IMAGEN SEGÚN LA ISLA
+        HBITMAP imgIsla = NULL;
+        if (i == 0) imgIsla = hBmpIslaCentral;  // La del medio
+        if (i == 1) imgIsla = hBmpIslaNoreste;  // La de arriba a la derecha
+
+        if (imgIsla != NULL)
         {
-            // DIBUJAR
-            DibujarImagen(hdc, hBmpIsla, screenX, screenY, wPantalla, hPantalla);
+            DibujarImagen(hdc, imgIsla, screenX, screenY, wPantalla, hPantalla);
         }
     }
 }

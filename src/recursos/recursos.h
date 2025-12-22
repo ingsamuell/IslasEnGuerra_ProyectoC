@@ -12,7 +12,8 @@
 // --- MENÚ Y JUEGO (Lo que faltaba) ---
 extern HBITMAP hBmpFondoMenu;
 extern HBITMAP hBmpJugadorAnim[4][3]; // 4 direcciones, 3 frames cada una
-extern HBITMAP hBmpIsla;       // Isla principal
+extern HBITMAP hBmpIslaCentral; // Para ISLA_1.bmp
+extern HBITMAP hBmpIslaNoreste; // Para isla_principal.bmp
 extern HBITMAP hBmpTitulo;     // Título del juego (si lo tienes)
 extern HBITMAP hBmpBoton;      // Botón normal
 extern HBITMAP hBmpBotonSel;   // Botón seleccionado
