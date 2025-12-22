@@ -47,6 +47,16 @@ extern HBITMAP hBmpEscudo0;
 extern HBITMAP hBmpBarraXPVacia;
 extern HBITMAP hBmpBarraXPLlena;
 
+// --- MUNDO Y ESTRUCTURAS (NUEVO) ---
+extern HBITMAP hBmpCastilloJugador;
+extern HBITMAP hBmpCastilloEnemigo1;
+extern HBITMAP hBmpCastilloEnemigo2;
+extern HBITMAP hBmpCastilloEnemigo3;
+
+// --- NATURALEZA (NUEVO) ---
+extern HBITMAP hBmpArbol;
+extern HBITMAP hBmpRoca;
+
 // ==========================================
 //   FUNCIONES DE GESTIÓN
 // ==========================================
