@@ -1,985 +1,287 @@
-/* src/mapa/mapa.c (Versión GDI con Cámara) */
+/* src/mapa/mapa.c - VERSIÓN: BOTONES HORIZONTALES */
 #include "mapa.h"
 #include "recursos/recursos.h"
 #include <stdio.h>
-#include <string.h>
 #include <math.h>
-#include <time.h>
 
 #define MAX_ISLAS 5
-
 Isla misIslas[MAX_ISLAS];
 
-/* --- Variables globales --- */
-static EstadoJuego estadoActual = {1, 0, 0, 0, {0, 0}};
-
-void inicializarIslas()
-{
-    // Limpiamos el array
-    for (int i = 0; i < MAX_ISLAS; i++)
-        misIslas[i].activa = 0;
-
-    // --- ISLA 0: CENTRAL (ISLA_1.bmp) ---
-    misIslas[0].activa = 1;
-    misIslas[0].x = 1350; 
-    misIslas[0].y = 1350;
-    // NUEVAS DIMENSIONES (700x700)
-    misIslas[0].ancho = 700; 
-    misIslas[0].alto = 700;
-    misIslas[0].margen = 60; // Zona de playa donde no se puede caminar (ajusta si es necesario)
-
-    // --- ISLA 1: VECINA (isla_principal.bmp) ---
-    misIslas[1].activa = 1;
+// --- INICIALIZACIÓN ---
+void inicializarIslas() {
+    for (int i = 0; i < MAX_ISLAS; i++) misIslas[i].activa = 0;
     
-    // CÁLCULO DE POSICIÓN:
-    // Isla 0 termina en: 1350 + 700 = 2050.
-    // Ponemos esta en 2100 para dejar un pequeño "canal" de agua de 50px.
-    misIslas[1].x = 2200;  
-    misIslas[1].y = 800;  // Un poco más al norte para que se vea diagonal
-    
-    // DIMENSIONES ORIGINALES (500x500)
-    misIslas[1].ancho = 500;
-    misIslas[1].alto = 500;
-    misIslas[1].margen = 60;
+    // Isla Central
+    misIslas[0].activa = 1; misIslas[0].x = 1350; misIslas[0].y = 1350;
+    misIslas[0].ancho = 700; misIslas[0].alto = 700; misIslas[0].margen = 60;
+
+    // Isla Vecina
+    misIslas[1].activa = 1; misIslas[1].x = 2200; misIslas[1].y = 800;
+    misIslas[1].ancho = 500; misIslas[1].alto = 500; misIslas[1].margen = 60;
 }
 
-void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
-{
+void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    for (int i = 0; i < MUNDO_FILAS; i++)
+        for (int j = 0; j < MUNDO_COLUMNAS; j++)
+            mapa[i][j] = 0;
+}
 
+void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     inicializarIslas();
-
-    // 1. LIMPIEZA
-    inicializarMapa(mapa); // Pone todo en 0
-
-    // 2. POSICIÓN DEL JUGADOR (COORDENADA 1600)
-    jugador->x = 1600;
-    jugador->y = 1600;
-
-    // 3. STATS
+    inicializarMapa(mapa);
+    
+    jugador->x = 1600; jugador->y = 1600;
     jugador->velocidad = 5;
-    jugador->vidaActual = 100;
-    jugador->vidaMax = 100;
-
-    // 4. ESTADO
-    estado->enPartida = 0; // OJO: Si pones 1, arranca sin menú. Si pones 0, sale el menú primero.
+    jugador->vidaActual = 100; jugador->vidaMax = 100;
+    jugador->armaduraActual = 0; jugador->armaduraMax = 100;
+    jugador->nivel = 1; jugador->experiencia = 0; jugador->experienciaSiguienteNivel = 100;
+    
+    estado->enPartida = 0;
     estado->mostrarMenu = 1;
+    estado->opcionSeleccionada = -1;
 }
 
-void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
-{
-    int i, j;
-
-    // Simplemente limpiamos la matriz para que esté lista para usar en el futuro
-    // Ya no ponemos '~' ni '.' porque la colisión la maneja EsSuelo()
-    for (i = 0; i < MUNDO_FILAS; i++)
-    {
-        for (j = 0; j < MUNDO_COLUMNAS; j++)
-        {
-            mapa[i][j] = 0; // 0 significa "vacío" o "nada especial aquí"
-        }
-    }
-
-    printf("Matriz de mapa limpiada (La isla visual la maneja el sistema de Sprites)\n");
-}
-
-int EsSuelo(int x, int y)
-{
-    // Recorremos todas las islas buscando si estamos pisando alguna
-    for (int i = 0; i < MAX_ISLAS; i++)
-    {
-        if (!misIslas[i].activa)
-            continue; // Si no está activa, la saltamos
-
+// --- FÍSICA Y MOVIMIENTO ---
+int EsSuelo(int x, int y) {
+    for (int i = 0; i < MAX_ISLAS; i++) {
+        if (!misIslas[i].activa) continue;
         Isla is = misIslas[i];
-
-        // Definimos la CAJA DE COLISIÓN (Hitbox) restando el margen
-        int minX = is.x + is.margen;
-        int maxX = is.x + is.ancho - is.margen;
-        int minY = is.y + is.margen;
-        int maxY = is.y + is.alto - is.margen;
-
-        // ¿El punto (x,y) está dentro de esta caja?
-        if (x >= minX && x <= maxX && y >= minY && y <= maxY)
-        {
-            return 1; // ¡ENCONTRADO! Estás pisando la isla 'i'
-        }
+        if (x >= is.x + is.margen && x <= is.x + is.ancho - is.margen &&
+            y >= is.y + is.margen && y <= is.y + is.alto - is.margen) return 1;
     }
-
-    return 0; // Revisé todas las islas y no estás en ninguna -> AGUA
+    return 0;
 }
 
-void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy)
-{
-    // 1. ACTUALIZAR DIRECCIÓN
+void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy) {
     if (dy > 0) jugador->direccion = DIR_ABAJO;
     else if (dy < 0) jugador->direccion = DIR_ARRIBA;
     else if (dx < 0) jugador->direccion = DIR_IZQUIERDA;
     else if (dx > 0) jugador->direccion = DIR_DERECHA;
 
-    // 2. CALCULAR ANIMACIÓN (Caminar)
-    // Aumentamos el contador
     jugador->pasoAnimacion++;
-    
-    // Cada 4 "ticks" cambiamos de imagen (ajusta este número para velocidad)
-    int velocidad = 4; 
-    int estado = (jugador->pasoAnimacion / velocidad) % 4;
+    int estado = (jugador->pasoAnimacion / 4) % 4;
+    if (estado == 0) jugador->frameAnim = 1;
+    else if (estado == 1) jugador->frameAnim = 0;
+    else if (estado == 2) jugador->frameAnim = 2;
+    else if (estado == 3) jugador->frameAnim = 0;
 
-    // Ciclo: Pie1 -> Base -> Pie2 -> Base
-    if (estado == 0) jugador->frameAnim = 1;      // Pie Izq
-    else if (estado == 1) jugador->frameAnim = 0; // Base
-    else if (estado == 2) jugador->frameAnim = 2; // Pie Der
-    else if (estado == 3) jugador->frameAnim = 0; // Base
-
-    // 3. MOVER FÍSICAMENTE
     int futuraX = jugador->x + (dx * jugador->velocidad);
     int futuraY = jugador->y + (dy * jugador->velocidad);
-
     if (EsSuelo(futuraX, futuraY)) {
-        jugador->x = futuraX;
-        jugador->y = futuraY;
+        jugador->x = futuraX; jugador->y = futuraY;
     }
 }
 
-void actualizarCamara(Camera *camara, Jugador jugador)
-{
-    // 1. Obtener dimensiones de la pantalla
+void actualizarCamara(Camera *camara, Jugador jugador) {
     int anchoPantalla = GetSystemMetrics(SM_CXSCREEN);
     int altoPantalla = GetSystemMetrics(SM_CYSCREEN);
-
-    // 2. Calcular el centro relativo al zoom
     int centroX = (anchoPantalla / 2) / camara->zoom;
     int centroY = (altoPantalla / 2) / camara->zoom;
-
-    // 3. Posicionar cámara
     camara->x = jugador.x - centroX;
     camara->y = jugador.y - centroY;
-
-    // 4. LÍMITES DEL MUNDO (Ahora sí usamos la variable)
-    int limiteMundoX = MUNDO_COLUMNAS * TAMANO_CELDA_BASE; // 3200
-    int limiteMundoY = MUNDO_FILAS * TAMANO_CELDA_BASE;    // 3200
-
-    // Ancho visible del mundo en píxeles
-    int mundoVisibleX = anchoPantalla / camara->zoom;
-    int mundoVisibleY = altoPantalla / camara->zoom;
-
-    // --- CLAMPING (Limitar movimiento) ---
-
-    // No salir por la izquierda/arriba
-    if (camara->x < 0)
-        camara->x = 0;
-    if (camara->y < 0)
-        camara->y = 0;
-
-    // No salir por la derecha
-    if (camara->x > limiteMundoX - mundoVisibleX)
-    {
-        camara->x = limiteMundoX - mundoVisibleX;
-        if (camara->x < 0)
-            camara->x = 0; // Por si la pantalla es más grande que el mundo
-    }
-
-    // No salir por abajo
-    if (camara->y > limiteMundoY - mundoVisibleY)
-    {
-        camara->y = limiteMundoY - mundoVisibleY;
-        if (camara->y < 0)
-            camara->y = 0;
-    }
+    if (camara->x < 0) camara->x = 0;
+    if (camara->y < 0) camara->y = 0;
 }
 
-/* --- Sistema de Menú Mejorado --- */
+// =========================================================
+// AQUÍ ESTÁ EL CAMBIO HORIZONTAL (DIBUJADO)
+// =========================================================
+void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado) {
+    RECT rect; GetClientRect(hwnd, &rect);
+    int ancho = rect.right;
+    int alto = rect.bottom;
 
-void dibujarBoton(HDC hdc, int x, int y, int ancho, int alto, const char *texto, BOOL seleccionado, BOOL activo)
-{
-    COLORREF colorFondo, colorTexto, colorBorde, colorSombra;
-
-    if (seleccionado)
-    {
-        colorFondo = RGB(100, 180, 255);
-        colorTexto = RGB(255, 255, 255);
-        colorBorde = RGB(255, 215, 0);
-        colorSombra = RGB(30, 100, 180);
-    }
-    else if (activo)
-    {
-        colorFondo = RGB(70, 130, 180);
-        colorTexto = RGB(255, 255, 255);
-        colorBorde = RGB(50, 100, 150);
-        colorSombra = RGB(20, 60, 100);
-    }
-    else
-    {
-        colorFondo = RGB(100, 100, 120);
-        colorTexto = RGB(200, 200, 200);
-        colorBorde = RGB(80, 80, 100);
-        colorSombra = RGB(50, 50, 70);
-    }
-
-    // Dibujar sombra
-    HBRUSH hBrushSombra = CreateSolidBrush(colorSombra);
-    RECT rectSombra = {x + 3, y + 3, x + ancho + 3, y + alto + 3};
-    FillRect(hdc, &rectSombra, hBrushSombra);
-    DeleteObject(hBrushSombra);
-
-    // Dibujar borde
-    HBRUSH hBrushBorde = CreateSolidBrush(colorBorde);
-    RECT rectBorde = {x - 2, y - 2, x + ancho + 2, y + alto + 2};
-    FillRect(hdc, &rectBorde, hBrushBorde);
-    DeleteObject(hBrushBorde);
-
-    // Dibujar fondo principal
-    HBRUSH hBrushFondo = CreateSolidBrush(colorFondo);
-    RECT rectBoton = {x, y, x + ancho, y + alto};
-    FillRect(hdc, &rectBoton, hBrushFondo);
-
-    // Efecto de gradiente (simulado)
-    if (seleccionado || activo)
-    {
-        HBRUSH hBrushGradiente = CreateSolidBrush(RGB(120, 180, 255));
-        RECT rectGradiente = {x, y, x + ancho, y + alto / 3};
-        FillRect(hdc, &rectGradiente, hBrushGradiente);
-        DeleteObject(hBrushGradiente);
-    }
-
-    // Configurar texto
-    SetBkMode(hdc, TRANSPARENT);
-    SetTextColor(hdc, colorTexto);
-
-    // Fuente del botón
-    HFONT hFont = CreateFont(
-        seleccionado ? 24 : 20,
-        0, 0, 0,
-        seleccionado ? FW_BOLD : FW_SEMIBOLD,
-        FALSE, FALSE, FALSE,
-        DEFAULT_CHARSET,
-        OUT_OUTLINE_PRECIS,
-        CLIP_DEFAULT_PRECIS,
-        CLEARTYPE_QUALITY,
-        VARIABLE_PITCH,
-        TEXT("Arial"));
-
-    HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
-
-    // Dibujar texto usando caracteres UNICODE correctos
-    if (strcmp(texto, "INICIAR PARTIDA") == 0)
-    {
-        DrawText(hdc, TEXT("START GAME"), -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    }
-    else if (strcmp(texto, "RESUMEN RECURSOS") == 0)
-    {
-        DrawText(hdc, TEXT("RESOURCES"), -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    }
-    else if (strcmp(texto, "SALIR") == 0)
-    {
-        DrawText(hdc, TEXT("EXIT"), -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    }
-    else if (strcmp(texto, "VOLVER AL MENÚ") == 0)
-    {
-        DrawText(hdc, TEXT("BACK TO MENU"), -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    }
-    else
-    {
-        DrawTextA(hdc, texto, -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    }
-
-    // Restaurar y limpiar
-    SelectObject(hdc, hOldFont);
-    DeleteObject(hFont);
-    DeleteObject(hBrushFondo);
-}
-
-void dibujarFondoAnimado(HDC hdc, int ancho, int alto, int tiempo)
-{
-    // Fondo con gradiente azul marino
-    for (int y = 0; y < alto; y++)
-    {
-        int azul = 25 + (y * 30) / alto;
-        HBRUSH hBrushLinea = CreateSolidBrush(RGB(10, 10, azul));
-        RECT rectLinea = {0, y, ancho, y + 1};
-        FillRect(hdc, &rectLinea, hBrushLinea);
-        DeleteObject(hBrushLinea);
-    }
-
-    // Estrellas parpadeantes
-    srand(tiempo / 10);
-    for (int i = 0; i < 80; i++)
-    {
-        int x = rand() % ancho;
-        int y = rand() % alto;
-        int brillo = 100 + (rand() % 155);
-        int tamano = 1 + (rand() % 2);
-
-        HBRUSH hBrushEstrella = CreateSolidBrush(RGB(brillo, brillo, brillo));
-        RECT rectEstrella = {x, y, x + tamano, y + tamano};
-        FillRect(hdc, &rectEstrella, hBrushEstrella);
-        DeleteObject(hBrushEstrella);
-    }
-}
-
-void dibujarMenu(HDC hdc, HWND hwnd, EstadoJuego *estado)
-{
-    RECT rectClient;
-    GetClientRect(hwnd, &rectClient);
-    int ancho = rectClient.right - rectClient.left;
-    int alto = rectClient.bottom - rectClient.top;
-
-    static int tiempo = 0;
-    tiempo++;
-
-    // Fondo animado
-    dibujarFondoAnimado(hdc, ancho, alto, tiempo);
-
-    // Título principal con efecto
-    HFONT hFontTitulo = CreateFont(48, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
-                                   DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
-                                   CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
-                                   VARIABLE_PITCH, TEXT("Arial"));
-    HFONT hOldFont = SelectObject(hdc, hFontTitulo);
-
-    // Sombra del título
-    SetTextColor(hdc, RGB(0, 0, 60));
-    RECT rectTituloSombra = {ancho / 2 - 150 + 2, 52, ancho / 2 + 150 + 2, 132};
-    DrawText(hdc, TEXT("WAR ISLANDS"), -1, &rectTituloSombra, DT_CENTER | DT_SINGLELINE);
-
-    // Título principal
-    SetTextColor(hdc, RGB(255, 215, 0));
-    SetBkMode(hdc, TRANSPARENT);
-    RECT rectTitulo = {ancho / 2 - 150, 50, ancho / 2 + 150, 130};
-    DrawText(hdc, TEXT("WAR ISLANDS"), -1, &rectTitulo, DT_CENTER | DT_SINGLELINE);
-
-    // Subtítulo
-    HFONT hFontSubtitulo = CreateFont(16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-                                      DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
-                                      CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
-                                      VARIABLE_PITCH, TEXT("Arial"));
-    SelectObject(hdc, hFontSubtitulo);
-    SetTextColor(hdc, RGB(180, 220, 255));
-
-    RECT rectSubtitulo = {0, 130, ancho, 170};
-    DrawText(hdc, TEXT("Conquer - Build - Survive"), -1, &rectSubtitulo, DT_CENTER | DT_SINGLELINE);
-
-    SelectObject(hdc, hOldFont);
-    DeleteObject(hFontTitulo);
-    DeleteObject(hFontSubtitulo);
-
-    // Botones interactivos
-    int centroX = ancho / 2;
-    int anchoBoton = 300;
-    int altoBoton = 60;
-    int espacioBoton = 20;
-
-    int yBase = 220;
-
-    // Determinar qué botón está seleccionado
-    int btnStartSel = (estado->opcionSeleccionada == 0);
-    int btnResourcesSel = (estado->opcionSeleccionada == 1);
-    int btnExitSel = (estado->opcionSeleccionada == 2);
-
-    dibujarBoton(hdc, centroX - anchoBoton / 2, yBase, anchoBoton, altoBoton,
-                 "INICIAR PARTIDA", btnStartSel, TRUE);
-    dibujarBoton(hdc, centroX - anchoBoton / 2, yBase + altoBoton + espacioBoton, anchoBoton, altoBoton,
-                 "RESUMEN RECURSOS", btnResourcesSel, TRUE);
-    dibujarBoton(hdc, centroX - anchoBoton / 2, yBase + (altoBoton + espacioBoton) * 2, anchoBoton, altoBoton,
-                 "SALIR", btnExitSel, TRUE);
-
-    // Instrucciones
-    HFONT hFontInstrucciones = CreateFont(14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-                                          DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
-                                          CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
-                                          VARIABLE_PITCH, TEXT("Arial"));
-    SelectObject(hdc, hFontInstrucciones);
-    SetTextColor(hdc, RGB(150, 200, 255));
-
-    RECT rectInstrucciones = {0, alto - 60, ancho, alto - 30};
-    DrawText(hdc, TEXT("Use UP/DOWN arrows to navigate and ENTER to select"), -1, &rectInstrucciones,
-             DT_CENTER | DT_SINGLELINE);
-
-    // Créditos
-    RECT rectCreditos = {0, alto - 30, ancho, alto};
-    DrawText(hdc, TEXT("War Islands v1.0 - Developed with C - 2024"), -1, &rectCreditos,
-             DT_CENTER | DT_SINGLELINE);
-
-    DeleteObject(hFontInstrucciones);
-}
-
-int verificarColisionBoton(int mouseX, int mouseY, int btnX, int btnY, int btnAncho, int btnAlto)
-{
-    return (mouseX >= btnX && mouseX <= btnX + btnAncho &&
-            mouseY >= btnY && mouseY <= btnY + btnAlto);
-}
-
-void actualizarPuntoMenu(EstadoJuego *estado, int x, int y, HWND hwnd)
-{
-    estado->puntoMouse.x = x;
-    estado->puntoMouse.y = y;
-
-    RECT rectClient;
-    GetClientRect(hwnd, &rectClient);
-    int ancho = rectClient.right;
-    if (estado->mostrarMenu)
-    {
-        // Usar las mismas coordenadas que utiliza dibujarMenuConSprites
-        RECT rc; GetClientRect(hwnd, &rc);
-        int anchoVentana = rc.right;
-        int altoVentana  = rc.bottom;
-
-        int btnAncho = 300;
-        int btnAlto = 60;
-        int startY = (altoVentana / 2) - 50;
-        int btnX = (anchoVentana - btnAncho) / 2;
-
-        estado->opcionSeleccionada = -1;
-
-        if (verificarColisionBoton(x, y, btnX, startY + (0 * 80), btnAncho, btnAlto))
-        {
-            estado->opcionSeleccionada = 0;
-        }
-        else if (verificarColisionBoton(x, y, btnX, startY + (1 * 80), btnAncho, btnAlto))
-        {
-            estado->opcionSeleccionada = 1;
-        }
-        else if (verificarColisionBoton(x, y, btnX, startY + (2 * 80), btnAncho, btnAlto))
-        {
-            estado->opcionSeleccionada = 2;
-        }
-    }
-    else if (estado->mostrarResumen)
-    {
-        int btnVolverX = ancho / 2 - 100;
-        int btnVolverY = 120 + 300 + 20;
-
-        estado->opcionSeleccionada = -1;
-        if (verificarColisionBoton(x, y, btnVolverX, btnVolverY, 200, 50))
-        {
-            estado->opcionSeleccionada = 0;
-        }
-    }
-}
-
-void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
-{
-    actualizarPuntoMenu(estado, x, y, hwnd);
-
-    if (estado->opcionSeleccionada != -1)
-    {
-        if (estado->mostrarMenu)
-        {
-            switch (estado->opcionSeleccionada)
-            {
-            case 0:
-                estado->mostrarMenu = 0;
-                estado->enPartida = 1;
-                estado->mostrarResumen = 0;
-                break;
-            case 1:
-                // --- ESTO ES LO QUE TE LLEVABA A LA PANTALLA NEGRA ---
-                // COMENTA ESTAS LÍNEAS ASÍ:
-                // estado->mostrarMenu = 0;
-                // estado->enPartida = 0;
-                // estado->mostrarResumen = 1;
-
-                // OPCIONAL: Puedes poner un mensajito temporal
-                MessageBox(hwnd, "Esta funcion estara disponible pronto.", "En Construccion", MB_OK | MB_ICONINFORMATION);
-                break;
-            case 2:
-                PostQuitMessage(0);
-                return;
-            }
-        }
-        else if (estado->mostrarResumen)
-        {
-            if (estado->opcionSeleccionada == 0)
-            {
-                estado->mostrarMenu = 1;
-                estado->enPartida = 0;
-                estado->mostrarResumen = 0;
-            }
-        }
-
-        InvalidateRect(hwnd, NULL, TRUE);
-    }
-}
-
-void procesarEnterMenu(HWND hwnd, EstadoJuego *estado)
-{
-    if (estado->opcionSeleccionada != -1)
-    {
-        if (estado->mostrarMenu)
-        {
-            switch (estado->opcionSeleccionada)
-            {
-            case 0:
-                estado->mostrarMenu = 0;
-                estado->enPartida = 1;
-                estado->mostrarResumen = 0;
-                break;
-            case 1:
-                //estado->mostrarMenu = 0;
-                //estado->enPartida = 0;
-                //estado->mostrarResumen = 1;
-                break;
-            case 2:
-                PostQuitMessage(0);
-                return;
-            }
-        }
-
-        InvalidateRect(hwnd, NULL, TRUE);
-    }
-}
-
-EstadoJuego *obtenerEstadoJuego()
-{
-    return &estadoActual;
-}
-
-void iniciarPartida()
-{
-    estadoActual.mostrarMenu = 0;
-    estadoActual.enPartida = 1;
-    estadoActual.mostrarResumen = 0;
-}
-
-void volverAlMenu()
-{
-    estadoActual.mostrarMenu = 1;
-    estadoActual.enPartida = 0;
-    estadoActual.mostrarResumen = 0;
-}
-
-/* ========== FUNCIONES CON SPRITES ========== */
-
-void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
-{
-    // 1. OBTENER TAMAÑO ACTUAL DE LA VENTANA
-    RECT rect;
-    GetClientRect(hwnd, &rect);
-    int anchoVentana = rect.right;
-    int altoVentana = rect.bottom;
-
-    // 2. DIBUJAR FONDO ESTIRADO (SCALING)
-    // Usamos StretchBlt directamente aquí para asegurar que llene todo sin transparencia
-    if (hBmpFondoMenu != NULL)
-    {
+    // 1. Fondo
+    if (hBmpFondoMenu) {
+        BITMAP bm; GetObject(hBmpFondoMenu, sizeof(BITMAP), &bm);
         HDC hdcMem = CreateCompatibleDC(hdc);
-        HBITMAP hOld = (HBITMAP)SelectObject(hdcMem, hBmpFondoMenu);
-
-        // Obtenemos tamaño real de la imagen
-        BITMAP bm;
-        GetObject(hBmpFondoMenu, sizeof(BITMAP), &bm);
-
-        // ESTIRAMOS la imagen desde (0,0) hasta (anchoVentana, altoVentana)
-        SetStretchBltMode(hdc, HALFTONE); // Para que no se vea pixelada al estirar
-        StretchBlt(hdc, 0, 0, anchoVentana, altoVentana,
-                   hdcMem, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
-
-        SelectObject(hdcMem, hOld);
+        SelectObject(hdcMem, hBmpFondoMenu);
+        SetStretchBltMode(hdc, HALFTONE);
+        StretchBlt(hdc, 0, 0, ancho, alto, hdcMem, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
         DeleteDC(hdcMem);
-    }
-    else
-    {
-        // Si falló la carga, fondo azul de emergencia
-        HBRUSH brochaAzul = CreateSolidBrush(RGB(0, 0, 50));
-        FillRect(hdc, &rect, brochaAzul);
-        DeleteObject(brochaAzul);
+    } else {
+        HBRUSH azul = CreateSolidBrush(RGB(20, 20, 60)); FillRect(hdc, &rect, azul); DeleteObject(azul);
     }
 
-    // 3. DIBUJAR BOTONES (Calculados proporcionalmente al centro)
-    int btnAncho = 300;
-    int btnAlto = 60;
-
-    // Centrar horizontalmente
-    int btnX = (anchoVentana - btnAncho) / 2;
-
-    // Empezar un poco más abajo del centro vertical
-    int startY = (altoVentana / 2) - 50;
-
-    for (int i = 0; i < 3; i++)
-    {
-        int btnY = startY + (i * 80); // 80 pixeles de separación
-
-        // ¿Qué imagen usamos?
-        HBITMAP imgBtn = (i == estado->opcionSeleccionada) ? hBmpBotonSel : hBmpBoton;
-
-        if (imgBtn != NULL)
-        {
-            // Usamos tu función auxiliar para los botones (mantienen transparencia si la tienen)
-            DibujarImagen(hdc, imgBtn, btnX, btnY, btnAncho, btnAlto);
-        }
-        else
-        {
-            // Si no hay imagen de botón, dibujamos rectángulos de colores
-            HBRUSH brocha;
-            if (i == estado->opcionSeleccionada)
-                brocha = CreateSolidBrush(RGB(255, 215, 0)); // Dorado seleccionado
-            else
-                brocha = CreateSolidBrush(RGB(192, 192, 192)); // Gris normal
-
-            RECT rBtn = {btnX, btnY, btnX + btnAncho, btnY + btnAlto};
-            FillRect(hdc, &rBtn, brocha);
-            DeleteObject(brocha);
-        }
-    }
-}
-
-/* ========== DIBUJAR MAPA CON ZOOM (ÚNICA FUNCIÓN DE DIBUJADO) ========== */
-void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int anchoVentana, int altoVentana)
-{
-    // 1. Fondo Azul
-    HBRUSH brochaAgua = CreateSolidBrush(RGB(0, 100, 180));
-    RECT rectTotal = {0, 0, anchoVentana, altoVentana};
-    FillRect(hdc, &rectTotal, brochaAgua);
-    DeleteObject(brochaAgua);
-
-    // 2. Usar el sistema de Islas (Array) en lugar de coordenadas fijas
-    // Esto asegura que lo que ves coincida con la colisión
-    for (int i = 0; i < MAX_ISLAS; i++)
-    {
-        if (!misIslas[i].activa)
-            continue;
-
-        // Coordenadas lógicas (1350, 1350)
-        int worldX = misIslas[i].x;
-        int worldY = misIslas[i].y;
-
-        // --- FÓRMULA CORREGIDA (SIN DOBLE CENTRADO) ---
-        // Simplemente: (PosiciónMundo - Cámara) * Zoom
-        int screenX = (worldX - cam.x) * cam.zoom;
-        int screenY = (worldY - cam.y) * cam.zoom;
-
-        int wPantalla = misIslas[i].ancho * cam.zoom;
-        int hPantalla = misIslas[i].alto * cam.zoom;
-
-        // SELECCIONAR IMAGEN SEGÚN LA ISLA
-        HBITMAP imgIsla = NULL;
-        if (i == 0) imgIsla = hBmpIslaCentral;  // La del medio
-        if (i == 1) imgIsla = hBmpIslaNoreste;  // La de arriba a la derecha
-
-        if (imgIsla != NULL)
-        {
-            DibujarImagen(hdc, imgIsla, screenX, screenY, wPantalla, hPantalla);
-        }
-    }
-}
-
-/* ========== DIBUJAR JUGADOR CON ZOOM ========== */
-void dibujarJugador(HDC hdc, Jugador jugador, Camera cam)
-{
-    int tamano = 32 * cam.zoom;
+    // --- CONFIGURACIÓN HORIZONTAL ---
+    int btnAncho = 500; // <--- Reducido para que quepan 3
+    int btnAlto = 200;   
+    int separacion = 30;
     
-    // Centrar en pantalla
-    RECT rect; GetClipBox(hdc, &rect); 
-    int cx = (rect.right / 2) - (tamano/2);
-    int cy = (rect.bottom / 2) - (tamano/2);
+    // Calculamos el ancho total del grupo de 3 botones
+    int totalAncho = (btnAncho * 3) + (separacion * 2);
+    
+    // Centramos horizontalmente el grupo
+    int startX = (ancho - totalAncho) / 2;
+    
+    // Posición Y fija (Un poco más abajo del centro)
+    int fixedY = (alto / 2) + 100; 
 
-    // Obtener imagen correcta de la matriz
+    // Botón 1: JUGAR (Izquierda)
+    HBITMAP imgJugar = (hBmpBtnJugar) ? hBmpBtnJugar : hBmpBoton;
+    DibujarImagen(hdc, imgJugar, startX, fixedY, btnAncho, btnAlto);
+
+    // Botón 2: PARTIDAS (Centro)
+    HBITMAP imgPartidas = (hBmpBtnPartidas) ? hBmpBtnPartidas : hBmpBoton;
+    DibujarImagen(hdc, imgPartidas, startX + btnAncho + separacion, fixedY, btnAncho, btnAlto);
+
+    // Botón 3: INSTRUCCIONES (Derecha)
+    HBITMAP imgInstr = (hBmpBtnInstrucciones) ? hBmpBtnInstrucciones : hBmpBoton;
+    DibujarImagen(hdc, imgInstr, startX + (btnAncho + separacion)*2, fixedY, btnAncho, btnAlto);
+
+    // --- BOTÓN SALIR (SE MANTIENE EN ESQUINA) ---
+    int salirW = 200; int salirH = 60; int margen = 30;
+    int salirX = ancho - salirW - margen;
+    int salirY = alto - salirH - margen;
+
+    HBITMAP imgSalir = (hBmpBtnSalir) ? hBmpBtnSalir : hBmpBoton;
+    DibujarImagen(hdc, imgSalir, salirX, salirY, salirW, salirH);
+}
+
+// --- LÓGICA DE CLICS DEL MENÚ (CAMBIO HORIZONTAL) ---
+int verificarColisionBoton(int mouseX, int mouseY, int btnX, int btnY, int btnAncho, int btnAlto) {
+    return (mouseX >= btnX && mouseX <= btnX + btnAncho && mouseY >= btnY && mouseY <= btnY + btnAlto);
+}
+
+void actualizarPuntoMenu(EstadoJuego *estado, int x, int y, HWND hwnd) {
+    RECT rc; GetClientRect(hwnd, &rc);
+    int ancho = rc.right;
+    int alto = rc.bottom;
+
+    // MISMOS VALORES QUE EN EL DIBUJADO
+    int btnAncho = 500; 
+    int btnAlto = 200;
+    int separacion = 30;
+    int totalAncho = (btnAncho * 3) + (separacion * 2);
+    int startX = (ancho - totalAncho) / 2;
+    int fixedY = (alto / 2) + 100;
+
+    estado->opcionSeleccionada = -1;
+
+    // 0: JUGAR (Izquierda)
+    if (verificarColisionBoton(x, y, startX, fixedY, btnAncho, btnAlto)) 
+        estado->opcionSeleccionada = 0;
+    
+    // 1: PARTIDAS (Centro) - Sumamos 1 ancho + 1 separación
+    else if (verificarColisionBoton(x, y, startX + btnAncho + separacion, fixedY, btnAncho, btnAlto)) 
+        estado->opcionSeleccionada = 1;
+    
+    // 2: INSTRUCCIONES (Derecha) - Sumamos 2 anchos + 2 separaciones
+    else if (verificarColisionBoton(x, y, startX + (btnAncho + separacion)*2, fixedY, btnAncho, btnAlto)) 
+        estado->opcionSeleccionada = 2;
+    
+    // 3: SALIR (Esquina)
+    int salirW = 200; int salirH = 60; int margen = 30;
+    if (verificarColisionBoton(x, y, ancho - salirW - margen, alto - salirH - margen, salirW, salirH))
+        estado->opcionSeleccionada = 3;
+}
+
+void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado) {
+    actualizarPuntoMenu(estado, x, y, hwnd);
+    if (estado->opcionSeleccionada != -1) {
+        switch (estado->opcionSeleccionada) {
+            case 0: estado->mostrarMenu = 0; estado->enPartida = 1; break;
+            case 1: MessageBox(hwnd, "Guardado no disponible aun.", "Partidas", MB_OK); break;
+            case 2: MessageBox(hwnd, "WASD para moverte.", "Ayuda", MB_OK); break;
+            case 3: PostQuitMessage(0); return;
+        }
+        InvalidateRect(hwnd, NULL, TRUE);
+    }
+}
+
+void procesarEnterMenu(HWND hwnd, EstadoJuego *estado) {
+    if (estado->mostrarMenu) {
+        estado->mostrarMenu = 0;
+        estado->enPartida = 1;
+        InvalidateRect(hwnd, NULL, TRUE);
+    }
+}
+
+// --- DIBUJADO DEL JUEGO Y HUD (SIN CAMBIOS) ---
+void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto) {
+    HBRUSH agua = CreateSolidBrush(RGB(0, 100, 180)); RECT r = {0, 0, ancho, alto};
+    FillRect(hdc, &r, agua); DeleteObject(agua);
+
+    for (int i = 0; i < MAX_ISLAS; i++) {
+        if (!misIslas[i].activa) continue;
+        int sx = (misIslas[i].x - cam.x) * cam.zoom;
+        int sy = (misIslas[i].y - cam.y) * cam.zoom;
+        int sw = misIslas[i].ancho * cam.zoom;
+        int sh = misIslas[i].alto * cam.zoom;
+        HBITMAP img = (i == 0) ? hBmpIslaCentral : hBmpIslaNoreste;
+        if (img) DibujarImagen(hdc, img, sx, sy, sw, sh);
+    }
+}
+
+void dibujarJugador(HDC hdc, Jugador jugador, Camera cam) {
+    RECT r; GetClipBox(hdc, &r);
+    int tam = 32 * cam.zoom;
+    int cx = (r.right / 2) - (tam/2);
+    int cy = (r.bottom / 2) - (tam/2);
     HBITMAP sprite = hBmpJugadorAnim[jugador.direccion][jugador.frameAnim];
-    
-    // Seguridad por si no cargó
-    if (!sprite) sprite = hBmpJugadorAnim[0][0];
-
-    DibujarImagen(hdc, sprite, cx, cy, tamano, tamano);
+    if (!sprite) sprite = hBmpJugador;
+    DibujarImagen(hdc, sprite, cx, cy, tam, tam);
 }
 
-/* ========== DIBUJAR HUD (VIDA, ESCUDO E INVENTARIO) ========== */
-void dibujarHUD(HDC hdc, Jugador* jugador, int anchoVentana, int altoVentana) {
-    
-    // =========================================================
-    // 1. VIDA (SISTEMA DE 5 CORAZONES)
-    // =========================================================
-    // Configuración: 5 corazones totales. Cada uno vale 20 de vida (100 / 5 = 20).
-    int maxCorazones = 5;
-    int vidaPorCorazon = 20; 
-    int separacion = 32; // Distancia entre corazones (píxeles)
-
-    for (int i = 0; i < maxCorazones; i++) {
-        // 1. Calcular la posición X de ESTE corazón (uno al lado del otro)
-        int xPos = 20 + (i * separacion);
-        int yPos = 20;
-
-        // 2. Calcular cuánta vida le queda a ESTE corazón específico
-        // Ejemplo: Si tengo 30 de vida:
-        // - Corazón 0: 30 - 0 = 30 (Lleno, topa en 20)
-        // - Corazón 1: 30 - 20 = 10 (Mitad)
-        // - Corazón 2: 30 - 40 = -10 (Vacío)
-        int vidaRestante = jugador->vidaActual - (i * vidaPorCorazon);
-
-        // 3. Decidir qué imagen usar
-        HBITMAP bmpAUsar = hBmpCorazon0; // Por defecto vacío
-
-        if (vidaRestante >= 20) {
-            bmpAUsar = hBmpCorazon100; // Lleno total
-        } 
-        else if (vidaRestante >= 15) {
-            bmpAUsar = hBmpCorazon75;  // 3/4
-        } 
-        else if (vidaRestante >= 10) {
-            bmpAUsar = hBmpCorazon50;  // Mitad
-        } 
-        else if (vidaRestante >= 5) {
-            bmpAUsar = hBmpCorazon25;  // 1/4 (A punto de romperse)
-        } 
-        else {
-            bmpAUsar = hBmpCorazon0;   // Vacío
-        }
-
-        // 4. Dibujar el corazón (Tamaño 32x32 queda bien para fila)
-        if (bmpAUsar) {
-            DibujarImagen(hdc, bmpAUsar, xPos, yPos, 32, 32);
-        }
+void dibujarHUD(HDC hdc, Jugador* jugador, int ancho, int alto) {
+    // 1. VIDA
+    for (int i = 0; i < 5; i++) {
+        int vida = jugador->vidaActual - (i * 20);
+        HBITMAP cor = hBmpCorazon0;
+        if (vida >= 20) cor = hBmpCorazon100;
+        else if (vida >= 15) cor = hBmpCorazon75;
+        else if (vida >= 10) cor = hBmpCorazon50;
+        else if (vida >= 5) cor = hBmpCorazon25;
+        DibujarImagen(hdc, cor, 20 + (i * 32), 20, 32, 32);
     }
 
-    // =========================================================
-    // 2. ARMADURA (Escudos dinámicos)
-    // =========================================================
+    // 2. ARMADURA
     HBITMAP bmpEscudo = hBmpEscudo0;
-    
-    float porcentajeEscudo = 0;
-    if (jugador->armaduraMax > 0) {
-        porcentajeEscudo = (float)jugador->armaduraActual / (float)jugador->armaduraMax;
-    }
+    float pEscudo = (jugador->armaduraMax > 0) ? (float)jugador->armaduraActual / jugador->armaduraMax : 0;
+    if (pEscudo >= 0.8) bmpEscudo = hBmpEscudo100;
+    else if (pEscudo >= 0.6) bmpEscudo = hBmpEscudo75;
+    else if (pEscudo >= 0.4) bmpEscudo = hBmpEscudo50;
+    else if (pEscudo > 0)    bmpEscudo = hBmpEscudo25;
+    if (bmpEscudo) DibujarImagen(hdc, bmpEscudo, 20, 60, 48, 48);
+    char tEscudo[10]; sprintf(tEscudo, "%d", jugador->armaduraActual);
+    SetBkMode(hdc, TRANSPARENT); SetTextColor(hdc, RGB(255,255,255));
+    TextOut(hdc, 75, 75, tEscudo, strlen(tEscudo));
 
-    if (porcentajeEscudo >= 0.8) bmpEscudo = hBmpEscudo100;
-    else if (porcentajeEscudo >= 0.6) bmpEscudo = hBmpEscudo75;
-    else if (porcentajeEscudo >= 0.4) bmpEscudo = hBmpEscudo50;
-    else if (porcentajeEscudo > 0)    bmpEscudo = hBmpEscudo25;
+    // 3. MOCHILA
+    HBITMAP bmpBolso = (jugador->inventarioAbierto) ? hBmpInvAbierto : hBmpInvCerrado;
+    if (bmpBolso) DibujarImagen(hdc, bmpBolso, 20, 120, 64, 64);
 
-    // Dibujar Escudo debajo de la vida (Y=80)
-    if (bmpEscudo) DibujarImagen(hdc, bmpEscudo, 20, 80, 48, 48);
-
-    // Texto numérico escudo
-    char textoEscudo[32];
-    sprintf(textoEscudo, "%d", jugador->armaduraActual);
-    SetBkMode(hdc, TRANSPARENT);
-    SetTextColor(hdc, RGB(255, 255, 255));
-    TextOut(hdc, 75, 95, textoEscudo, strlen(textoEscudo));
-
-    // =========================================================
-    // 3. BOTÓN MOCHILA (Debajo del escudo)
-    // =========================================================
-    int tamanoBolso = 64;
-    int bolsoX = 20;   // Alineado a la izquierda
-    int bolsoY = 140;  // Debajo del escudo (80 + 48 + margen)
-
-    // Lógica visual: Si está abierto usa una imagen, si no la otra
-    HBITMAP bmpBolsoActual = (jugador->inventarioAbierto) ? hBmpInvAbierto : hBmpInvCerrado;
-
-    // Dibujar botón
-    if (bmpBolsoActual) {
-        DibujarImagen(hdc, bmpBolsoActual, bolsoX, bolsoY, tamanoBolso, tamanoBolso);
-    }
-
-    // =========================================================
-    // 4. PANEL DE INVENTARIO (LISTA DE RECURSOS)
-    // =========================================================
+    // 4. PANEL
     if (jugador->inventarioAbierto) {
-        int panW = 220;
-        int panH = 350; // Más alto para que quepan los 6 items
-        
-        // Posición: A la derecha del botón
-        int panX = bolsoX + tamanoBolso + 10; 
-        int panY = bolsoY;
-
-        // --- FONDO DEL PANEL ---
-        HBRUSH brochaFondo = CreateSolidBrush(RGB(40, 40, 40));   // Gris oscuro
-        HBRUSH brochaBorde = CreateSolidBrush(RGB(200, 200, 200)); // Borde claro
-        RECT rectInv = {panX, panY, panX + panW, panY + panH};
-        
-        FillRect(hdc, &rectInv, brochaFondo);
-        FrameRect(hdc, &rectInv, brochaBorde);
-        
-        DeleteObject(brochaFondo); 
-        DeleteObject(brochaBorde);
-
-        // --- TÍTULO ---
-        SetTextColor(hdc, RGB(255, 255, 255));
-        TextOut(hdc, panX + 15, panY + 15, "MOCHILA", 7);
-
-        // --- LISTA DE MATERIALES ---
-        int lineaY = panY + 50;
-        int saltoLinea = 40;
-        char buffer[32];
-        int iconSize = 32;
-
-        // 1. MADERA
-        SetTextColor(hdc, RGB(255, 255, 255)); // Blanco
-        if (hBmpIconoMadera) DibujarImagen(hdc, hBmpIconoMadera, panX + 20, lineaY, iconSize, iconSize);
-        sprintf(buffer, "x %d", jugador->madera);
-        TextOut(hdc, panX + 60, lineaY + 8, buffer, strlen(buffer));
-
-        lineaY += saltoLinea;
-
-        // 2. PIEDRA
-        if (hBmpIconoPiedra) DibujarImagen(hdc, hBmpIconoPiedra, panX + 20, lineaY, iconSize, iconSize);
-        sprintf(buffer, "x %d", jugador->piedra);
-        TextOut(hdc, panX + 60, lineaY + 8, buffer, strlen(buffer));
-
-        lineaY += saltoLinea;
-
-        // 3. ORO
-        SetTextColor(hdc, RGB(255, 215, 0)); // Dorado
-        if (hBmpIconoOro) DibujarImagen(hdc, hBmpIconoOro, panX + 20, lineaY, iconSize, iconSize);
-        sprintf(buffer, "x %d", jugador->oro);
-        TextOut(hdc, panX + 60, lineaY + 8, buffer, strlen(buffer));
-
-        lineaY += saltoLinea;
-
-        // 4. HIERRO
-        SetTextColor(hdc, RGB(192, 192, 192)); // Gris Plata
-        if (hBmpIconoHierro) DibujarImagen(hdc, hBmpIconoHierro, panX + 20, lineaY, iconSize, iconSize);
-        sprintf(buffer, "x %d", jugador->hierro);
-        TextOut(hdc, panX + 60, lineaY + 8, buffer, strlen(buffer));
-
-        lineaY += saltoLinea;
-
-        // 5. COMIDA
-        SetTextColor(hdc, RGB(255, 120, 100)); // Rojizo
-        if (hBmpIconoComida) DibujarImagen(hdc, hBmpIconoComida, panX + 20, lineaY, iconSize, iconSize);
-        sprintf(buffer, "x %d", jugador->comida);
-        TextOut(hdc, panX + 60, lineaY + 8, buffer, strlen(buffer));
-
-        lineaY += saltoLinea;
-
-        // 6. HOJAS
-        SetTextColor(hdc, RGB(144, 238, 144)); // Verde claro
-        if (hBmpIconoHoja) DibujarImagen(hdc, hBmpIconoHoja, panX + 20, lineaY, iconSize, iconSize);
-        sprintf(buffer, "x %d", jugador->hojas);
-        TextOut(hdc, panX + 60, lineaY + 8, buffer, strlen(buffer));
-    }
-}
-/* ========== FUNCIONES ADICIONALES (opcionales) ========== */
-
-void dibujarFondoAnimadoMejorado(HDC hdc, int ancho, int alto, int tiempo)
-{
-    // Gradiente azul marino más profundo
-    for (int y = 0; y < alto; y++)
-    {
-        int azul = 30 + (y * 40) / alto;
-        int verde = 10 + (y * 10) / alto;
-        HBRUSH hBrushLinea = CreateSolidBrush(RGB(5, verde, azul));
-        RECT rectLinea = {0, y, ancho, y + 1};
-        FillRect(hdc, &rectLinea, hBrushLinea);
-        DeleteObject(hBrushLinea);
+        int px = 90, py = 120, pw = 200, ph = 350;
+        HBRUSH fondo = CreateSolidBrush(RGB(40,40,40)); RECT r = {px, py, px+pw, py+ph};
+        FillRect(hdc, &r, fondo); DeleteObject(fondo);
+        SetTextColor(hdc, RGB(255,255,255)); TextOut(hdc, px+10, py+10, "MOCHILA", 7);
+        int iy = py + 40; char buf[32];
+        if(hBmpIconoMadera) DibujarImagen(hdc, hBmpIconoMadera, px+10, iy, 32, 32);
+        sprintf(buf, "x %d", jugador->madera); TextOut(hdc, px+50, iy+8, buf, strlen(buf)); iy+=40;
+        if(hBmpIconoPiedra) DibujarImagen(hdc, hBmpIconoPiedra, px+10, iy, 32, 32);
+        sprintf(buf, "x %d", jugador->piedra); TextOut(hdc, px+50, iy+8, buf, strlen(buf)); iy+=40;
+        if(hBmpIconoOro) DibujarImagen(hdc, hBmpIconoOro, px+10, iy, 32, 32);
+        sprintf(buf, "x %d", jugador->oro); TextOut(hdc, px+50, iy+8, buf, strlen(buf));
     }
 
-    // Estrellas más dinámicas
-    srand(tiempo / 8);
-    for (int i = 0; i < 120; i++)
-    {
-        int x = rand() % ancho;
-        int y = rand() % alto;
-        int brillo = 80 + (rand() % 175);
-        int tamano = 1 + (rand() % 3);
-        int parpadeo = (tiempo + i) % 100;
-
-        if (parpadeo < 80)
-        { // Efecto de parpadeo
-            HBRUSH hBrushEstrella = CreateSolidBrush(RGB(brillo, brillo, brillo));
-            RECT rectEstrella = {x, y, x + tamano, y + tamano};
-            FillRect(hdc, &rectEstrella, hBrushEstrella);
-            DeleteObject(hBrushEstrella);
+    // 5. XP
+    if (hBmpBarraXPVacia && hBmpBarraXPLlena) {
+        BITMAP bm; GetObject(hBmpBarraXPVacia, sizeof(BITMAP), &bm);
+        int xpW = bm.bmWidth; int xpH = bm.bmHeight;
+        int xpX = (ancho - xpW) / 2; int xpY = alto - xpH - 20;
+        DibujarImagen(hdc, hBmpBarraXPVacia, xpX, xpY, xpW, xpH);
+        float pct = 0;
+        if (jugador->experienciaSiguienteNivel > 0) pct = (float)jugador->experiencia / jugador->experienciaSiguienteNivel;
+        if (pct > 1) pct = 1;
+        int fillW = (int)(xpW * pct);
+        if (fillW > 0) {
+            HDC hdcMem = CreateCompatibleDC(hdc); HBITMAP hOld = (HBITMAP)SelectObject(hdcMem, hBmpBarraXPLlena);
+            TransparentBlt(hdc, xpX, xpY, fillW, xpH, hdcMem, 0, 0, fillW, xpH, RGB(255, 0, 255));
+            SelectObject(hdcMem, hOld); DeleteDC(hdcMem);
         }
+        char tNivel[32]; sprintf(tNivel, "NVL %d", jugador->nivel);
+        SetTextColor(hdc, RGB(0, 255, 255)); TextOut(hdc, xpX - 60, xpY + 5, tNivel, strlen(tNivel));
     }
-}
-
-void dibujarBotonMejorado(HDC hdc, int x, int y, int ancho, int alto, const char *texto, BOOL seleccionado, BOOL activo)
-{
-    COLORREF colorFondo, colorTexto, colorBorde, colorSombra, colorBrillo;
-
-    if (seleccionado)
-    {
-        colorFondo = RGB(80, 160, 240);
-        colorTexto = RGB(255, 255, 255);
-        colorBorde = RGB(255, 225, 50);
-        colorSombra = RGB(20, 80, 160);
-        colorBrillo = RGB(120, 200, 255);
-    }
-    else if (activo)
-    {
-        colorFondo = RGB(60, 120, 200);
-        colorTexto = RGB(255, 255, 255);
-        colorBorde = RGB(40, 90, 150);
-        colorSombra = RGB(15, 50, 100);
-        colorBrillo = RGB(90, 160, 220);
-    }
-    else
-    {
-        colorFondo = RGB(80, 80, 120);
-        colorTexto = RGB(200, 200, 200);
-        colorBorde = RGB(60, 60, 90);
-        colorSombra = RGB(40, 40, 70);
-        colorBrillo = RGB(100, 100, 140);
-    }
-
-    // Dibujar sombra más suave
-    HBRUSH hBrushSombra = CreateSolidBrush(colorSombra);
-    RECT rectSombra = {x + 4, y + 4, x + ancho + 4, y + alto + 4};
-    FillRect(hdc, &rectSombra, hBrushSombra);
-    DeleteObject(hBrushSombra);
-
-    // Dibujar borde
-    HBRUSH hBrushBorde = CreateSolidBrush(colorBorde);
-    RECT rectBorde = {x - 3, y - 3, x + ancho + 3, y + alto + 3};
-    FillRect(hdc, &rectBorde, hBrushBorde);
-    DeleteObject(hBrushBorde);
-
-    // Dibujar fondo principal con gradiente
-    HBRUSH hBrushFondo = CreateSolidBrush(colorFondo);
-    RECT rectBoton = {x, y, x + ancho, y + alto};
-    FillRect(hdc, &rectBoton, hBrushFondo);
-
-    // Efecto de gradiente superior
-    if (seleccionado || activo)
-    {
-        HBRUSH hBrushGradiente = CreateSolidBrush(colorBrillo);
-        RECT rectGradiente = {x, y, x + ancho, y + alto / 4};
-        FillRect(hdc, &rectGradiente, hBrushGradiente);
-        DeleteObject(hBrushGradiente);
-    }
-
-    // Configurar texto
-    SetBkMode(hdc, TRANSPARENT);
-    SetTextColor(hdc, colorTexto);
-
-    // Fuente del botón mejorada
-    HFONT hFont = CreateFont(
-        seleccionado ? 26 : 22,
-        0, 0, 0,
-        seleccionado ? FW_HEAVY : FW_BOLD,
-        FALSE, FALSE, FALSE,
-        DEFAULT_CHARSET,
-        OUT_OUTLINE_PRECIS,
-        CLIP_DEFAULT_PRECIS,
-        CLEARTYPE_QUALITY,
-        VARIABLE_PITCH,
-        TEXT("Arial"));
-
-    HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
-
-    // Dibujar texto
-    if (strcmp(texto, "INICIAR PARTIDA") == 0)
-    {
-        DrawText(hdc, TEXT("START GAME"), -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    }
-    else if (strcmp(texto, "RESUMEN RECURSOS") == 0)
-    {
-        DrawText(hdc, TEXT("RESOURCES SUMMARY"), -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    }
-    else if (strcmp(texto, "SALIR") == 0)
-    {
-        DrawText(hdc, TEXT("EXIT GAME"), -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    }
-    else if (strcmp(texto, "VOLVER AL MENÚ") == 0)
-    {
-        DrawText(hdc, TEXT("BACK TO MENU"), -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    }
-    else
-    {
-        DrawTextA(hdc, texto, -1, &rectBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    }
-
-    // Restaurar y limpiar
-    SelectObject(hdc, hOldFont);
-    DeleteObject(hFont);
-    DeleteObject(hBrushFondo);
 }
