@@ -115,7 +115,7 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado) {
     int startX = (ancho - totalAncho) / 2;
     
     // Posición Y fija (Un poco más abajo del centro)
-    int fixedY = (alto / 2) + 100; 
+    int fixedY = (alto / 2) ; 
 
     // Botón 1: JUGAR (Izquierda)
     HBITMAP imgJugar = (hBmpBtnJugar) ? hBmpBtnJugar : hBmpBoton;
@@ -130,7 +130,7 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado) {
     DibujarImagen(hdc, imgInstr, startX + (btnAncho + separacion)*2, fixedY, btnAncho, btnAlto);
 
     // --- BOTÓN SALIR (SE MANTIENE EN ESQUINA) ---
-    int salirW = 200; int salirH = 60; int margen = 30;
+    int salirW = 500; int salirH = 200; int margen = 30;
     int salirX = ancho - salirW - margen;
     int salirY = alto - salirH - margen;
 
@@ -154,7 +154,7 @@ void actualizarPuntoMenu(EstadoJuego *estado, int x, int y, HWND hwnd) {
     int separacion = 30;
     int totalAncho = (btnAncho * 3) + (separacion * 2);
     int startX = (ancho - totalAncho) / 2;
-    int fixedY = (alto / 2) + 100;
+    int fixedY = (alto / 2) ;
 
     estado->opcionSeleccionada = -1;
 
@@ -171,7 +171,7 @@ void actualizarPuntoMenu(EstadoJuego *estado, int x, int y, HWND hwnd) {
         estado->opcionSeleccionada = 2;
     
     // 3: SALIR (Esquina)
-    int salirW = 200; int salirH = 60; int margen = 30;
+    int salirW = 500; int salirH = 200; int margen = 30;
     if (verificarColisionBoton(x, y, ancho - salirW - margen, alto - salirH - margen, salirW, salirH))
         estado->opcionSeleccionada = 3;
 }
