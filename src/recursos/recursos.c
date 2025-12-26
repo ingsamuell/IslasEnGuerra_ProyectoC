@@ -22,11 +22,14 @@ HBITMAP hBmpIslaCentral = NULL; HBITMAP hBmpIslaNoreste = NULL;
 HBITMAP hBmpCastilloJugador = NULL; HBITMAP hBmpCastilloEnemigo1 = NULL;
 HBITMAP hBmpCastilloEnemigo2 = NULL; HBITMAP hBmpCastilloEnemigo3 = NULL;
 HBITMAP hBmpArbol = NULL; HBITMAP hBmpRoca = NULL;
-HBITMAP hBmpIconoMadera = NULL; HBITMAP hBmpIconoPiedra = NULL; HBITMAP hBmpIconoOro = NULL;
+HBITMAP hBmpIconoMadera = NULL; HBITMAP hBmpIconoPiedra = NULL; HBITMAP hBmpIconoOro = NULL; HBITMAP hBmpIconoEspada = NULL; HBITMAP hBmpIconoPico = NULL;
 HBITMAP hBmpIconoHierro = NULL; HBITMAP hBmpIconoComida = NULL; HBITMAP hBmpIconoHoja = NULL;
 HBITMAP hBmpCorazon100 = NULL; HBITMAP hBmpCorazon75 = NULL; HBITMAP hBmpCorazon50 = NULL; HBITMAP hBmpCorazon25 = NULL; HBITMAP hBmpCorazon0 = NULL;
 HBITMAP hBmpEscudo100 = NULL; HBITMAP hBmpEscudo75 = NULL; HBITMAP hBmpEscudo50 = NULL; HBITMAP hBmpEscudo25 = NULL; HBITMAP hBmpEscudo0 = NULL;
 HBITMAP hBmpBarraXPVacia = NULL; HBITMAP hBmpBarraXPLlena = NULL;
+
+HBITMAP hBmpArmaduraAnim[4][3];
+HBITMAP hBmpTienda[2];
 
 HBITMAP CargarImagen(const char *ruta) {
     HBITMAP hBmp = (HBITMAP)LoadImage(NULL, ruta, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
@@ -78,6 +81,20 @@ void CargarRecursos() {
     hBmpIslaNoreste = CargarImagen("assets/mundo/isla_principal.bmp");
     hBmpCorazon100 = CargarImagen("assets/ui/corazon_100.bmp");
     // ... (el resto de tus cargas habituales van aquí) ...
+
+    // Cargar Tienda Animada (Gato)
+    hBmpTienda[0] = CargarImagen("assets/mundo/tienda_gato1.bmp");
+    hBmpTienda[1] = CargarImagen("assets/mundo/tienda_gato2.bmp");
+    // Cargar Armadura (12 frames)
+ char ruta[100];
+    for (int d = 0; d < 4; d++) {
+        for (int f = 0; f < 3; f++) {
+            sprintf(ruta, "assets/jugador/arm_%d_%d.bmp", d, f);
+            hBmpArmaduraAnim[d][f] = CargarImagen(ruta);
+        }
+    }
+    hBmpIconoEspada = CargarImagen("assets/items/item_espada.bmp");
+    hBmpIconoPico = CargarImagen("assets/items/item_pico.bmp");
 }
 
 void LiberarRecursos() {

@@ -6,6 +6,16 @@
 
 #define MAX_ISLAS 5
 Isla misIslas[MAX_ISLAS];
+HBITMAP hBmpTienda[2] = { NULL, NULL };
+int frameTienda = 0; /* frame global para la animación de la tienda (actualizado en main.c) */
+
+/* Animaciones de armadura (fallback si no están declaradas en recursos.h) */
+HBITMAP hBmpArmaduraAnim[4][3] = {
+    { NULL, NULL, NULL },
+    { NULL, NULL, NULL },
+    { NULL, NULL, NULL },
+    { NULL, NULL, NULL }
+};
 
 // --- INICIALIZACIÓN ---
 void inicializarIslas() {
@@ -197,13 +207,160 @@ void procesarEnterMenu(HWND hwnd, EstadoJuego *estado) {
     }
 }
 
+// En mapa.c
+void dibujarTiendasEnMundo(HDC hdc, Camera cam, int ancho, int alto, EstadoJuego *est) {
+    // MAX_ISLAS debe estar definido en tu global.h o mapa.h
+    for (int i = 0; i < MAX_ISLAS; i++) {
+        if (misIslas[i].activa) {
+            // Posición: Justo en el centro de la isla
+            int tx_mundo = misIslas[i].x + (misIslas[i].ancho / 2);
+            int ty_mundo = misIslas[i].y + (misIslas[i].alto / 2);
+
+            // Conversión a pantalla con ZOOM
+            int sx = (tx_mundo - cam.x) * cam.zoom + (ancho / 2);
+            int sy = (ty_mundo - cam.y) * cam.zoom + (alto / 2);
+            int tam = 80 * cam.zoom;
+
+            // Animación del gato (usa el frameTienda que actualizas en main.c)
+            int f = (est->frameTienda / 20) % 2;
+            
+            if (hBmpTienda[f]) {
+                DibujarImagen(hdc, hBmpTienda[f], sx - tam/2, sy - tam/2, tam, tam);
+            }
+        }
+    }
+}
+// En mapa.c
+void procesarClickMochila(int mouseX, int mouseY, Jugador *jugador, HWND hwnd) {
+    if (!jugador->inventarioAbierto) return;
+
+    int px = 90, py = 120; // Posición del panel de mochila
+    int iy_comida = py + 240; // Ajusta esta altura según tu diseño actual
+
+    // --- LÓGICA PARA COMER ---
+    // Si el clic está en el área del icono de comida
+    if (mouseX >= px + 10 && mouseX <= px + 200 && mouseY >= iy_comida && mouseY <= iy_comida + 32) {
+        
+        // Solo comer si tiene comida y le falta vida
+        if (jugador->comida > 0 && jugador->vidaActual < jugador->vidaMax) {
+            
+            jugador->vidaActual += 25; // Cantidad de vida que recupera
+            jugador->comida--;         // Restar una unidad
+            
+            // Evitar que la vida pase del máximo
+            if (jugador->vidaActual > jugador->vidaMax) {
+                jugador->vidaActual = jugador->vidaMax;
+            }
+
+            // Forzar redibujado para ver la vida subir inmediatamente
+            InvalidateRect(hwnd, NULL, FALSE);
+        }
+    }
+}
+
+// En mapa.c
+// En src/mapa/mapa.c
+
+// Asegúrate de incluir recursos
+#include "recursos/recursos.h" 
+
+void dibujarTiendasEnIslas(HDC hdc, Camera cam, int ancho, int alto, int frameTienda) {
+    for (int i = 0; i < MAX_ISLAS; i++) {
+        // Solo dibujar si la isla existe (activa)
+        if (misIslas[i].activa) {
+            
+            // COORDENADAS:
+            // Centramos la tienda en la isla.
+            // Ajuste: Restamos un poco a Y para que no quede muy abajo.
+            int tiendaMundoX = misIslas[i].x + (misIslas[i].ancho / 2);
+            int tiendaMundoY = misIslas[i].y + (misIslas[i].alto / 2) - 50; 
+
+            // CONVERSIÓN A PANTALLA:
+            int tx = (tiendaMundoX - cam.x) * cam.zoom + (ancho / 2);
+            int ty = (tiendaMundoY - cam.y) * cam.zoom + (alto / 2);
+            
+            // TAMAÑO: Ajusta el 128 según qué tan grande sea tu dibujo pixel art
+            int tam = 128 * cam.zoom; 
+
+            // ANIMACIÓN:
+            // Usamos frameTienda. Cambia cada 20 ciclos.
+            int f = (frameTienda / 20) % 2; 
+            
+            if (hBmpTienda[f] != NULL) {
+                // Dibujamos centrada (restamos tam/2)
+                DibujarImagen(hdc, hBmpTienda[f], tx - (tam/2), ty - (tam/2), tam, tam);
+                
+                // (Opcional) Texto de depuración para ver si se dibuja
+                // TextOut(hdc, tx, ty, "TIENDA AQUI", 11); 
+            }
+        }
+    }
+}
+
+void dibujarTiendaInteractiva(HDC hdc, Jugador* j) {
+    int tx = 450, ty = 120;
+    
+    // Fondo
+    SelectObject(hdc, GetStockObject(BLACK_BRUSH));
+    Rectangle(hdc, tx, ty, tx + 300, ty + 350);
+    
+    SetTextColor(hdc, RGB(255, 215, 0)); // Color Dorado
+    TextOut(hdc, tx + 80, ty + 10, "--- MERCADER ---", 16);
+
+    // Items
+    char b[100];
+    SetTextColor(hdc, RGB(255, 255, 255));
+
+    // 1. ESPADA
+    sprintf(b, "1. Espada: 3 Hierro + 20 Oro %s", j->tieneEspada ? "[OK]" : "");
+    TextOut(hdc, tx + 20, ty + 60, b, strlen(b));
+
+    // 2. PICO
+    sprintf(b, "2. Pico: 5 Piedra + 15 Oro %s", j->tienePico ? "[OK]" : "");
+    TextOut(hdc, tx + 20, ty + 110, b, strlen(b));
+
+    // 3. ARMADURA
+    sprintf(b, "3. Armadura: 5 Hierro + 50 Oro %s", j->tieneArmadura ? "[OK]" : "");
+    TextOut(hdc, tx + 20, ty + 160, b, strlen(b));
+}
+
+void procesarClickMochilaTienda(int mx, int my, Jugador *j, HWND hwnd) {
+    if (!j->inventarioAbierto) return;
+
+    int tx = 450, ty = 120; // Posición de la tienda en pantalla
+
+    // COMPRAR ARMADURA (5 Hierro + 50 Oro)
+    if (mx >= tx && mx <= tx + 300 && my >= ty + 50 && my <= ty + 90) {
+        if (j->hierro >= 5 && j->oro >= 50 && !j->tieneArmadura) {
+            j->hierro -= 5; j->oro -= 50;
+            j->tieneArmadura = 1;
+            j->frameDestello = 15;
+            InvalidateRect(hwnd, NULL, FALSE);
+        }
+    }
+    
+    // EQUIPAR/QUITAR (Click en el ítem dentro de la mochila)
+    // Supongamos que el icono de armadura está en px+10, py+200
+    if (mx >= 100 && mx <= 300 && my >= 320 && my <= 360) {
+        if (j->tieneArmadura) {
+            j->armaduraEquipada = !j->armaduraEquipada;
+            j->frameDestello = 8;
+            InvalidateRect(hwnd, NULL, FALSE);
+        }
+    }
+    // Si la compra fue exitosa o si toca al gato:
+    PlaySound(TEXT("assets/sonidos/miau.wav"), NULL, SND_FILENAME | SND_ASYNC);
+}
 // --- DIBUJADO DEL JUEGO Y HUD (SIN CAMBIOS) ---
-void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto) {
-    HBRUSH agua = CreateSolidBrush(RGB(0, 100, 180)); RECT r = {0, 0, ancho, alto};
-    FillRect(hdc, &r, agua); DeleteObject(agua);
+void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda) {
+    HBRUSH agua = CreateSolidBrush(RGB(0, 100, 180)); 
+    RECT r = {0, 0, ancho, alto};
+    FillRect(hdc, &r, agua); 
+    DeleteObject(agua);
 
     for (int i = 0; i < MAX_ISLAS; i++) {
         if (!misIslas[i].activa) continue;
+        // ... (código de dibujo de islas igual) ...
         int sx = (misIslas[i].x - cam.x) * cam.zoom;
         int sy = (misIslas[i].y - cam.y) * cam.zoom;
         int sw = misIslas[i].ancho * cam.zoom;
@@ -211,17 +368,39 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
         HBITMAP img = (i == 0) ? hBmpIslaCentral : hBmpIslaNoreste;
         if (img) DibujarImagen(hdc, img, sx, sy, sw, sh);
     }
+    
+    // Ahora sí podemos pasar frameTienda porque lo recibimos como argumento
+    dibujarTiendasEnIslas(hdc, cam, ancho, alto, frameTienda);
 }
 
+
+// DIBUJAR AL JUGADOR (Con Armadura y Destello)
 void dibujarJugador(HDC hdc, Jugador jugador, Camera cam) {
     RECT r; GetClipBox(hdc, &r);
     int tam = 32 * cam.zoom;
     int cx = (r.right / 2) - (tam/2);
     int cy = (r.bottom / 2) - (tam/2);
+
+    // 1. Cuerpo base
     HBITMAP sprite = hBmpJugadorAnim[jugador.direccion][jugador.frameAnim];
-    if (!sprite) sprite = hBmpJugador;
-    DibujarImagen(hdc, sprite, cx, cy, tam, tam);
+    DibujarImagen(hdc, (sprite ? sprite : hBmpJugador), cx, cy, tam, tam);
+
+    // 2. Armadura encima (Si está equipada)
+    if (jugador.armaduraEquipada) {
+        HBITMAP sArma = hBmpArmaduraAnim[jugador.direccion][jugador.frameAnim];
+        if (sArma) DibujarImagen(hdc, sArma, cx, cy, tam, tam);
+    }
+
+    // 3. Efecto Destello Blanco
+    if (jugador.frameDestello > 0) {
+        HBRUSH luz = CreateSolidBrush(RGB(255, 255, 255));
+        HBRUSH old = (HBRUSH)SelectObject(hdc, luz);
+        Ellipse(hdc, cx - 10, cy - 10, cx + tam + 10, cy + tam + 10);
+        SelectObject(hdc, old);
+        DeleteObject(luz);
+    }
 }
+
 
 void dibujarHUD(HDC hdc, Jugador* jugador, int ancho, int alto) {
     // 1. VIDA
@@ -284,4 +463,26 @@ void dibujarHUD(HDC hdc, Jugador* jugador, int ancho, int alto) {
         char tNivel[32]; sprintf(tNivel, "NVL %d", jugador->nivel);
         SetTextColor(hdc, RGB(0, 255, 255)); TextOut(hdc, xpX - 60, xpY + 5, tNivel, strlen(tNivel));
     }
+
+    // Variable para saber si estamos cerca de alguna tienda
+BOOL cercaDeTienda = FALSE;
+
+for (int i = 0; i < MAX_ISLAS; i++) {
+    if (misIslas[i].activa) {
+        int tx = misIslas[i].x + (misIslas[i].ancho / 2);
+        int ty = misIslas[i].y + 60;
+        
+        // Calcular distancia al jugador
+        float dist = sqrt(pow(jugador->x - tx, 2) + pow(jugador->y - ty, 2));
+        if (dist < 120) { // Radio de interacción
+            cercaDeTienda = TRUE;
+            break; 
+        }
+    }
+}
+
+// Si está cerca, dibujar el menú de la derecha
+if (jugador->inventarioAbierto && cercaDeTienda) {
+    dibujarTiendaInteractiva(hdc, jugador); 
+}
 }

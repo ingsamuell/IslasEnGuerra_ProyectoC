@@ -47,11 +47,18 @@ typedef struct {
     int comida;
     int hojas;
 
-    // --- ANIMACIÓN ---
+// --- ANIMACIÓN ---
     int direccion;      // 0, 1, 2, 3
     int frameAnim;      // 0=Base, 1=PieIzq, 2=PieDer
     int pasoAnimacion;  // Contador para velocidad de animación
-} Jugador;
+
+    int carne;            // Cantidad de carne disponible
+    int tieneArmadura;    // 1 si el objeto existe en el inventario
+    int armaduraEquipada; // 1 si la lleva puesta
+    int tieneEspada;      // 1 si la compró
+    int tienePico;        // 1 si lo compró
+    int frameDestello;    // Para el efecto visual blanco
+    } Jugador;
 
 // Otras estructuras globales si las tienes (como EstadoJuego)
 typedef struct {
@@ -59,8 +66,10 @@ typedef struct {
     int enPartida;
     int mostrarResumen; // Inventario
     int opcionSeleccionada;
-
+    
     POINT puntoMouse;
+        int frameTienda;      // Contador para la animación del gato
+
 } EstadoJuego;
 
 typedef struct {
