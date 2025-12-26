@@ -155,7 +155,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 dibujarMenuConSprites(hdcMem, hwnd, &estadoJuego);
             } else {
                 // 1. DIBUJAR MUNDO (Primero)
-                dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto);
+                dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto, estadoJuego.frameTienda);
                 
                 // 2. DIBUJAR JUGADOR (¡AQUÍ ESTÁ LA CLAVE!)
                 // Asegúrate de que esta línea exista y esté DESPUÉS del mapa

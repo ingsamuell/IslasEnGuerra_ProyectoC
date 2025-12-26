@@ -16,7 +16,7 @@ void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int 
 void actualizarCamara(Camera *camara, Jugador jugador);
 
 /* ========== DIBUJADO DEL JUEGO (ÚNICA FUNCIÓN) ========== */
-void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera camara, int anchoVentana, int altoVentana);
+void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda);
 void dibujarJugador(HDC hdc, Jugador jugador, Camera camara);
 void dibujarHUD(HDC hdc, Jugador* jugador, int anchoVentana, int altoVentana);
 
