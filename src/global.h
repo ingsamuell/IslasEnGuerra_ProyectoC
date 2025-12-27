@@ -4,9 +4,9 @@
 #include <windows.h> // Necesario para tipos de datos
 
 // --- DEFINICIONES GLOBALES ---
-#define MUNDO_FILAS 100
-#define MUNDO_COLUMNAS 100
-#define TAMANO_CELDA_BASE 32     // Tamaño base de celda para zoom
+#define MUNDO_FILAS 200       // Doble de filas
+#define MUNDO_COLUMNAS 200    // Doble de columnas
+#define TAMANO_CELDA_BASE 16  // Mitad de tamaño (Más precisión)
 #define PANTALLA_FILAS 60        // 600 / 10 = 60
 #define PANTALLA_COLUMNAS 80     // 800 / 10 = 80
 #define TAMANO_CELDA 32   

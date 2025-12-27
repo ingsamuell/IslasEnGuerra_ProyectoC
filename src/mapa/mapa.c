@@ -14,61 +14,115 @@ void inicializarIslas()
     for (int i = 0; i < MAX_ISLAS; i++)
         misIslas[i].activa = 0;
 
-    // ISLA CENTRAL (Grande 1000x1000) - Centro en 1600,1600
-    // Posición = 1600 - (1000/2) = 1100
+    // ISLA CENTRAL (Grande)
     misIslas[0].activa = 1;
     misIslas[0].x = 1100;
     misIslas[0].y = 1100;
     misIslas[0].ancho = 1000;
     misIslas[0].alto = 1000;
-    misIslas[0].margen = 80; // Margen de agua más grande
+    misIslas[0].margen = 0; // YA NO NECESITAMOS MARGEN MANUAL, LO LEE DE LA IMAGEN
 
-    // ISLA NORTE (Sec2 700x700)
-    // Arriba de la central (Y = 1100 - 200 margen - 700 alto = 200)
-    // X Centrada = 1600 - 350 = 1250
+    // ISLA NORTE
     misIslas[1].activa = 1;
     misIslas[1].x = 1250;
     misIslas[1].y = 200;
     misIslas[1].ancho = 700;
     misIslas[1].alto = 700;
-    misIslas[1].margen = 60;
+    misIslas[1].margen = 0;
 
-    // ISLA SUR (Sec4 500x500)
-    // Abajo de la central (Y = 1100 + 1000 + 200 margen = 2300)
-    // X Centrada = 1600 - 250 = 1350
+    // ISLA SUR
     misIslas[2].activa = 1;
     misIslas[2].x = 1350;
     misIslas[2].y = 2300;
     misIslas[2].ancho = 500;
     misIslas[2].alto = 500;
-    misIslas[2].margen = 50;
+    misIslas[2].margen = 0;
 
-    // ISLA OESTE (Sec1 320x250)
-    // Izquierda de la central (X = 1100 - 200 margen - 320 ancho = 580)
-    // Y Centrada = 1600 - 125 = 1475
+    // ISLA OESTE
     misIslas[3].activa = 1;
     misIslas[3].x = 580;
     misIslas[3].y = 1475;
     misIslas[3].ancho = 320;
     misIslas[3].alto = 250;
-    misIslas[3].margen = 40;
+    misIslas[3].margen = 0;
 
-    // ISLA ESTE (Sec3 400x400)
-    // Derecha de la central (X = 1100 + 1000 + 200 margen = 2300)
-    // Y Centrada = 1600 - 200 = 1400
+    // ISLA ESTE
     misIslas[4].activa = 1;
     misIslas[4].x = 2300;
     misIslas[4].y = 1400;
     misIslas[4].ancho = 400;
     misIslas[4].alto = 400;
-    misIslas[4].margen = 50;
+    misIslas[4].margen = 0;
+}
+
+// --- NUEVA FUNCIÓN MAGICA: ESCANEAR BMP ---
+void generarColisionDesdeImagen(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], HBITMAP hBmp, int mundoX, int mundoY) {
+    if (!hBmp) return;
+
+    // 1. Crear un contexto de memoria para leer el BMP
+    HDC hdcScreen = GetDC(NULL);
+    HDC hdcMem = CreateCompatibleDC(hdcScreen);
+    HBITMAP hOld = (HBITMAP)SelectObject(hdcMem, hBmp);
+
+    // 2. Obtener dimensiones reales de la imagen
+    BITMAP bm;
+    GetObject(hBmp, sizeof(BITMAP), &bm);
+
+    // 3. Escanear la imagen saltando de celda en celda (cada 16px)
+    // Usamos TAMANO_CELDA_BASE (16) para ir rápido y coincidir con la rejilla
+    for (int y = 0; y < bm.bmHeight; y += TAMANO_CELDA_BASE) {
+        for (int x = 0; x < bm.bmWidth; x += TAMANO_CELDA_BASE) {
+            
+            // Leemos el píxel en el CENTRO de la celda para mayor precisión
+            // (x + 8, y + 8)
+            COLORREF color = GetPixel(hdcMem, x + (TAMANO_CELDA_BASE/2), y + (TAMANO_CELDA_BASE/2));
+
+            // 4. LÓGICA DE DETECCIÓN
+            // Si el color NO es Magenta (255, 0, 255), entonces es Tierra.
+            if (color != RGB(255, 0, 255)) {
+                
+                // Calcular posición en la Matriz Global
+                int gridX = (mundoX + x) / TAMANO_CELDA_BASE;
+                int gridY = (mundoY + y) / TAMANO_CELDA_BASE;
+
+                // Validar límites y marcar
+                if (gridY >= 0 && gridY < MUNDO_FILAS && gridX >= 0 && gridX < MUNDO_COLUMNAS) {
+                    mapa[gridY][gridX] = 1; // 1 = TIERRA
+                }
+            }
+        }
+    }
+
+    // Limpieza
+    SelectObject(hdcMem, hOld);
+    DeleteDC(hdcMem);
+    ReleaseDC(NULL, hdcScreen);
 }
 
 void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
 {
+    // 1. Llenar todo de agua al principio
     for (int i = 0; i < MUNDO_FILAS; i++)
         for (int j = 0; j < MUNDO_COLUMNAS; j++)
             mapa[i][j] = 0;
+
+    // 2. Escanear cada imagen de isla y "estamparla" en el mapa
+    // Esto copia la forma exacta (sin el magenta) a la matriz de colisión
+    
+    // Isla Central
+    if (misIslas[0].activa) generarColisionDesdeImagen(mapa, hBmpIslaGrande, misIslas[0].x, misIslas[0].y);
+    
+    // Isla Norte
+    if (misIslas[1].activa) generarColisionDesdeImagen(mapa, hBmpIslaSec2, misIslas[1].x, misIslas[1].y);
+    
+    // Isla Sur
+    if (misIslas[2].activa) generarColisionDesdeImagen(mapa, hBmpIslaSec4, misIslas[2].x, misIslas[2].y);
+    
+    // Isla Oeste
+    if (misIslas[3].activa) generarColisionDesdeImagen(mapa, hBmpIslaSec1, misIslas[3].x, misIslas[3].y);
+    
+    // Isla Este
+    if (misIslas[4].activa) generarColisionDesdeImagen(mapa, hBmpIslaSec3, misIslas[4].x, misIslas[4].y);
 }
 
 void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
@@ -86,8 +140,8 @@ void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FIL
     jugador->nivel = 1;
     jugador->experiencia = 0;
     jugador->experienciaSiguienteNivel = 100;
-    jugador->nivelMochila = 1; // Empieza con la bolsa pequeña
-    jugador->modoTienda = 0; // Empieza en modo comprar
+    jugador->nivelMochila = 1; 
+    jugador->modoTienda = 0; 
 
     // Configuración inicial
     estado->enPartida = 0;
@@ -97,45 +151,42 @@ void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FIL
 }
 
 // --- FÍSICA Y MOVIMIENTO ---
-int EsSuelo(int x, int y)
+int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
 {
-    for (int i = 0; i < MAX_ISLAS; i++)
-    {
-        if (!misIslas[i].activa)
-            continue;
-        Isla is = misIslas[i];
-        if (x >= is.x + is.margen && x <= is.x + is.ancho - is.margen &&
-            y >= is.y + is.margen && y <= is.y + is.alto - is.margen)
-            return 1;
+    // Convertir pixel a celda
+    int col = x / TAMANO_CELDA_BASE;
+    int fila = y / TAMANO_CELDA_BASE;
+
+    // Límites del mundo
+    if (fila < 0 || fila >= MUNDO_FILAS || col < 0 || col >= MUNDO_COLUMNAS) {
+        return 0; // Fuera es agua
     }
-    return 0;
+
+    return (mapa[fila][col] == 1);
 }
 
 void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy)
 {
-    if (dy > 0)
-        jugador->direccion = DIR_ABAJO;
-    else if (dy < 0)
-        jugador->direccion = DIR_ARRIBA;
-    else if (dx < 0)
-        jugador->direccion = DIR_IZQUIERDA;
-    else if (dx > 0)
-        jugador->direccion = DIR_DERECHA;
+    if (dy > 0) jugador->direccion = DIR_ABAJO;
+    else if (dy < 0) jugador->direccion = DIR_ARRIBA;
+    else if (dx < 0) jugador->direccion = DIR_IZQUIERDA;
+    else if (dx > 0) jugador->direccion = DIR_DERECHA;
 
     jugador->pasoAnimacion++;
     int estado = (jugador->pasoAnimacion / 4) % 4;
-    if (estado == 0)
-        jugador->frameAnim = 1;
-    else if (estado == 1)
-        jugador->frameAnim = 0;
-    else if (estado == 2)
-        jugador->frameAnim = 2;
-    else if (estado == 3)
-        jugador->frameAnim = 0;
+    if (estado == 0) jugador->frameAnim = 1;
+    else if (estado == 1) jugador->frameAnim = 0;
+    else if (estado == 2) jugador->frameAnim = 2;
+    else if (estado == 3) jugador->frameAnim = 0;
 
     int futuraX = jugador->x + (dx * jugador->velocidad);
     int futuraY = jugador->y + (dy * jugador->velocidad);
-    if (EsSuelo(futuraX, futuraY))
+    
+    // Verificamos colisión en los PIES (centro abajo)
+    int colisionX = futuraX + 16; 
+    int colisionY = futuraY + 30; 
+
+    if (EsSuelo(colisionX, colisionY, mapa))
     {
         jugador->x = futuraX;
         jugador->y = futuraY;
@@ -150,10 +201,8 @@ void actualizarCamara(Camera *camara, Jugador jugador)
     int centroY = (altoPantalla / 2) / camara->zoom;
     camara->x = jugador.x - centroX;
     camara->y = jugador.y - centroY;
-    if (camara->x < 0)
-        camara->x = 0;
-    if (camara->y < 0)
-        camara->y = 0;
+    if (camara->x < 0) camara->x = 0;
+    if (camara->y < 0) camara->y = 0;
 }
 
 // --- DIBUJADO DEL MENÚ (MEDIDAS ORIGINALES RESTAURADAS) ---
@@ -435,31 +484,17 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
 // --- DIBUJADO DE TIENDAS ---
 void dibujarTiendasEnIslas(HDC hdc, Camera cam, int ancho, int alto, int frameTienda)
 {
-    // Coordenadas FIJAS en el mundo (Isla Central, esquina inferior izquierda)
+    // Misma lógica de tiendas
     int tiendaMundoX = 1450;
     int tiendaMundoY = 1900;
-
-    // Conversión a Pantalla (Igual que las islas: Mundo - Camara * Zoom)
     int tx = (tiendaMundoX - cam.x) * cam.zoom;
     int ty = (tiendaMundoY - cam.y) * cam.zoom;
-
-    // Tamaño que escala con el zoom
     int tam = 50 * cam.zoom;
-
-    // Animación
     int f = (frameTienda / 20) % 2;
 
-    // Solo dibujamos si la tienda está dentro de la pantalla (Optimización básica)
-    if (tx + tam >= 0 && tx - tam <= ancho && ty + tam >= 0 && ty - tam <= alto)
-    {
+    if (tx + tam >= 0 && tx - tam <= ancho && ty + tam >= 0 && ty - tam <= alto) {
         if (hBmpTienda[f] != NULL)
-        {
-            // Dibujamos centrada en la coordenada (tx, ty)
             DibujarImagen(hdc, hBmpTienda[f], tx - (tam / 2), ty - (tam / 2), tam, tam);
-
-            // (Opcional) Texto pequeño para identificarla si quieres debug
-            // SetTextColor(hdc, RGB(255, 255, 0)); TextOut(hdc, tx, ty, "TIENDA", 6);
-        }
     }
 }
 
@@ -656,19 +691,36 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
         HBITMAP img = NULL;
         switch(i) {
             case 0: img = hBmpIslaGrande; break;
-            case 1: img = hBmpIslaSec2; break; // Norte
-            case 2: img = hBmpIslaSec4; break; // Sur
-            case 3: img = hBmpIslaSec1; break; // Oeste
-            case 4: img = hBmpIslaSec3; break; // Este
+            case 1: img = hBmpIslaSec2; break; 
+            case 2: img = hBmpIslaSec4; break; 
+            case 3: img = hBmpIslaSec1; break; 
+            case 4: img = hBmpIslaSec3; break; 
         }
 
         if (img) DibujarImagen(hdc, img, sx, sy, sw, sh);
     }
 
-    // Dibujar Tiendas (Asegúrate de que la posición de la tienda esté en una isla válida)
-    // Nota: La tienda estaba en (1450, 1900). Como la Isla Grande ahora va de 1100 a 2100 en Y,
-    // 1900 sigue siendo válido (parte inferior). ¡No necesitas cambiar nada aquí!
+    // Dibujar Tiendas
     dibujarTiendasEnIslas(hdc, cam, ancho, alto, frameTienda);
+
+    // --- DEBUG VISUAL (Opcional: Descomentar para ver la rejilla generada por la imagen) ---
+    
+    HBRUSH bTierra = CreateSolidBrush(RGB(255, 0, 0)); // Rojo
+    for (int y = 0; y < MUNDO_FILAS; y++) {
+        for (int x = 0; x < MUNDO_COLUMNAS; x++) {
+            if (mapa[y][x] == 1) { // Si es tierra
+                RECT rd = {
+                    (x * TAMANO_CELDA_BASE - cam.x) * cam.zoom,
+                    (y * TAMANO_CELDA_BASE - cam.y) * cam.zoom,
+                    (x * TAMANO_CELDA_BASE + TAMANO_CELDA_BASE - cam.x) * cam.zoom, 
+                    (y * TAMANO_CELDA_BASE + TAMANO_CELDA_BASE - cam.y) * cam.zoom  
+                };
+                FrameRect(hdc, &rd, bTierra); 
+            }
+        }
+    }
+    DeleteObject(bTierra);
+    
 }
 
 void dibujarItemRejilla(HDC hdc, HBITMAP icono, int cantidad, int maximo, int x, int y, const char *nombre)
