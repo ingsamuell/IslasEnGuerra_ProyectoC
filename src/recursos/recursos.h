@@ -6,25 +6,23 @@
 
 // --- VARIABLES GLOBALES (HBITMAP) ---
 
-// 1. MENÚ: Imágenes Específicas (NUEVO)
+// 1. MENÚ
 extern HBITMAP hBmpFondoMenu;
 extern HBITMAP hBmpBtnJugar;
 extern HBITMAP hBmpBtnPartidas;
 extern HBITMAP hBmpBtnInstrucciones;
 extern HBITMAP hBmpBtnSalir;
-
-// 2. MENÚ: Compatibilidad (MANTENER)
 extern HBITMAP hBmpTitulo;
-extern HBITMAP hBmpBoton;    // Botón genérico
-extern HBITMAP hBmpBotonSel; // Botón seleccionado genérico
+extern HBITMAP hBmpBoton;
+extern HBITMAP hBmpBotonSel;
 
-// 3. JUGADOR
+// 2. JUGADOR Y TIENDA
 extern HBITMAP hBmpJugador;
 extern HBITMAP hBmpJugadorAnim[4][3];
 extern HBITMAP hBmpTienda[2];
 extern HBITMAP hBmpArmaduraAnim[4][3];
 
-// 4. INTERFAZ (Mochila, Vida, etc.)
+// 3. INTERFAZ (UI)
 extern HBITMAP hBmpInvCerrado;
 extern HBITMAP hBmpInvAbierto;
 extern HBITMAP hBmpCorazon100;
@@ -40,24 +38,24 @@ extern HBITMAP hBmpEscudo0;
 extern HBITMAP hBmpBarraXPVacia;
 extern HBITMAP hBmpBarraXPLlena;
 
-// 5. ITEMS
+// 4. ITEMS E ICONOS
 extern HBITMAP hBmpIconoMadera;
 extern HBITMAP hBmpIconoPiedra;
 extern HBITMAP hBmpIconoOro;
 extern HBITMAP hBmpIconoHierro;
 extern HBITMAP hBmpIconoComida;
 extern HBITMAP hBmpIconoHoja;
-
 extern HBITMAP hBmpIconoEspada;
 extern HBITMAP hBmpIconoPico;
 
-// 6. MUNDO
-extern HBITMAP hBmpIslaCentral;
-extern HBITMAP hBmpIslaNoreste;
+// 5. MUNDO (NUEVAS ISLAS)
+extern HBITMAP hBmpIslaGrande; // Central (1000x1000)
+extern HBITMAP hBmpIslaSec1;   // Oeste (320x250)
+extern HBITMAP hBmpIslaSec2;   // Norte (700x700)
+extern HBITMAP hBmpIslaSec3;   // Este (400x400)
+extern HBITMAP hBmpIslaSec4;   // Sur (500x500)
+
 extern HBITMAP hBmpCastilloJugador;
-extern HBITMAP hBmpCastilloEnemigo1;
-extern HBITMAP hBmpCastilloEnemigo2;
-extern HBITMAP hBmpCastilloEnemigo3;
 extern HBITMAP hBmpArbol;
 extern HBITMAP hBmpRoca;
 

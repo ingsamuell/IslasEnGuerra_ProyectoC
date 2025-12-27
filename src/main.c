@@ -1,4 +1,4 @@
-/* src/main.c - CÓDIGO CORREGIDO Y LIMPIO */
+/* src/main.c  */
 #include <windows.h>
 #include <stdio.h>
 #include "global.h"             // Estructuras del jugador y juego
@@ -25,161 +25,128 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         case WM_ERASEBKGND:
             return 1;
 
-        /* --- NUEVO: CONTROLES DE RATÓN (CLICS) --- */
+        /* --- CLIC IZQUIERDO (Comprar, Comer, Abrir Bolsa, Menú) --- */
         case WM_LBUTTONDOWN:
         {
             int mouseX = LOWORD(lParam);
             int mouseY = HIWORD(lParam);
 
-            // 1. Lógica del Menú
+            // A. Lógica del Menú Principal
             if (estadoJuego.mostrarMenu) {
                 procesarClickMenu(mouseX, mouseY, hwnd, &estadoJuego);
             }
-            // 2. Lógica del Juego (Mochila)
+            // B. Lógica del Juego
             else if (estadoJuego.enPartida) {
                 
-                // --- NUEVAS COORDENADAS DEL BOTÓN (Deben coincidir con dibujarHUD) ---
-                // Ya no necesitamos GetClientRect porque la posición es fija arriba.
-                
+                // 1. DETECTAR BOTÓN MOCHILA (Para Abrir/Cerrar)
+                int btnX = 20;   
+                int btnY = 120;  
                 int tamanoBolso = 64;
-                int btnX = 20;   // Misma X que Vida/Escudo
-                int btnY = 140;  // Debajo del Escudo
 
-                // Detectar colisión en la nueva zona
                 if (mouseX >= btnX && mouseX <= btnX + tamanoBolso &&
                     mouseY >= btnY && mouseY <= btnY + tamanoBolso) {
-                    
-                    // Alternar inventario
                     miJugador.inventarioAbierto = !miJugador.inventarioAbierto;
                     InvalidateRect(hwnd, NULL, FALSE);
                 }
+
+                // 2. DETECTAR CLICS DENTRO DE LA MOCHILA (Comer)
+                procesarClickMochila(mouseX, mouseY, &miJugador, hwnd);
+
+                // 3. DETECTAR TIENDA (Comprar / Vender-1)
+                procesarClickMochilaTienda(mouseX, mouseY, 0, &miJugador, hwnd);
             }
             return 0;
         }
 
-        /* --- CONTROLES (TECLADO) --- */
+        /* --- CLIC DERECHO (Solo para Vender en lote) --- */
+        case WM_RBUTTONDOWN:
+        {
+            int mouseX = LOWORD(lParam);
+            int mouseY = HIWORD(lParam);
+
+            if (estadoJuego.enPartida) {
+                // El '1' indica Clic Derecho (Vender 10)
+                procesarClickMochilaTienda(mouseX, mouseY, 1, &miJugador, hwnd);
+            }
+            return 0;
+        }
+
+        /* --- TECLADO (Movimiento, Zoom y ESCAPE) --- */
         case WM_KEYDOWN:
         {
-            /* 1. MENÚ PRINCIPAL */
+            // A. MENÚ
             if (estadoJuego.mostrarMenu) {
-                switch (wParam) {
-                    case VK_UP:
-                        estadoJuego.opcionSeleccionada--;
-                        if (estadoJuego.opcionSeleccionada < 0) estadoJuego.opcionSeleccionada = 2;
-                        InvalidateRect(hwnd, NULL, FALSE);
-                        break;
-                    case VK_DOWN:
-                        estadoJuego.opcionSeleccionada++;
-                        if (estadoJuego.opcionSeleccionada > 2) estadoJuego.opcionSeleccionada = 0;
-                        InvalidateRect(hwnd, NULL, FALSE);
-                        break;
-                    case VK_RETURN:
-                        procesarEnterMenu(hwnd, &estadoJuego);
-                        break;
-                    case VK_ESCAPE:
-                        PostQuitMessage(0);
-                        break;
-                }
+                if (wParam == VK_RETURN) procesarEnterMenu(hwnd, &estadoJuego);
             } 
-            /* 2. INVENTARIO (RESUMEN) */
-            else if (estadoJuego.mostrarResumen) {
-                // Con cualquier tecla cerramos el inventario
-                if (wParam == VK_ESCAPE || wParam == 'I' || wParam == VK_RETURN) {
-                     estadoJuego.mostrarResumen = 0;
-                     miJugador.inventarioAbierto = 0;
-                     InvalidateRect(hwnd, NULL, FALSE);
-                }
-            }
-            /* 3. JUGANDO (EN PARTIDA) */
+            // B. EN PARTIDA
             else if (estadoJuego.enPartida) {
                 switch (wParam) {
-                    // Movimiento WASD y Flechas
-                    case VK_LEFT:  case 'A': moverJugador(&miJugador, mapaMundo, -1, 0); break;
-                    case VK_RIGHT: case 'D': moverJugador(&miJugador, mapaMundo, 1, 0); break;
-                    case VK_UP:    case 'W': moverJugador(&miJugador, mapaMundo, 0, -1); break;
-                    case VK_DOWN:  case 'S': moverJugador(&miJugador, mapaMundo, 0, 1); break;
-                    
-                    // Abrir Inventario con tecla
-                    case 'I': 
-                        miJugador.inventarioAbierto = !miJugador.inventarioAbierto; // Alternar
-                        InvalidateRect(hwnd, NULL, FALSE);
-                        break;
-
-                    // Zoom (+ y -)
-                    case VK_ADD: case 0xBB:
-                        if (miCamara.zoom < 4.0f) miCamara.zoom += 0.5f;
-                        actualizarCamara(&miCamara, miJugador);
-                        InvalidateRect(hwnd, NULL, TRUE);
-                        break;
-                    case VK_SUBTRACT: case 0xBD:
-                        if (miCamara.zoom > 0.5f) miCamara.zoom -= 0.5f;
-                        actualizarCamara(&miCamara, miJugador);
-                        InvalidateRect(hwnd, NULL, TRUE);
-                        break;
-
-                    // Pausa / Volver al menú
+                    // --- SALIR AL MENÚ ---
                     case VK_ESCAPE:
-                        estadoJuego.mostrarMenu = 1;
                         estadoJuego.enPartida = 0;
-                        InvalidateRect(hwnd, NULL, TRUE);
+                        estadoJuego.mostrarMenu = 1;
+                        InvalidateRect(hwnd, NULL, FALSE);
+                        return 0;
+
+                    // --- MOVIMIENTO ---
+                    case 'W': moverJugador(&miJugador, mapaMundo, 0, -1); break;
+                    case 'S': moverJugador(&miJugador, mapaMundo, 0, 1); break;
+                    case 'A': moverJugador(&miJugador, mapaMundo, -1, 0); break;
+                    case 'D': moverJugador(&miJugador, mapaMundo, 1, 0); break;
+                    case 'I': miJugador.inventarioAbierto = !miJugador.inventarioAbierto; break;
+
+                    // --- ZOOM (Teclas + y -) ---
+                    case VK_ADD:      // Tecla '+' (NumPad)
+                    case 0xBB:        // Tecla '+' (Teclado estándar)
+                        miCamara.zoom += 1; 
+                        if (miCamara.zoom > 5) miCamara.zoom = 5; 
+                        break;
+
+                    case VK_SUBTRACT: // Tecla '-' (NumPad)
+                    case 0xBD:        // Tecla '-' (Teclado estándar)
+                        miCamara.zoom -= 1; 
+                        if (miCamara.zoom < 1) miCamara.zoom = 1; 
                         break;
                 }
                 
-                // Actualizar cámara si nos movimos
-                if (wParam == 'A' || wParam == 'D' || wParam == 'W' || wParam == 'S' ||
-                    wParam == VK_LEFT || wParam == VK_RIGHT || wParam == VK_UP || wParam == VK_DOWN) {
-                    actualizarCamara(&miCamara, miJugador);
-                    InvalidateRect(hwnd, NULL, FALSE);
-                }
+                actualizarCamara(&miCamara, miJugador);
+                InvalidateRect(hwnd, NULL, FALSE);
             }
             return 0;
         }
 
-        /* --- DIBUJADO (RENDER) --- */
-        case WM_PAINT: {
+        /* --- DIBUJADO --- */
+        case WM_PAINT:
+        {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
 
-            // --- DOBLE BUFFER ---
+            // Doble Buffering
+            RECT rc; GetClientRect(hwnd, &rc);
+            int ancho = rc.right; int alto = rc.bottom;
             HDC hdcMem = CreateCompatibleDC(hdc);
-            RECT rect;
-            GetClientRect(hwnd, &rect);
-            int ancho = rect.right;
-            int alto = rect.bottom;
-            
             HBITMAP hbmMem = CreateCompatibleBitmap(hdc, ancho, alto);
-            HBITMAP hbmOld = SelectObject(hdcMem, hbmMem);
+            HBITMAP hbmOld = (HBITMAP)SelectObject(hdcMem, hbmMem);
 
-            // --- DIBUJAR ---
             if (estadoJuego.mostrarMenu) {
                 dibujarMenuConSprites(hdcMem, hwnd, &estadoJuego);
-            } else {
-                // 1. DIBUJAR MUNDO (Primero)
+            } 
+            else if (estadoJuego.enPartida) {
                 dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto, estadoJuego.frameTienda);
-                
-                // 2. DIBUJAR JUGADOR (¡AQUÍ ESTÁ LA CLAVE!)
-                // Asegúrate de que esta línea exista y esté DESPUÉS del mapa
                 dibujarJugador(hdcMem, miJugador, miCamara);
-                
-                // 3. DIBUJAR HUD (Al final, encima de todo)
                 dibujarHUD(hdcMem, &miJugador, ancho, alto);
             }
 
-            // Copiar a pantalla
             BitBlt(hdc, 0, 0, ancho, alto, hdcMem, 0, 0, SRCCOPY);
-
-            // Limpieza
             SelectObject(hdcMem, hbmOld);
             DeleteObject(hbmMem);
             DeleteDC(hdcMem);
-
             EndPaint(hwnd, &ps);
             return 0;
         }
 
-        case WM_SIZE:
-            InvalidateRect(hwnd, NULL, TRUE);
-            return 0;
+        default:
+            return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
@@ -197,33 +164,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     
     if (!RegisterClass(&wc)) return -1;
 
-    // 2. OBTENER RESOLUCIÓN DE TU PANTALLA
+    // 2. OBTENER RESOLUCIÓN
     int anchoPantalla = GetSystemMetrics(SM_CXSCREEN);
     int altoPantalla  = GetSystemMetrics(SM_CYSCREEN);
 
-    // 3. CREAR VENTANA "POPUP" (INVISIBLE AL PRINCIPIO)
+    // 3. CREAR VENTANA
     HWND hwnd = CreateWindow("ClaseIslasGuerra", "Islas en Guerra",
-                             WS_OVERLAPPEDWINDOW, // <--- CAMBIO CLAVE
-                             CW_USEDEFAULT, CW_USEDEFAULT, // Dejamos que Windows decida la posición inicial
-                             anchoPantalla, altoPantalla,  // Tamaño inicial
+                             WS_OVERLAPPEDWINDOW, 
+                             CW_USEDEFAULT, CW_USEDEFAULT, 
+                             anchoPantalla, altoPantalla,  
                              NULL, NULL, hInstance, NULL);
 
     if (hwnd == NULL) return 0;
 
-    // 4. CARGAR RECURSOS (Imágenes, sonidos...)
+    // 4. CARGAR RECURSOS
     CargarRecursos(); 
 
     // 5. INICIALIZAR DATOS
-    // ¡AQUÍ ESTÁ LA MAGIA!
-    // Esta función ya pone al jugador en (1600, 1600), le da vida, oro y carga las islas.
-    // No hace falta poner nada más aquí.
     inicializarJuego(&miJugador, &estadoJuego, mapaMundo);
     
-    // 6. CONFIGURAR CÁMARA INICIAL
-    // Queremos empezar con Zoom para ver bien los detalles
-    miCamara.zoom = 2.0f;  // <--- ZOOM INICIAL (2x)
+    // 6. CONFIGURAR CÁMARA INICIAL (ZOOM x3)
+    miCamara.zoom = 3;  
 
-    // Sincronizar cámara con jugador (que ya está en 1600,1600 gracias a la función de arriba)
+    // Sincronizar cámara
     miCamara.x = miJugador.x;
     miCamara.y = miJugador.y;
     actualizarCamara(&miCamara, miJugador);
@@ -240,6 +203,5 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     }
 
     LiberarRecursos();
-    
     return 0;
 }
