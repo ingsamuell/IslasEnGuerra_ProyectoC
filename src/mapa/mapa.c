@@ -14,21 +14,54 @@ void inicializarIslas()
     for (int i = 0; i < MAX_ISLAS; i++)
         misIslas[i].activa = 0;
 
-    // Isla Central
+    // ISLA CENTRAL (Grande 1000x1000) - Centro en 1600,1600
+    // Posición = 1600 - (1000/2) = 1100
     misIslas[0].activa = 1;
-    misIslas[0].x = 1350;
-    misIslas[0].y = 1350;
-    misIslas[0].ancho = 700;
-    misIslas[0].alto = 700;
-    misIslas[0].margen = 60;
+    misIslas[0].x = 1100;
+    misIslas[0].y = 1100;
+    misIslas[0].ancho = 1000;
+    misIslas[0].alto = 1000;
+    misIslas[0].margen = 80; // Margen de agua más grande
 
-    // Isla Vecina
+    // ISLA NORTE (Sec2 700x700)
+    // Arriba de la central (Y = 1100 - 200 margen - 700 alto = 200)
+    // X Centrada = 1600 - 350 = 1250
     misIslas[1].activa = 1;
-    misIslas[1].x = 2200;
-    misIslas[1].y = 800;
-    misIslas[1].ancho = 500;
-    misIslas[1].alto = 500;
+    misIslas[1].x = 1250;
+    misIslas[1].y = 200;
+    misIslas[1].ancho = 700;
+    misIslas[1].alto = 700;
     misIslas[1].margen = 60;
+
+    // ISLA SUR (Sec4 500x500)
+    // Abajo de la central (Y = 1100 + 1000 + 200 margen = 2300)
+    // X Centrada = 1600 - 250 = 1350
+    misIslas[2].activa = 1;
+    misIslas[2].x = 1350;
+    misIslas[2].y = 2300;
+    misIslas[2].ancho = 500;
+    misIslas[2].alto = 500;
+    misIslas[2].margen = 50;
+
+    // ISLA OESTE (Sec1 320x250)
+    // Izquierda de la central (X = 1100 - 200 margen - 320 ancho = 580)
+    // Y Centrada = 1600 - 125 = 1475
+    misIslas[3].activa = 1;
+    misIslas[3].x = 580;
+    misIslas[3].y = 1475;
+    misIslas[3].ancho = 320;
+    misIslas[3].alto = 250;
+    misIslas[3].margen = 40;
+
+    // ISLA ESTE (Sec3 400x400)
+    // Derecha de la central (X = 1100 + 1000 + 200 margen = 2300)
+    // Y Centrada = 1600 - 200 = 1400
+    misIslas[4].activa = 1;
+    misIslas[4].x = 2300;
+    misIslas[4].y = 1400;
+    misIslas[4].ancho = 400;
+    misIslas[4].alto = 400;
+    misIslas[4].margen = 50;
 }
 
 void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
@@ -604,26 +637,37 @@ void dibujarJugador(HDC hdc, Jugador jugador, Camera cam)
 // --- DIBUJADO PRINCIPAL (MAPA + HUD) ---
 void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda)
 {
+    // Fondo de Agua
     HBRUSH agua = CreateSolidBrush(RGB(0, 100, 180));
     RECT r = {0, 0, ancho, alto};
     FillRect(hdc, &r, agua);
     DeleteObject(agua);
 
-    // Dibujar Islas
+    // Dibujar las 5 Islas
     for (int i = 0; i < MAX_ISLAS; i++)
     {
-        if (!misIslas[i].activa)
-            continue;
+        if (!misIslas[i].activa) continue;
+
         int sx = (misIslas[i].x - cam.x) * cam.zoom;
         int sy = (misIslas[i].y - cam.y) * cam.zoom;
         int sw = misIslas[i].ancho * cam.zoom;
         int sh = misIslas[i].alto * cam.zoom;
-        HBITMAP img = (i == 0) ? hBmpIslaCentral : hBmpIslaNoreste;
-        if (img)
-            DibujarImagen(hdc, img, sx, sy, sw, sh);
+
+        HBITMAP img = NULL;
+        switch(i) {
+            case 0: img = hBmpIslaGrande; break;
+            case 1: img = hBmpIslaSec2; break; // Norte
+            case 2: img = hBmpIslaSec4; break; // Sur
+            case 3: img = hBmpIslaSec1; break; // Oeste
+            case 4: img = hBmpIslaSec3; break; // Este
+        }
+
+        if (img) DibujarImagen(hdc, img, sx, sy, sw, sh);
     }
 
-    // Dibujar Tiendas
+    // Dibujar Tiendas (Asegúrate de que la posición de la tienda esté en una isla válida)
+    // Nota: La tienda estaba en (1450, 1900). Como la Isla Grande ahora va de 1100 a 2100 en Y,
+    // 1900 sigue siendo válido (parte inferior). ¡No necesitas cambiar nada aquí!
     dibujarTiendasEnIslas(hdc, cam, ancho, alto, frameTienda);
 }
 
