@@ -58,6 +58,8 @@ typedef struct {
     int tieneEspada;      // 1 si la compró
     int tienePico;        // 1 si lo compró
     int frameDestello;    // Para el efecto visual blanco
+    int nivelMochila;     // 1 = Básica, 2 = Herramientas, 3 = Completa
+
     } Jugador;
 
 // Otras estructuras globales si las tienes (como EstadoJuego)
