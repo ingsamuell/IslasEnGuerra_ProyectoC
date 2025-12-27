@@ -54,6 +54,7 @@ void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FIL
     jugador->experiencia = 0;
     jugador->experienciaSiguienteNivel = 100;
     jugador->nivelMochila = 1; // Empieza con la bolsa pequeña
+    jugador->modoTienda = 0; // Empieza en modo comprar
 
     // Configuración inicial
     estado->enPartida = 0;
@@ -248,59 +249,152 @@ void procesarEnterMenu(HWND hwnd, EstadoJuego *estado)
 }
 
 // --- INTERACCIÓN MOCHILA (Comida) ---
-void procesarClickMochila(int mouseX, int mouseY, Jugador *jugador, HWND hwnd)
-{
-    if (!jugador->inventarioAbierto)
-        return;
+void procesarClickMochila(int mouseX, int mouseY, Jugador *jugador, HWND hwnd) {
+    if (!jugador->inventarioAbierto) return;
 
-    int px = 90, py = 120;    // Posición del panel de mochila
-    int iy_comida = py + 240; // Altura aproximada del icono comida
+    // Coordenadas base (Deben ser iguales a dibujarHUD)
+    int px = 90, py = 120;
+    int startX = px + 20;
+    int startY = py + 40;
 
-    if (mouseX >= px + 10 && mouseX <= px + 200 && mouseY >= iy_comida && mouseY <= iy_comida + 32)
-    {
-        if (jugador->comida > 0 && jugador->vidaActual < jugador->vidaMax)
-        {
-            jugador->vidaActual += 25;
-            jugador->comida--;
-            if (jugador->vidaActual > jugador->vidaMax)
+    // La COMIDA es el Ítem #5 en nuestra lista (índice 5)
+    // Cálculo de posición en rejilla:
+    int i = 5; 
+    int col = i % 2; // 1
+    int row = i / 2; // 2
+    
+    int itemX = startX + (col * 150); // 110 + 150 = 260
+    int itemY = startY + (row * 50);  // 160 + 100 = 260
+    
+    // Detectar clic en el icono de comida (32x32)
+    if (mouseX >= itemX && mouseX <= itemX + 32 && mouseY >= itemY && mouseY <= itemY + 32) {
+        
+        // Lógica de comer
+        if (jugador->comida > 0 && jugador->vidaActual < jugador->vidaMax) {
+            jugador->vidaActual += 25; 
+            jugador->comida--;         
+            
+            if (jugador->vidaActual > jugador->vidaMax) {
                 jugador->vidaActual = jugador->vidaMax;
+            }
+            
+            // Feedback sonoro (Opcional, si tienes el sonido)
+            // PlaySound(TEXT("assets/sonidos/comer.wav"), NULL, SND_FILENAME | SND_ASYNC);
+            
             InvalidateRect(hwnd, NULL, FALSE);
         }
     }
 }
 
-// --- INTERACCIÓN TIENDA (Compra) ---
-void procesarClickMochilaTienda(int mx, int my, Jugador *j, HWND hwnd)
-{
-    if (!j->inventarioAbierto)
+// --- INTERACCIÓN TIENDA (Compra - Venta) ---
+
+void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, HWND hwnd) {
+    if (!j->inventarioAbierto) return;
+
+    int tx = 450, ty = 120; // Posición base de la tienda
+
+    // 1. PESTAÑAS (Comprar / Vender)
+    // Pestaña Comprar (x: 450 a 600, y: 90 a 120)
+    if (mx >= tx && mx <= tx + 150 && my >= ty - 30 && my <= ty) {
+        j->modoTienda = 0; // COMPRAR
+        PlaySound(TEXT("assets/sonidos/click.wav"), NULL, SND_FILENAME | SND_ASYNC);
+        InvalidateRect(hwnd, NULL, FALSE);
         return;
-
-    int tx = 450, ty = 120; // Posición de la tienda
-
-    // COMPRAR ARMADURA (Clic en opción 3)
-    if (mx >= tx && mx <= tx + 300 && my >= ty + 160 && my <= ty + 190)
-    {
-        if (j->hierro >= 5 && j->oro >= 50 && !j->tieneArmadura)
-        {
-            j->hierro -= 5;
-            j->oro -= 50;
-            j->tieneArmadura = 1;
-            j->frameDestello = 15;
-            PlaySound(TEXT("assets/sonidos/miau.wav"), NULL, SND_FILENAME | SND_ASYNC);
-            InvalidateRect(hwnd, NULL, FALSE);
-        }
+    }
+    // Pestaña Vender (x: 600 a 750, y: 90 a 120)
+    if (mx >= tx + 150 && mx <= tx + 300 && my >= ty - 30 && my <= ty) {
+        j->modoTienda = 1; // VENDER
+        PlaySound(TEXT("assets/sonidos/click.wav"), NULL, SND_FILENAME | SND_ASYNC);
+        InvalidateRect(hwnd, NULL, FALSE);
+        return;
     }
 
-    // EQUIPAR (Clic en el icono de armadura dentro de la mochila)
-    // Coordenadas aproximadas en la mochila
-    int px = 90, py = 120;
-    if (mx >= px && mx <= px + 200 && my >= py + 200 && my <= py + 240)
-    { // Ajustar según posición real
-        if (j->tieneArmadura)
-        {
-            j->armaduraEquipada = !j->armaduraEquipada;
-            j->frameDestello = 8;
-            InvalidateRect(hwnd, NULL, FALSE);
+    // 2. LÓGICA DE CLICKS SEGÚN MODO
+    // Definimos coordenadas de items (misma rejilla que el dibujo)
+    int startX = tx + 20;
+    int startY = ty + 40;
+
+    if (j->modoTienda == 0) { // --- MODO COMPRAR ---
+        // Lista de cosas a comprar (5 items)
+        for (int i = 0; i < 5; i++) {
+            int col = i % 2; int row = i / 2;
+            int ix = startX + (col * 140); int iy = startY + (row * 60);
+            
+            if (mx >= ix && mx <= ix + 100 && my >= iy && my <= iy + 50) {
+                // Precios y Lógica
+                BOOL comprado = FALSE;
+                
+                // 1. ESPADA (20 Oro + 3 Hierro)
+                if (i == 0 && !j->tieneEspada) {
+                    if (j->oro >= 20 && j->hierro >= 3) {
+                        j->oro -= 20; j->hierro -= 3; j->tieneEspada = 1; comprado = TRUE;
+                    }
+                }
+                // 2. PICO (15 Oro + 5 Piedra)
+                else if (i == 1 && !j->tienePico) {
+                    if (j->oro >= 15 && j->piedra >= 5) {
+                        j->oro -= 15; j->piedra -= 5; j->tienePico = 1; comprado = TRUE;
+                    }
+                }
+                // 3. ARMADURA (50 Oro + 5 Hierro)
+                else if (i == 2 && !j->tieneArmadura) {
+                    if (j->oro >= 50 && j->hierro >= 5) {
+                        j->oro -= 50; j->hierro -= 5; j->tieneArmadura = 1; comprado = TRUE;
+                    }
+                }
+                // 4. MOCHILA NIVEL 2 (20 Oro + 30 Hojas)
+                else if (i == 3 && j->nivelMochila == 1) {
+                    if (j->oro >= 20 && j->hojas >= 30) {
+                        j->oro -= 20; j->hojas -= 30; j->nivelMochila = 2; comprado = TRUE;
+                    }
+                }
+                // 5. MOCHILA NIVEL 3 (50 Oro + 10 Hierro)
+                else if (i == 4 && j->nivelMochila == 2) {
+                    if (j->oro >= 50 && j->hierro >= 10) {
+                        j->oro -= 50; j->hierro -= 10; j->nivelMochila = 3; comprado = TRUE;
+                    }
+                }
+
+                if (comprado) {
+                    PlaySound(TEXT("assets/sonidos/kaching.wav"), NULL, SND_FILENAME | SND_ASYNC);
+                    InvalidateRect(hwnd, NULL, FALSE);
+                } else {
+                    // Sonido de error o feedback visual opcional
+                }
+            }
+        }
+    } 
+    else { // --- MODO VENDER ---
+        // Lista de cosas vendibles (Madera, Piedra, Hierro, Hojas, Comida)
+        int precios[] = {1, 2, 5, 1, 3}; // Oro por unidad
+        int* stocks[] = {&j->madera, &j->piedra, &j->hierro, &j->hojas, &j->comida};
+        char* nombres[] = {"Madera", "Piedra", "Hierro", "Hojas", "Comida"};
+
+        for (int i = 0; i < 5; i++) {
+            int col = i % 2; int row = i / 2;
+            int ix = startX + (col * 140); int iy = startY + (row * 60);
+
+            if (mx >= ix && mx <= ix + 100 && my >= iy && my <= iy + 50) {
+                int cantidadAVender = esClickDerecho ? 10 : 1;
+                int stockActual = *stocks[i];
+
+                // Ajustar si no tengo 10
+                if (cantidadAVender > stockActual) cantidadAVender = stockActual;
+
+                if (cantidadAVender > 0) {
+                    int ganancia = cantidadAVender * precios[i];
+                    char mensaje[100];
+                    sprintf(mensaje, "¿Vender %d %s por %d Oro?", cantidadAVender, nombres[i], ganancia);
+
+                    // --- VENTANA DE CONFIRMACIÓN ---
+                    if (MessageBox(hwnd, mensaje, "Confirmar Venta", MB_YESNO | MB_ICONQUESTION) == IDYES) {
+                        *stocks[i] -= cantidadAVender;
+                        j->oro += ganancia;
+                        PlaySound(TEXT("assets/sonidos/kaching.wav"), NULL, SND_FILENAME | SND_ASYNC);
+                        InvalidateRect(hwnd, NULL, FALSE);
+                    }
+                }
+            }
         }
     }
 }
@@ -336,33 +430,143 @@ void dibujarTiendasEnIslas(HDC hdc, Camera cam, int ancho, int alto, int frameTi
     }
 }
 
-void dibujarTiendaInteractiva(HDC hdc, Jugador *j)
-{
-    int tx = 450, ty = 120;
-
-    // 1. Fondo Negro
-    SelectObject(hdc, GetStockObject(BLACK_BRUSH));
-    Rectangle(hdc, tx, ty, tx + 300, ty + 350);
-
-    // 2. Configurar Texto Transparente (IMPORTANTE PARA QUE SE VEA BIEN)
+void dibujarPrecio(HDC hdc, int x, int y, const char* costo1, const char* costo2, BOOL alcanzable) {
     SetBkMode(hdc, TRANSPARENT);
+    // Color: Verde si alcanza, Rojo si no
+    if (alcanzable) SetTextColor(hdc, RGB(50, 255, 50)); 
+    else SetTextColor(hdc, RGB(255, 50, 50)); 
+    
+    // Dibujar Línea 1 (Ej: "20 Oro")
+    TextOut(hdc, x, y, costo1, strlen(costo1));
+    // Dibujar Línea 2 justo debajo (Ej: "3 Hierro")
+    TextOut(hdc, x, y + 12, costo2, strlen(costo2));
+}
 
-    // 3. Título Dorado
-    SetTextColor(hdc, RGB(255, 215, 0));
-    TextOut(hdc, tx + 80, ty + 10, "--- MERCADER ---", 16);
+void dibujarTiendaInteractiva(HDC hdc, Jugador *j) {
+    int tx = 450, ty = 120; // Posición base
 
-    // 4. Opciones (Blanco)
-    char b[100];
-    SetTextColor(hdc, RGB(255, 255, 255));
+    // 0. Detectar Mouse (Para Hover)
+    POINT p; GetCursorPos(&p); 
+    ScreenToClient(WindowFromDC(hdc), &p);
+    int mx = p.x; int my = p.y;
 
-    sprintf(b, "1. Espada: 3 Hierro + 20 Oro %s", j->tieneEspada ? "[OK]" : "");
-    TextOut(hdc, tx + 20, ty + 60, b, strlen(b));
+    // 1. PESTAÑAS Y FONDO (Igual que antes)
+    HBRUSH bComprar = CreateSolidBrush((j->modoTienda == 0) ? RGB(50,50,60) : RGB(30,30,30));
+    HBRUSH bVender = CreateSolidBrush((j->modoTienda == 1) ? RGB(50,50,60) : RGB(30,30,30));
+    RECT rC = {tx, ty - 30, tx + 150, ty};
+    RECT rV = {tx + 150, ty - 30, tx + 300, ty};
+    FillRect(hdc, &rC, bComprar); DeleteObject(bComprar);
+    FillRect(hdc, &rV, bVender); DeleteObject(bVender);
+    SetBkMode(hdc, TRANSPARENT); SetTextColor(hdc, RGB(255,215,0));
+    TextOut(hdc, tx + 40, ty - 25, "COMPRAR", 7);
+    TextOut(hdc, tx + 195, ty - 25, "VENDER", 6);
 
-    sprintf(b, "2. Pico: 5 Piedra + 15 Oro %s", j->tienePico ? "[OK]" : "");
-    TextOut(hdc, tx + 20, ty + 110, b, strlen(b));
+    HBRUSH fondo = CreateSolidBrush(RGB(40, 40, 45));
+    RECT rMain = {tx, ty, tx + 300, ty + 350};
+    FillRect(hdc, &rMain, fondo); DeleteObject(fondo);
+    HBRUSH borde = CreateSolidBrush(RGB(255, 255, 255));
+    FrameRect(hdc, &rMain, borde); DeleteObject(borde);
 
-    sprintf(b, "3. Armadura: 5 Hierro + 50 Oro %s", j->tieneArmadura ? "[OK]" : "");
-    TextOut(hdc, tx + 20, ty + 160, b, strlen(b));
+    // 3. CONTENIDO (REJILLA)
+    int startX = tx + 20; int startY = ty + 40;
+
+    if (j->modoTienda == 0) { // --- MODO COMPRAR (ACTUALIZADO) ---
+        for (int i = 0; i < 5; i++) {
+            int col = i % 2; int row = i / 2;
+            int x = startX + (col * 140); int y = startY + (row * 60);
+
+            HBITMAP icono = NULL;
+            // Usamos dos cadenas para los costos
+            char costo1[32] = ""; char costo2[32] = ""; 
+            BOOL alcanzable = FALSE; BOOL comprado = FALSE;
+
+            switch(i) {
+                case 0: // Espada
+                    icono = hBmpIconoEspada;
+                    sprintf(costo1, "20 Oro"); sprintf(costo2, "3 Hierro");
+                    if (j->tieneEspada) comprado = TRUE;
+                    else if (j->oro >= 20 && j->hierro >= 3) alcanzable = TRUE;
+                    break;
+                case 1: // Pico
+                    icono = hBmpIconoPico;
+                    sprintf(costo1, "15 Oro"); sprintf(costo2, "5 Piedra");
+                    if (j->tienePico) comprado = TRUE;
+                    else if (j->oro >= 15 && j->piedra >= 5) alcanzable = TRUE;
+                    break;
+                case 2: // Armadura
+                    icono = hBmpArmaduraAnim[0][0];
+                    sprintf(costo1, "50 Oro"); sprintf(costo2, "5 Hierro");
+                    if (j->tieneArmadura) comprado = TRUE;
+                    else if (j->oro >= 50 && j->hierro >= 5) alcanzable = TRUE;
+                    break;
+                case 3: // Mochila 2
+                    icono = hBmpInvAbierto;
+                    sprintf(costo1, "20 Oro"); sprintf(costo2, "30 Hojas");
+                    if (j->nivelMochila >= 2) comprado = TRUE;
+                    else if (j->oro >= 20 && j->hojas >= 30) alcanzable = TRUE;
+                    break;
+                case 4: // Mochila 3
+                    icono = hBmpInvAbierto; 
+                    sprintf(costo1, "50 Oro"); sprintf(costo2, "10 Hierro");
+                    if (j->nivelMochila >= 3) comprado = TRUE;
+                    else if (j->nivelMochila == 2 && j->oro >= 50 && j->hierro >= 10) alcanzable = TRUE;
+                    else if (j->nivelMochila < 2) {
+                        sprintf(costo1, "Req. Nivel 2"); 
+                        costo2[0] = '\0'; // <--- CORRECCIÓN AQUÍ (Cadena vacía segura)
+                    }
+                    break;
+            }
+
+            // DIBUJAR ÍTEM Y PRECIO
+            if (icono) DibujarImagen(hdc, icono, x, y, 32, 32);
+            if (comprado) {
+                SetTextColor(hdc, RGB(100, 100, 100));
+                TextOut(hdc, x + 40, y + 8, "COMPRADO", 8);
+            } else {
+                dibujarPrecio(hdc, x + 40, y + 8, costo1, costo2, alcanzable);
+            }
+
+            // HOVER TOOLTIP (Combina las dos líneas para la descripción abajo)
+            // CORRECCIÓN AQUÍ: Aumentamos seguridad con tooltip[100]
+            if (mx >= x && mx <= x + 100 && my >= y && my <= y + 40 && !comprado && costo1[0] != '\0') {
+               char tooltip[100]; // <--- AUMENTADO DE 64 A 100
+               
+               if (costo2[0] != '\0') sprintf(tooltip, "Costo: %s - %s", costo1, costo2);
+               else sprintf(tooltip, "%s", costo1); 
+
+               SetTextColor(hdc, RGB(255, 255, 255));
+               TextOut(hdc, tx + 20, ty + 320, tooltip, strlen(tooltip));
+            }
+        }
+
+    } else { // --- MODO VENDER (Sin cambios, ya estaba bien) ---
+        int precios[] = {1, 2, 5, 1, 3};
+        char* nombres[] = {"Madera", "Piedra", "Hierro", "Hojas", "Comida"};
+        HBITMAP iconos[] = {hBmpIconoMadera, hBmpIconoPiedra, hBmpIconoHierro, hBmpIconoHoja, hBmpIconoComida};
+        int cantidades[] = {j->madera, j->piedra, j->hierro, j->hojas, j->comida};
+
+        for (int i = 0; i < 5; i++) {
+            int col = i % 2; int row = i / 2;
+            int x = startX + (col * 140); int y = startY + (row * 60);
+
+            if (iconos[i]) DibujarImagen(hdc, iconos[i], x, y, 32, 32);
+            
+            char texto[32];
+            sprintf(texto, "%s (x%d)", nombres[i], cantidades[i]);
+            SetTextColor(hdc, RGB(255, 255, 255));
+            TextOut(hdc, x + 40, y, texto, strlen(texto));
+
+            char precio[32];
+            sprintf(precio, "+%d Oro c/u", precios[i]);
+            SetTextColor(hdc, RGB(255, 215, 0));
+            TextOut(hdc, x + 40, y + 16, precio, strlen(precio));
+            
+            if (mx >= x && mx <= x + 100 && my >= y && my <= y + 40) {
+               SetTextColor(hdc, RGB(200, 200, 200));
+               TextOut(hdc, tx + 20, ty + 320, "Click: Vender 1 | Der: 10", 25);
+            }
+        }
+    }
 }
 
 // --- DIBUJADO DE JUGADOR ---

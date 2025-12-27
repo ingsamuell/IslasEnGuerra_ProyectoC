@@ -59,6 +59,7 @@ typedef struct {
     int tienePico;        // 1 si lo compró
     int frameDestello;    // Para el efecto visual blanco
     int nivelMochila;     // 1 = Básica, 2 = Herramientas, 3 = Completa
+    int modoTienda; // 0 = COMPRAR, 1 = VENDER
 
     } Jugador;
 
