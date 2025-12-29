@@ -22,7 +22,7 @@
 // --- LIMITES ---
 #define MAX_VACAS 8
 #define VIDA_VACA 100
-#define MAX_ARBOLES 200 // Un buen número para cubrir 5 islas
+#define MAX_ARBOLES 20// Un buen número para cubrir 5 islas
 
 // --- ESTRUCTURA DEL JUGADOR ---
 typedef struct {
@@ -71,15 +71,15 @@ typedef struct {
 } Jugador;
 
 typedef struct {
-    float x;            
-    float y;            
-    int direccion;      
-    int activa;         
-    int vida;           
-    float velocidad;    
-    int comiendo;       
-    int frameAnim;      // Asegúrate de que se llame exactamente así
-    int contadorAnim;   // Añade este campo para controlar la velocidad
+    float x;
+    float y;
+    float xInicial;      // Para el límite de 100px
+    int direccion;       // -1: Izquierda, 1: Derecha
+    int estado;          // 0: Caminando, 1: Quieta
+    int contadorEspera;  
+    int activa;
+    int frameAnim;       // 0 a 3 (el offset se suma al dibujar)
+    int contadorAnim;
 } Vaca;
 
 // --- ESTRUCTURA DE ÁRBOL ---
@@ -88,6 +88,7 @@ typedef struct {
     int y;
     int tipo;   // 0 = Árbol Chico, 1 = Árbol Grande
     int activa; // 1 = Existe
+    int vida;   // <--- NUEVO: Vida del árbol (5 golpes)
 } Arbol;
 
 // --- OTRAS ESTRUCTURAS ---

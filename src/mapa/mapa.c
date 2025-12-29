@@ -446,79 +446,78 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
     }
 }
 
-
-// 1. INICIALIZAR VACAS (Llamar a esto dentro de inicializarJuego)
 void inicializarVacas() {
-    for(int i=0; i<MAX_VACAS; i++) {
-        manada[i].activa = 0; // Limpiar
-    }
-
-    // Ejemplo: Crear 3 vacas en la Isla Central
     // Vaca 1
     manada[0].activa = 1;
     manada[0].x = 1200;
     manada[0].y = 1400;
-    manada[0].frameAnim = 0;
+    manada[0].xInicial = 1200;
+    manada[0].direccion = -1; // Empieza hacia la izquierda (usa sprites 0-3)
+    manada[0].estado = 0;
 
-    // Vaca 2 (Un poco más atrás)
+    // Vaca 2
     manada[1].activa = 1;
     manada[1].x = 1100;
     manada[1].y = 1500;
-    manada[1].frameAnim = 2; // Empieza en otro frame para que no se vean idénticas
-
-    // Vaca 3
-    manada[2].activa = 1;
-    manada[2].x = 1300;
-    manada[2].y = 1350;
-    manada[2].frameAnim = 4;
+    manada[1].xInicial = 1100;
+    manada[1].direccion = 1;  // Empieza hacia la derecha (usa sprites 4-7)
+    manada[1].estado = 0;
+    
+    // ... repetir para las demás
 }
 
-// 2. ACTUALIZAR VACAS (Movimiento automático)
-void actualizarVacas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
-    for(int i=0; i<MAX_VACAS; i++) {
-        if(!manada[i].activa) continue;
 
-        // A. Movimiento (Izquierda a Derecha -> Aumentar X)
-        int velocidad = 2; 
-        int futuraX = manada[i].x + velocidad;
+void actualizarVacas() {
+    for (int i = 0; i < MAX_VACAS; i++) {
+        if (!manada[i].activa) continue;
 
-        // B. Verificar colisión (Para que no caminen sobre el agua)
-        // Verificamos "los pies" de la vaca
-        if (EsSuelo(futuraX + 16, manada[i].y + 30)) {
-            manada[i].x = futuraX;
-        } else {
-            // Si llega al agua/borde, la regresamos al inicio para que haga un bucle
-            // O podrías hacer que cambie de dirección (restar X)
-            manada[i].x -= 200; // Retrocede un poco o vuelve a empezar
-        }
+        if (manada[i].estado == 0) { // CAMINANDO
+            float futuraX = manada[i].x + (1.2f * manada[i].direccion);
 
-        // C. Animación (Cambiar frames 0-7)
-        manada[i].contadorAnim++;
-        if(manada[i].contadorAnim > 5) { // Cada 5 ciclos cambia de imagen (ajusta este número para velocidad)
-            manada[i].frameAnim++;
-            if(manada[i].frameAnim >= 8) {
-                manada[i].frameAnim = 0; // Volver al frame 0
+            // Si se aleja más de 100px de su origen, cambia de dirección
+            if (fabs(futuraX - manada[i].xInicial) > 100) {
+                manada[i].direccion *= -1; // Invertir: si era 1 (der) pasa a -1 (izq)
+                manada[i].estado = 1;      // Se detiene un momento
+                manada[i].contadorEspera = 0;
+            } else {
+                manada[i].x = futuraX;
             }
-            manada[i].contadorAnim = 0;
+
+            // Animación de caminata (ciclo de 0 a 3)
+            manada[i].contadorAnim++;
+            if (manada[i].contadorAnim > 8) {
+                manada[i].frameAnim = (manada[i].frameAnim + 1) % 4;
+                manada[i].contadorAnim = 0;
+            }
+        } 
+        else { // ESTADO: QUIETA
+            manada[i].contadorEspera++;
+            if (manada[i].contadorEspera > 70) { // Espera un poco
+                manada[i].estado = 0;
+            }
         }
     }
 }
 
-// 3. DIBUJAR VACAS
-void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto) { 
-        for(int i=0; i<MAX_VACAS; i++) {
-        if(!manada[i].activa) continue;
+void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto) {
+    for (int i = 0; i < MAX_VACAS; i++) {
+        if (!manada[i].activa) continue;
 
-        // Cálculo de posición en pantalla (Igual que las islas y jugador)
-		// Importante sumar la mitad del ancho/alto para centrar al jugador
-		int pantallaX = (int)((manada[i].x - cam.x) * cam.zoom) + (ancho / 2);
-		int pantallaY = (int)((manada[i].y - cam.y) * cam.zoom) + (alto / 2);
-        int tam = 32 * cam.zoom; // Tamaño base 32x32 escalado
+        int sx = (int)((manada[i].x - cam.x) * cam.zoom) + (ancho / 2);
+        int sy = (int)((manada[i].y - cam.y) * cam.zoom) + (alto / 2);
+        int tam = (int)(48 * cam.zoom);
 
-        // Dibujar el frame actual
-        HBITMAP img = hBmpVaca[manada[i].frameAnim];
-        if(img) {
-            DibujarImagen(hdc, img, pantallaX, pantallaY, tam, tam);
+        // LÓGICA DE SPRITES:
+        // Si direccion es -1 (Izquierda): Usa indices 0, 1, 2, 3
+        // Si direccion es 1 (Derecha): Usa indices 4, 5, 6, 7 (frameAnim + 4)
+        int indiceSprite = manada[i].frameAnim;
+        if (manada[i].direccion == 1) {
+            indiceSprite += 4; 
+        }
+
+        HBITMAP img = hBmpVaca[indiceSprite];
+        if (img) {
+            DibujarImagen(hdc, img, sx, sy, tam, tam);
         }
     }
 }
@@ -548,6 +547,23 @@ void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
             contador++;
         }
     }
+    
+    while (contador < MAX_ARBOLES && intentos < 5000) {
+        // ... (lógica de posición aleatoria) ...
+
+        if (EsSuelo(rx + 16, ry + 30, mapa)) { 
+            misArboles[contador].x = rx;
+            misArboles[contador].y = ry;
+            misArboles[contador].tipo = rand() % 2; 
+            misArboles[contador].activa = 1;
+            
+            // --- NUEVO ---
+            misArboles[contador].vida = 5; // Empiezan con 5 golpes de resistencia
+            // -------------
+            
+            contador++;
+        }
+}
 }
 
 // 2. DIBUJAR ÁRBOLES
@@ -567,6 +583,56 @@ void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto) {
         if (sx > -tamBase && sx < ancho && sy > -tamBase && sy < alto) {
             HBITMAP img = (misArboles[i].tipo == 1) ? hBmpArbolGrande : hBmpArbolChico;
             if(img) DibujarImagen(hdc, img, sx, sy, tamBase, tamBase);
+        }
+    }
+}
+
+// --- SISTEMA DE TALA ---
+void intentarTalarArbol(Jugador *j) {
+    // 1. Calcular el punto de golpe frente al jugador
+    int alcance = 40; // Qué tan lejos llega el golpe
+    int golpeX = j->x + 16; // Centro del jugador X
+    int golpeY = j->y + 16; // Centro del jugador Y
+
+    // Ajustamos la coordenada del golpe según hacia dónde mira
+    if (j->direccion == DIR_DERECHA) golpeX += alcance;
+    else if (j->direccion == DIR_IZQUIERDA) golpeX -= alcance;
+    else if (j->direccion == DIR_ABAJO) golpeY += alcance;
+    else if (j->direccion == DIR_ARRIBA) golpeY -= alcance;
+
+    // 2. Buscar si hay un árbol en ese punto
+    for (int i = 0; i < MAX_ARBOLES; i++) {
+        if (!misArboles[i].activa) continue;
+
+        // Definir la caja de colisión del árbol
+        int arbolAncho = 32;
+        int arbolAlto = 32;
+        if (misArboles[i].tipo == 1) { // Árbol grande es más grande
+            arbolAncho = 64; 
+            arbolAlto = 64;
+        }
+
+        // 3. Verificar colisión (Punto vs Rectángulo)
+        if (golpeX >= misArboles[i].x && golpeX <= misArboles[i].x + arbolAncho &&
+            golpeY >= misArboles[i].y && golpeY <= misArboles[i].y + arbolAlto) {
+            
+            // ¡GOLPE CONFIRMADO!
+            misArboles[i].vida--; // Restar vida (golpe de mano quita 1)
+
+            // Efecto visual simple (opcional): Puedes reproducir sonido aquí
+            // PlaySound("assets/sonidos/golpe_madera.wav", ...);
+
+            // 4. ¿Se cayó el árbol?
+            if (misArboles[i].vida <= 0) {
+                misArboles[i].activa = 0; // Desaparece
+                
+                // Dar recompensa
+                int maderaGanada = (misArboles[i].tipo == 1) ? 5 : 3; // Grande da 5, chico da 3
+                j->madera += maderaGanada;
+                j->experiencia += 10; // Un poco de XP también
+            }
+            
+            return; // Solo golpeamos un árbol a la vez
         }
     }
 }

@@ -1,8 +1,8 @@
-/* src/main.c - VERSIÓN CORREGIDA Y COMPATIBLE */
+/* src/main.c - VERSIÓN CORREGIDA FINAL */
 #include <windows.h>
 #include <stdio.h>
-#include "global.h"             // Estructuras del jugador y juego
-#include "mapa/mapa.h"          // Funciones del mapa
+#include "global.h"             
+#include "mapa/mapa.h"          
 #include "recursos/recursos.h"  
 
 /* ========== VARIABLES GLOBALES ========== */
@@ -11,7 +11,7 @@ Jugador miJugador;
 Camera miCamara;
 EstadoJuego estadoJuego;
 
-/* ========== PROCEDIMIENTO DE VENTANA (Eventos) ========== */
+/* ========== PROCEDIMIENTO DE VENTANA ========== */
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
@@ -21,11 +21,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             PostQuitMessage(0);
             return 0;
 
-        /* Evitar parpadeo de pantalla */
         case WM_ERASEBKGND:
             return 1;
 
-        /* --- CLIC IZQUIERDO --- */
         case WM_LBUTTONDOWN:
         {
             int mouseX = LOWORD(lParam);
@@ -35,32 +33,27 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 procesarClickMenu(mouseX, mouseY, hwnd, &estadoJuego);
             }
             else if (estadoJuego.enPartida) {
-                // 1. Botón Mochila
+                // Botón Mochila
                 int btnX = 20; int btnY = 120; int tamanoBolso = 64;
                 if (mouseX >= btnX && mouseX <= btnX + tamanoBolso &&
                     mouseY >= btnY && mouseY <= btnY + tamanoBolso) {
                     miJugador.inventarioAbierto = !miJugador.inventarioAbierto;
                     InvalidateRect(hwnd, NULL, FALSE);
                 }
-                // 2. Interacciones
                 procesarClickMochila(mouseX, mouseY, &miJugador, hwnd);
                 procesarClickMochilaTienda(mouseX, mouseY, 0, &miJugador, hwnd);
             }
             return 0;
         }
 
-        /* --- CLIC DERECHO --- */
         case WM_RBUTTONDOWN:
         {
-            int mouseX = LOWORD(lParam);
-            int mouseY = HIWORD(lParam);
             if (estadoJuego.enPartida) {
-                procesarClickMochilaTienda(mouseX, mouseY, 1, &miJugador, hwnd);
+                procesarClickMochilaTienda(LOWORD(lParam), HIWORD(lParam), 1, &miJugador, hwnd);
             }
             return 0;
         }
 
-        /* --- TECLADO --- */
         case WM_KEYDOWN:
         {
             if (estadoJuego.mostrarMenu) {
@@ -68,27 +61,28 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             } 
             else if (estadoJuego.enPartida) {
                 switch (wParam) {
-                    case VK_ESCAPE: // Salir al menú
+                    case VK_ESCAPE: 
                         estadoJuego.enPartida = 0;
                         estadoJuego.mostrarMenu = 1;
                         InvalidateRect(hwnd, NULL, FALSE);
                         return 0;
 
-                    // Movimiento
                     case 'W': moverJugador(&miJugador, mapaMundo, 0, -1); break;
                     case 'S': moverJugador(&miJugador, mapaMundo, 0, 1); break;
                     case 'A': moverJugador(&miJugador, mapaMundo, -1, 0); break;
                     case 'D': moverJugador(&miJugador, mapaMundo, 1, 0); break;
                     case 'I': miJugador.inventarioAbierto = !miJugador.inventarioAbierto; break;
 
-                    // Zoom
-                    case VK_ADD: case 0xBB: // '+'
+                    case VK_ADD: case 0xBB: 
                         miCamara.zoom += 1; if (miCamara.zoom > 5) miCamara.zoom = 5; break;
-                    case VK_SUBTRACT: case 0xBD: // '-'
+                    case VK_SUBTRACT: case 0xBD: 
                         miCamara.zoom -= 1; if (miCamara.zoom < 1) miCamara.zoom = 1; break;
-
-                    case VK_SPACE: 
-                        // golpearVaca(&miJugador); // <-- AÚN NO CREADA EN MAPA.C (Comentada para que compile)
+                        case VK_SPACE: 
+                        // Intentar talar lo que esté enfrente
+                        intentarTalarArbol(&miJugador);
+                        
+                        // (Si implementas golpearVaca después, puedes poner ambas aquí 
+                        // y el juego decidirá qué golpeó primero)
                         break;
                 }
                 actualizarCamara(&miCamara, miJugador);
@@ -97,12 +91,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             return 0;
         }
 
-        /* --- DIBUJADO --- */
         case WM_PAINT:
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
-
             RECT rc; GetClientRect(hwnd, &rc);
             int ancho = rc.right; int alto = rc.bottom;
             HDC hdcMem = CreateCompatibleDC(hdc);
@@ -113,10 +105,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 dibujarMenuConSprites(hdcMem, hwnd, &estadoJuego);
             } 
             else if (estadoJuego.enPartida) {
-                // Dibujamos capas en orden:
                 dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto, estadoJuego.frameTienda);
                 dibujarArboles(hdcMem, miCamara, ancho, alto); 
-                dibujarVacas(hdcMem, miCamara, ancho, alto); 
+                dibujarVacas(hdcMem, miCamara, ancho, alto);
                 dibujarJugador(hdcMem, miJugador, miCamara);
                 dibujarHUD(hdcMem, &miJugador, ancho, alto);
             }
@@ -128,6 +119,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         }
         default: return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
+    
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
@@ -151,26 +143,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     CargarRecursos(); 
 
-    // --- DEBUG DE RECURSOS ---
-    {
-        int faltan = 0;
-        char msg[512] = "";
-        for (int i = 0; i < 8; i++) {
-            if (!hBmpVaca[i]) {
-                char tmp[64]; sprintf(tmp, "Falta hBmpVaca[%d]\n", i);
-                strcat(msg, tmp); faltan++;
-            }
-        }
-        if (faltan) MessageBox(NULL, msg, "Recursos faltantes: vacas", MB_OK | MB_ICONWARNING);
-    }
+    // Verificación de archivos de vacas (DEBUG)
+    int vacasFaltan = 0;
+    for(int i=0; i<8; i++) if(!hBmpVaca[i]) vacasFaltan++;
+    if(vacasFaltan > 0) MessageBox(NULL, "Faltan imágenes de vacas en assets/animales/", "Error Recursos", MB_OK);
 
     // Inicializar lógica
     inicializarJuego(&miJugador, &estadoJuego, mapaMundo);
     
-    // NOTA: inicializarJuego ya llama internamente a vacas y árboles en mapa.c
-    // Si quieres reiniciarlas aquí explícitamente:
-    inicializarVacas();       // <--- CORREGIDO: Sin argumentos
-    inicializarArboles(mapaMundo); 
+    // CORRECCIÓN: Llamadas sin argumentos o con los correctos
+    inicializarVacas();           
+    inicializarArboles(mapaMundo);
 
     miCamara.zoom = 3;  
     actualizarCamara(&miCamara, miJugador);
@@ -178,7 +161,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ShowWindow(hwnd, SW_MAXIMIZE); 
     UpdateWindow(hwnd);   
 
-    // --- BUCLE DE JUEGO (GAME LOOP) ---
+    // Bucle del juego
     MSG msg = {0};
     while (msg.message != WM_QUIT) {
         if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -187,18 +170,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         } 
         else {
             if (estadoJuego.enPartida) {
-                // LÓGICA CONTINUA
-                actualizarVacas(mapaMundo); // <--- CORREGIDO: Pasamos el mapa para colisiones
+                // CORRECCIÓN: Pasar el mapa a actualizarVacas
+                actualizarVacas(mapaMundo); 
                 
-                // Animación Gato
+                // Animación tienda
                 static int timerGato = 0;
                 if (++timerGato > 30) { 
                     estadoJuego.frameTienda = !estadoJuego.frameTienda;
                     timerGato = 0;
                 }
-
                 InvalidateRect(hwnd, NULL, FALSE);
-                Sleep(16); // ~60 FPS
+                Sleep(16); 
             }
         }
     }

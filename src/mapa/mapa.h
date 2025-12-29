@@ -15,7 +15,7 @@ int EsSuelo(int x, int y);
 
 /* --- SISTEMA DE VACAS --- */
 void inicializarVacas(); // Sin argumentos
-void actualizarVacas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]); // Recibe mapa para no caminar en agua
+void actualizarVacas();
 void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto);
 
 // (Esta función aún no la hemos creado en mapa.c, la comento para evitar errores)
@@ -24,6 +24,7 @@ void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto);
 /* --- SISTEMA DE ÁRBOLES --- */
 void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto);
+void intentarTalarArbol(Jugador *j); // <--- AGREGAR ESTA LÍNEA
 
 /* --- CÁMARA --- */
 void actualizarCamara(Camera *camara, Jugador jugador);

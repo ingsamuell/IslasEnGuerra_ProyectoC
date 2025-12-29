@@ -74,14 +74,14 @@ void CargarRecursos() {
     hBmpArbolGrande = CargarImagen("assets/mundo/Arbolgrande_islaUno.bmp");
 
     // --- CARGAR VACAS ---
-    hBmpVaca[0] = CargarImagen("assets/animales/vaca_0.bmp");
-    hBmpVaca[1] = CargarImagen("assets/animales/vaca_1.bmp");
-    hBmpVaca[2] = CargarImagen("assets/animales/vaca_2.bmp");
-    hBmpVaca[3] = CargarImagen("assets/animales/vaca_3.bmp");
-    hBmpVaca[4] = CargarImagen("assets/animales/vaca_4.bmp");
-    hBmpVaca[5] = CargarImagen("assets/animales/vaca_5.bmp");
-    hBmpVaca[6] = CargarImagen("assets/animales/vaca_6.bmp");
-    hBmpVaca[7] = CargarImagen("assets/animales/vaca_7.bmp");
+    hBmpVaca[0] = CargarImagen("assets/mundo/vaca_0.bmp");
+    hBmpVaca[1] = CargarImagen("assets/mundo/vaca-1.bmp");
+    hBmpVaca[2] = CargarImagen("assets/mundo/vaca-2.bmp");
+    hBmpVaca[3] = CargarImagen("assets/mundo/vaca-3.bmp");
+    hBmpVaca[4] = CargarImagen("assets/mundo/vaca-4.bmp");
+    hBmpVaca[5] = CargarImagen("assets/mundo/vaca-5.bmp");
+    hBmpVaca[6] = CargarImagen("assets/mundo/vaca-6.bmp");
+    hBmpVaca[7] = CargarImagen("assets/mundo/vaca-7.bmp");
 
     // Jugador
     hBmpJugadorAnim[0][0] = CargarImagen("assets/jugador/p_frente_base.bmp");
@@ -124,7 +124,11 @@ void CargarRecursos() {
 
     // Mundo
     hBmpIslaCentral = CargarImagen("assets/mundo/ISLA_1.bmp");
-    hBmpIslaNoreste = CargarImagen("assets/mundo/isla_principal.bmp");
+    hBmpIslaGrande = CargarImagen("assets/mundo/Isla_grande.bmp");
+    hBmpIslaSec1 = CargarImagen("assets/mundo/islasecundaria_UNO.bmp");
+    hBmpIslaSec2 = CargarImagen("assets/mundo/islasecundaria_DOS.bmp");
+    hBmpIslaSec3 = CargarImagen("assets/mundo/islasecundaria_TRES.bmp");
+    hBmpIslaSec4 = CargarImagen("assets/mundo/islasecundaria_CUATRO.bmp");
     hBmpCastilloJugador = CargarImagen("assets/mundo/Castillo_jugador.bmp");
     hBmpCastilloEnemigo1 = CargarImagen("assets/mundo/Castillo_enemigoUNO.bmp");
     hBmpCastilloEnemigo2 = CargarImagen("assets/mundo/Castillo_enemigoDOS.bmp");
