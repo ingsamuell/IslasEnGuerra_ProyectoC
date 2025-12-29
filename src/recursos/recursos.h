@@ -16,11 +16,17 @@ extern HBITMAP hBmpTitulo;
 extern HBITMAP hBmpBoton;
 extern HBITMAP hBmpBotonSel;
 
-// 2. JUGADOR Y TIENDA
+// 2. JUGADOR, TIENDA Y ENTIDADES
 extern HBITMAP hBmpJugador;
 extern HBITMAP hBmpJugadorAnim[4][3];
 extern HBITMAP hBmpTienda[2];
 extern HBITMAP hBmpArmaduraAnim[4][3];
+extern HBITMAP hBmpVaca[8]; 
+extern HBITMAP hBmpArbolChico;
+extern HBITMAP hBmpArbolGrande;
+
+// (Opcional: Si necesitas acceder al mapa desde recursos, déjalo, si no, se puede quitar)
+extern char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
 
 // 3. INTERFAZ (UI)
 extern HBITMAP hBmpInvCerrado;
@@ -48,7 +54,7 @@ extern HBITMAP hBmpIconoHoja;
 extern HBITMAP hBmpIconoEspada;
 extern HBITMAP hBmpIconoPico;
 
-// 5. MUNDO (NUEVAS ISLAS)
+// 5. MUNDO (ISLAS)
 extern HBITMAP hBmpIslaGrande; // Central (1000x1000)
 extern HBITMAP hBmpIslaSec1;   // Oeste (320x250)
 extern HBITMAP hBmpIslaSec2;   // Norte (700x700)
@@ -56,7 +62,6 @@ extern HBITMAP hBmpIslaSec3;   // Este (400x400)
 extern HBITMAP hBmpIslaSec4;   // Sur (500x500)
 
 extern HBITMAP hBmpCastilloJugador;
-extern HBITMAP hBmpArbol;
 extern HBITMAP hBmpRoca;
 
 // --- FUNCIONES ---

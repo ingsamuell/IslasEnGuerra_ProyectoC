@@ -1,13 +1,21 @@
 /* src/mapa/mapa.c - VERSIÓN LIMPIA Y CORREGIDA */
-#include "mapa.h"
-#include "recursos/recursos.h"
+#include "mapa.h"          // En la misma carpeta
+#include "../global.h"     // Subir a src/
+#include "../recursos/recursos.h" // Subir a src/ y entrar a recursos/
 #include <stdio.h>
-#include <math.h>
 #include <mmsystem.h> // Necesario para PlaySound
+#include <math.h> // Necesario para calcular distancias de ataque
+#include <stdbool.h>
+
+// Referencia a las imágenes cargadas en recursos.c
+extern HBITMAP hBmpVaca[8]; 
+// Estado interno de las vacas
+Vaca manada[MAX_VACAS];
 
 #define MAX_ISLAS 5
 Isla misIslas[MAX_ISLAS];
-
+// Variable global de árboles
+Arbol misArboles[MAX_ARBOLES];
 // --- INICIALIZACIÓN ---
 void inicializarIslas()
 {
@@ -69,12 +77,17 @@ void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
     for (int i = 0; i < MUNDO_FILAS; i++)
         for (int j = 0; j < MUNDO_COLUMNAS; j++)
             mapa[i][j] = 0;
+
+
 }
 
 void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
 {
     inicializarIslas();
     inicializarMapa(mapa);
+    inicializarArboles(mapa); // Luego plantamos los árboles
+    inicializarVacas();
+
 
     jugador->x = 1600;
     jugador->y = 1600;
@@ -209,6 +222,7 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
     HBITMAP imgSalir = (hBmpBtnSalir) ? hBmpBtnSalir : hBmpBoton;
     DibujarImagen(hdc, imgSalir, salirX, salirY, salirW, salirH);
 }
+
 
 // --- INTERACCIÓN MENÚ ---
 int verificarColisionBoton(int mouseX, int mouseY, int btnX, int btnY, int btnAncho, int btnAlto)
@@ -432,6 +446,130 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
     }
 }
 
+
+// 1. INICIALIZAR VACAS (Llamar a esto dentro de inicializarJuego)
+void inicializarVacas() {
+    for(int i=0; i<MAX_VACAS; i++) {
+        manada[i].activa = 0; // Limpiar
+    }
+
+    // Ejemplo: Crear 3 vacas en la Isla Central
+    // Vaca 1
+    manada[0].activa = 1;
+    manada[0].x = 1200;
+    manada[0].y = 1400;
+    manada[0].frameAnim = 0;
+
+    // Vaca 2 (Un poco más atrás)
+    manada[1].activa = 1;
+    manada[1].x = 1100;
+    manada[1].y = 1500;
+    manada[1].frameAnim = 2; // Empieza en otro frame para que no se vean idénticas
+
+    // Vaca 3
+    manada[2].activa = 1;
+    manada[2].x = 1300;
+    manada[2].y = 1350;
+    manada[2].frameAnim = 4;
+}
+
+// 2. ACTUALIZAR VACAS (Movimiento automático)
+void actualizarVacas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    for(int i=0; i<MAX_VACAS; i++) {
+        if(!manada[i].activa) continue;
+
+        // A. Movimiento (Izquierda a Derecha -> Aumentar X)
+        int velocidad = 2; 
+        int futuraX = manada[i].x + velocidad;
+
+        // B. Verificar colisión (Para que no caminen sobre el agua)
+        // Verificamos "los pies" de la vaca
+        if (EsSuelo(futuraX + 16, manada[i].y + 30)) {
+            manada[i].x = futuraX;
+        } else {
+            // Si llega al agua/borde, la regresamos al inicio para que haga un bucle
+            // O podrías hacer que cambie de dirección (restar X)
+            manada[i].x -= 200; // Retrocede un poco o vuelve a empezar
+        }
+
+        // C. Animación (Cambiar frames 0-7)
+        manada[i].contadorAnim++;
+        if(manada[i].contadorAnim > 5) { // Cada 5 ciclos cambia de imagen (ajusta este número para velocidad)
+            manada[i].frameAnim++;
+            if(manada[i].frameAnim >= 8) {
+                manada[i].frameAnim = 0; // Volver al frame 0
+            }
+            manada[i].contadorAnim = 0;
+        }
+    }
+}
+
+// 3. DIBUJAR VACAS
+void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto) { 
+        for(int i=0; i<MAX_VACAS; i++) {
+        if(!manada[i].activa) continue;
+
+        // Cálculo de posición en pantalla (Igual que las islas y jugador)
+		// Importante sumar la mitad del ancho/alto para centrar al jugador
+		int pantallaX = (int)((manada[i].x - cam.x) * cam.zoom) + (ancho / 2);
+		int pantallaY = (int)((manada[i].y - cam.y) * cam.zoom) + (alto / 2);
+        int tam = 32 * cam.zoom; // Tamaño base 32x32 escalado
+
+        // Dibujar el frame actual
+        HBITMAP img = hBmpVaca[manada[i].frameAnim];
+        if(img) {
+            DibujarImagen(hdc, img, pantallaX, pantallaY, tam, tam);
+        }
+    }
+}
+// 1. INICIALIZAR ÁRBOLES (Aleatorio inteligente)
+void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    int contador = 0;
+    int intentos = 0;
+
+    // Limpiamos el array primero
+    for(int i=0; i<MAX_ARBOLES; i++) misArboles[i].activa = 0;
+
+    // Intentamos colocar árboles hasta llenar el cupo o cansarnos
+    while (contador < MAX_ARBOLES && intentos < 5000) {
+        intentos++;
+
+        // Coordenada aleatoria en todo el mundo (3200x3200 aprox)
+        int rx = rand() % (MUNDO_COLUMNAS * TAMANO_CELDA_BASE);
+        int ry = rand() % (MUNDO_FILAS * TAMANO_CELDA_BASE);
+
+        // VERIFICACIÓN: ¿Es tierra firme?
+        // Verificamos el punto donde estaría el tronco (centro abajo)
+        if (EsSuelo(rx + 16, ry + 30)) { 
+            misArboles[contador].x = rx;
+            misArboles[contador].y = ry;
+            misArboles[contador].tipo = rand() % 2; // 0 o 1
+            misArboles[contador].activa = 1;
+            contador++;
+        }
+    }
+}
+
+// 2. DIBUJAR ÁRBOLES
+void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto) {
+    for (int i = 0; i < MAX_ARBOLES; i++) {
+        if (!misArboles[i].activa) continue;
+
+        // Calcular posición en pantalla
+        int sx = (misArboles[i].x - cam.x) * cam.zoom;
+        int sy = (misArboles[i].y - cam.y) * cam.zoom;
+        
+        // El árbol grande mide el doble (64px) aprox, el chico 32px
+        int tamBase = 32 * cam.zoom;
+        if (misArboles[i].tipo == 1) tamBase = 64 * cam.zoom; 
+
+        // Optimización: Solo dibujar si está en pantalla
+        if (sx > -tamBase && sx < ancho && sy > -tamBase && sy < alto) {
+            HBITMAP img = (misArboles[i].tipo == 1) ? hBmpArbolGrande : hBmpArbolChico;
+            if(img) DibujarImagen(hdc, img, sx, sy, tamBase, tamBase);
+        }
+    }
+}
 // --- DIBUJADO DE TIENDAS ---
 void dibujarTiendasEnIslas(HDC hdc, Camera cam, int ancho, int alto, int frameTienda)
 {
@@ -633,17 +771,16 @@ void dibujarJugador(HDC hdc, Jugador jugador, Camera cam)
         DeleteObject(luz);
     }
 }
-
 // --- DIBUJADO PRINCIPAL (MAPA + HUD) ---
 void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda)
 {
-    // Fondo de Agua
+    // 1. FONDO DE AGUA (Primero de todo, para que sea la base)
     HBRUSH agua = CreateSolidBrush(RGB(0, 100, 180));
     RECT r = {0, 0, ancho, alto};
     FillRect(hdc, &r, agua);
     DeleteObject(agua);
 
-    // Dibujar las 5 Islas
+    // 2. DIBUJAR LAS 5 ISLAS
     for (int i = 0; i < MAX_ISLAS; i++)
     {
         if (!misIslas[i].activa) continue;
@@ -665,11 +802,12 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
         if (img) DibujarImagen(hdc, img, sx, sy, sw, sh);
     }
 
-    // Dibujar Tiendas (Asegúrate de que la posición de la tienda esté en una isla válida)
-    // Nota: La tienda estaba en (1450, 1900). Como la Isla Grande ahora va de 1100 a 2100 en Y,
-    // 1900 sigue siendo válido (parte inferior). ¡No necesitas cambiar nada aquí!
+    // 3. DIBUJAR LAS VACAS (Encima de las islas, debajo de la tienda/HUD)
+    dibujarVacas(hdc, cam, ancho, alto);
+    dibujarArboles(hdc, cam, ancho, alto); 
     dibujarTiendasEnIslas(hdc, cam, ancho, alto, frameTienda);
 }
+
 
 void dibujarItemRejilla(HDC hdc, HBITMAP icono, int cantidad, int maximo, int x, int y, const char *nombre)
 {
