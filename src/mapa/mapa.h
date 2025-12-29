@@ -24,7 +24,12 @@ void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto);
 /* --- SISTEMA DE ÁRBOLES --- */
 void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto);
-void intentarTalarArbol(Jugador *j); // <--- AGREGAR ESTA LÍNEA
+void talarArbol(Jugador *j); 
+
+/* --- SISTEMA DE TESOROS --- */
+void inicializarTesoros();
+void abrirTesoro(Jugador *j);
+void dibujarTesoros(HDC hdc, Camera cam, int ancho, int alto);
 
 /* --- CÁMARA --- */
 void actualizarCamara(Camera *camara, Jugador jugador);

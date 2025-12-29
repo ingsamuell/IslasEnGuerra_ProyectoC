@@ -16,6 +16,9 @@ Vaca manada[MAX_VACAS];
 Isla misIslas[MAX_ISLAS];
 // Variable global de árboles
 Arbol misArboles[MAX_ARBOLES];
+// Variable global
+Tesoro misTesoros[MAX_TESOROS];
+
 // --- INICIALIZACIÓN ---
 void inicializarIslas()
 {
@@ -472,18 +475,18 @@ void actualizarVacas() {
         if (!manada[i].activa) continue;
 
         if (manada[i].estado == 0) { // CAMINANDO
-            float futuraX = manada[i].x + (1.2f * manada[i].direccion);
+            float proximoX = manada[i].x + (1.2f * manada[i].direccion);
 
             // Si se aleja más de 100px de su origen, cambia de dirección
-            if (fabs(futuraX - manada[i].xInicial) > 100) {
-                manada[i].direccion *= -1; // Invertir: si era 1 (der) pasa a -1 (izq)
+            if (fabs(proximoX - manada[i].xInicial) > 100) {
+                manada[i].direccion *= -1; 
                 manada[i].estado = 1;      // Se detiene un momento
                 manada[i].contadorEspera = 0;
             } else {
-                manada[i].x = futuraX;
+                manada[i].x = proximoX;
             }
 
-            // Animación de caminata (ciclo de 0 a 3)
+            // Animación cíclica de 0 a 3
             manada[i].contadorAnim++;
             if (manada[i].contadorAnim > 8) {
                 manada[i].frameAnim = (manada[i].frameAnim + 1) % 4;
@@ -492,12 +495,11 @@ void actualizarVacas() {
         } 
         else { // ESTADO: QUIETA
             manada[i].contadorEspera++;
-            if (manada[i].contadorEspera > 70) { // Espera un poco
-                manada[i].estado = 0;
-            }
+            if (manada[i].contadorEspera > 70) manada[i].estado = 0;
         }
     }
 }
+
 
 void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto) {
     for (int i = 0; i < MAX_VACAS; i++) {
@@ -507,18 +509,14 @@ void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto) {
         int sy = (int)((manada[i].y - cam.y) * cam.zoom) + (alto / 2);
         int tam = (int)(48 * cam.zoom);
 
-        // LÓGICA DE SPRITES:
-        // Si direccion es -1 (Izquierda): Usa indices 0, 1, 2, 3
-        // Si direccion es 1 (Derecha): Usa indices 4, 5, 6, 7 (frameAnim + 4)
+        // Lógica de sprites: Izquierda (0-3), Derecha (4-7)
         int indiceSprite = manada[i].frameAnim;
         if (manada[i].direccion == 1) {
             indiceSprite += 4; 
         }
 
         HBITMAP img = hBmpVaca[indiceSprite];
-        if (img) {
-            DibujarImagen(hdc, img, sx, sy, tam, tam);
-        }
+        if (img) DibujarImagen(hdc, img, sx, sy, tam, tam);
     }
 }
 // 1. INICIALIZAR ÁRBOLES (Aleatorio inteligente)
@@ -537,21 +535,21 @@ void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
         int rx = rand() % (MUNDO_COLUMNAS * TAMANO_CELDA_BASE);
         int ry = rand() % (MUNDO_FILAS * TAMANO_CELDA_BASE);
 
-        // VERIFICACIÓN: ¿Es tierra firme?
-        // Verificamos el punto donde estaría el tronco (centro abajo)
-        if (EsSuelo(rx + 16, ry + 30)) { 
-            misArboles[contador].x = rx;
-            misArboles[contador].y = ry;
-            misArboles[contador].tipo = rand() % 2; // 0 o 1
-            misArboles[contador].activa = 1;
-            contador++;
-        }
+if (EsSuelo(rx + 16, ry + 30)) { 
+    misArboles[contador].x = rx;
+    misArboles[contador].y = ry;
+    misArboles[contador].tipo = rand() % 2; 
+    misArboles[contador].activa = 1;
+    misArboles[contador].vida = 5; // <--- ¡TODOS CON 5 DE VIDA!
+    contador++;
+}
     }
     
     while (contador < MAX_ARBOLES && intentos < 5000) {
         // ... (lógica de posición aleatoria) ...
-
-        if (EsSuelo(rx + 16, ry + 30, mapa)) { 
+	int rx = rand() % MUNDO_ANCHO;
+	int ry = rand() % MUNDO_ALTO;
+        if (EsSuelo(rx + 16, ry + 30)) { 
             misArboles[contador].x = rx;
             misArboles[contador].y = ry;
             misArboles[contador].tipo = rand() % 2; 
@@ -587,55 +585,168 @@ void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto) {
     }
 }
 
-// --- SISTEMA DE TALA ---
-void intentarTalarArbol(Jugador *j) {
-    // 1. Calcular el punto de golpe frente al jugador
-    int alcance = 40; // Qué tan lejos llega el golpe
-    int golpeX = j->x + 16; // Centro del jugador X
-    int golpeY = j->y + 16; // Centro del jugador Y
+// --- FUNCIÓN DE TALAR ---
+void talarArbol(Jugador *j) {
+    int rango = 40; // Distancia para poder golpear (píxeles)
 
-    // Ajustamos la coordenada del golpe según hacia dónde mira
-    if (j->direccion == DIR_DERECHA) golpeX += alcance;
-    else if (j->direccion == DIR_IZQUIERDA) golpeX -= alcance;
-    else if (j->direccion == DIR_ABAJO) golpeY += alcance;
-    else if (j->direccion == DIR_ARRIBA) golpeY -= alcance;
+    // Centro del jugador
+    int jx = j->x + 16;
+    int jy = j->y + 16;
 
-    // 2. Buscar si hay un árbol en ese punto
     for (int i = 0; i < MAX_ARBOLES; i++) {
         if (!misArboles[i].activa) continue;
 
-        // Definir la caja de colisión del árbol
-        int arbolAncho = 32;
-        int arbolAlto = 32;
-        if (misArboles[i].tipo == 1) { // Árbol grande es más grande
-            arbolAncho = 64; 
-            arbolAlto = 64;
-        }
+        // Calcular centro del árbol (aprox)
+        int tam = (misArboles[i].tipo == 1) ? 64 : 32;
+        int ax = misArboles[i].x + (tam / 2);
+        int ay = misArboles[i].y + (tam / 2);
 
-        // 3. Verificar colisión (Punto vs Rectángulo)
-        if (golpeX >= misArboles[i].x && golpeX <= misArboles[i].x + arbolAncho &&
-            golpeY >= misArboles[i].y && golpeY <= misArboles[i].y + arbolAlto) {
-            
-            // ¡GOLPE CONFIRMADO!
-            misArboles[i].vida--; // Restar vida (golpe de mano quita 1)
+        // Verificar distancia (Si está cerca)
+        if (abs(jx - ax) < rango && abs(jy - ay) < rango) {
 
-            // Efecto visual simple (opcional): Puedes reproducir sonido aquí
-            // PlaySound("assets/sonidos/golpe_madera.wav", ...);
+            // 1. Restar vida
+            misArboles[i].vida--;
 
-            // 4. ¿Se cayó el árbol?
+            // (Opcional) Efecto visual o sonoro aquí
+            // PlaySound("assets/sonidos/golpe.wav", ...);
+
+            // 2. ¿Se cayó el árbol?
             if (misArboles[i].vida <= 0) {
                 misArboles[i].activa = 0; // Desaparece
-                
-                // Dar recompensa
-                int maderaGanada = (misArboles[i].tipo == 1) ? 5 : 3; // Grande da 5, chico da 3
+
+                // 3. Dar recompensa
+                int maderaGanada = (misArboles[i].tipo == 1) ? 5 : 3;
                 j->madera += maderaGanada;
-                j->experiencia += 10; // Un poco de XP también
+
+                // Feedback (Mensaje temporal o sonido de premio)
+                // PlaySound("assets/sonidos/madera.wav", ...);
             }
-            
+
             return; // Solo golpeamos un árbol a la vez
         }
     }
 }
+
+
+// 1. INICIALIZAR TESOROS (Escondidos detrás de árboles)
+void inicializarTesoros() {
+    // Tesoro 1: TIPO ORO (0)
+    // Escondido "detrás" de un árbol (Y menor que el árbol para que el árbol lo tape si dibujas el árbol después)
+    // O simplemente cerca de coordenadas boscosas.
+    misTesoros[0].x = 1320; 
+    misTesoros[0].y = 1250; 
+    misTesoros[0].tipo = 0; // Solo Oro
+    misTesoros[0].estado = 0; // Cerrado
+    misTesoros[0].activa = 1;
+
+    // Tesoro 2: TIPO JOYAS/HIERRO (1)
+    misTesoros[1].x = 1850; 
+    misTesoros[1].y = 1550; 
+    misTesoros[1].tipo = 1; // Oro + Hierro
+    misTesoros[1].estado = 0; // Cerrado
+    misTesoros[1].activa = 1;
+}
+
+// --- 2. ABRIR TESORO (Lógica de 2 Pasos) ---
+void abrirTesoro(Jugador *j) {
+    int rango = 60; // Distancia para interactuar
+    int jx = j->x + 16;
+    int jy = j->y + 16;
+
+    for(int i = 0; i < MAX_TESOROS; i++) {
+        if(!misTesoros[i].activa) continue;
+        
+        // Si ya está vacío (Estado 2), no hacemos nada
+        if(misTesoros[i].estado == 2) continue; 
+
+        int tx = misTesoros[i].x + 16;
+        int ty = misTesoros[i].y + 16;
+
+        if(abs(jx - tx) < rango && abs(jy - ty) < rango) {
+            
+            // PASO 1: ABRIR EL COFRE
+            if (misTesoros[i].estado == 0) {
+                misTesoros[i].estado = 1; // Pasa a "Abierto con cosas"
+                return; // Terminamos por este frame
+            }
+
+            // PASO 2: TOMAR EL LOOT
+            if (misTesoros[i].estado == 1) {
+                // Generar Loot Random
+                int oroGanado = 30 + (rand() % 11); // 30-40
+                
+                if(misTesoros[i].tipo == 0) {
+                    // Solo Oro
+                    j->oro += oroGanado;
+                } 
+                else {
+                    // Oro + Hierro (Joyas)
+                    int hierroGanado = 15 + (rand() % 11); // 15-25
+                    j->oro += oroGanado;
+                    j->hierro += hierroGanado;
+                }
+
+                misTesoros[i].estado = 2; // Pasa a "Vacío"
+                return;
+            }
+        }
+    }
+}
+
+// --- 3. DIBUJAR TESOROS CON TEXTO ---
+void dibujarTesoros(HDC hdc, Camera cam, int ancho, int alto) {
+    // Calculamos la posición aproximada del jugador (centro de pantalla)
+    // para saber si mostrar el mensaje.
+    int jugadorScreenX = ancho / 2;
+    int jugadorScreenY = alto / 2;
+
+    for(int i = 0; i < MAX_TESOROS; i++) {
+        if(!misTesoros[i].activa) continue;
+
+        int sx = (misTesoros[i].x - cam.x) * cam.zoom;
+        int sy = (misTesoros[i].y - cam.y) * cam.zoom;
+        int tam = 32 * cam.zoom;
+
+        // Solo dibujar si está en pantalla
+        if(sx > -tam && sx < ancho && sy > -tam && sy < alto) {
+            HBITMAP img = NULL;
+            
+            // SELECCIÓN DE IMAGEN SEGÚN ESTADO
+            if(misTesoros[i].estado == 0) {
+                img = hBmpTesoroCerrado;
+            } 
+            else if(misTesoros[i].estado == 1) {
+                // Está abierto pero lleno: mostramos Oro o Joyas
+                if(misTesoros[i].tipo == 0) img = hBmpTesoroOro;
+                else img = hBmpTesoroJoyas;
+            } 
+            else {
+                img = hBmpTesoroVacio; // Ya lo tomaste
+            }
+
+            if(img) DibujarImagen(hdc, img, sx, sy, tam, tam);
+
+            int dist = sqrt(pow(sx + (tam/2) - jugadorScreenX, 2) + pow(sy + (tam/2) - jugadorScreenY, 2));
+            
+            if (dist < 100 && misTesoros[i].estado < 2) { // 100px de radio en pantalla
+                SetBkMode(hdc, TRANSPARENT);
+                SetTextColor(hdc, RGB(255, 255, 0)); // Amarillo
+                
+                char mensaje[64];
+                if (misTesoros[i].estado == 0) {
+                    sprintf(mensaje, "ESPACIO: Abrir Tesoro");
+                } else {
+                    sprintf(mensaje, "ESPACIO: Tomar Objetos");
+                }
+                
+                // Dibujar texto centrado sobre el cofre
+                TextOut(hdc, sx - 20, sy - 20, mensaje, strlen(mensaje));
+            }
+        }
+    }
+}
+
+
 // --- DIBUJADO DE TIENDAS ---
 void dibujarTiendasEnIslas(HDC hdc, Camera cam, int ancho, int alto, int frameTienda)
 {

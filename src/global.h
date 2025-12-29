@@ -20,9 +20,13 @@
 #define DIR_DERECHA   3
 
 // --- LIMITES ---
+#define MUNDO_ANCHO 2000  // Ajusta este valor al tamaño real de tu mapa
+#define MUNDO_ALTO 2000   // Ajusta este valor al tamaño real de tu mapa
 #define MAX_VACAS 8
 #define VIDA_VACA 100
-#define MAX_ARBOLES 20// Un buen número para cubrir 5 islas
+#define MAX_ARBOLES 30// Un buen número para cubrir 5 islas
+// --- TESOROS ---
+#define MAX_TESOROS 2
 
 // --- ESTRUCTURA DEL JUGADOR ---
 typedef struct {
@@ -91,6 +95,14 @@ typedef struct {
     int vida;   // <--- NUEVO: Vida del árbol (5 golpes)
 } Arbol;
 
+
+typedef struct {
+    int x;
+    int y;
+    int tipo;   // 0 = Solo Oro, 1 = Oro + Hierro (Joyas)
+    int estado; // 0 = Cerrado, 1 = Abierto/Vacío
+    int activa; // 1 = Existe
+} Tesoro;
 // --- OTRAS ESTRUCTURAS ---
 typedef struct {
     int mostrarMenu;

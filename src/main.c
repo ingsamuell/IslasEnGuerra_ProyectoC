@@ -79,10 +79,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                         miCamara.zoom -= 1; if (miCamara.zoom < 1) miCamara.zoom = 1; break;
                         case VK_SPACE: 
                         // Intentar talar lo que esté enfrente
-                        intentarTalarArbol(&miJugador);
+                        talarArbol(&miJugador);
+                        abrirTesoro(&miJugador);
                         
                         // (Si implementas golpearVaca después, puedes poner ambas aquí 
                         // y el juego decidirá qué golpeó primero)
+                        InvalidateRect(hwnd, NULL, FALSE);
                         break;
                 }
                 actualizarCamara(&miCamara, miJugador);
@@ -106,6 +108,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             } 
             else if (estadoJuego.enPartida) {
                 dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto, estadoJuego.frameTienda);
+                dibujarTesoros(hdcMem, miCamara, ancho, alto); 
                 dibujarArboles(hdcMem, miCamara, ancho, alto); 
                 dibujarVacas(hdcMem, miCamara, ancho, alto);
                 dibujarJugador(hdcMem, miJugador, miCamara);
@@ -154,6 +157,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // CORRECCIÓN: Llamadas sin argumentos o con los correctos
     inicializarVacas();           
     inicializarArboles(mapaMundo);
+    inicializarTesoros(); 
+    
 
     miCamara.zoom = 3;  
     actualizarCamara(&miCamara, miJugador);

@@ -31,6 +31,10 @@ HBITMAP hBmpIslaCentral = NULL; HBITMAP hBmpIslaNoreste = NULL;
 HBITMAP hBmpCastilloJugador = NULL;
 HBITMAP hBmpCastilloEnemigo1 = NULL; HBITMAP hBmpCastilloEnemigo2 = NULL; HBITMAP hBmpCastilloEnemigo3 = NULL;
 HBITMAP hBmpRoca = NULL;
+HBITMAP hBmpTesoroCerrado = NULL;
+HBITMAP hBmpTesoroOro = NULL;
+HBITMAP hBmpTesoroJoyas = NULL;
+HBITMAP hBmpTesoroVacio = NULL;
 
 // --- VARIABLES FALTANTES (AGREGADAS) ---
 HBITMAP hBmpArbolChico = NULL;  // Antes hBmpArbol
@@ -135,7 +139,11 @@ void CargarRecursos() {
     hBmpCastilloEnemigo3 = CargarImagen("assets/mundo/Castillo_enemigoTRES.bmp");
     hBmpTienda[0] = CargarImagen("assets/mundo/tienda-de-ventas-pixilart.bmp");
     hBmpTienda[1] = CargarImagen("assets/mundo/tienda-de-ventas-pixilart-movimiento.bmp");
-
+    // --- TESOROS ---
+    hBmpTesoroCerrado = CargarImagen("assets/mundo/tesoro-pixilart.bmp");
+    hBmpTesoroOro     = CargarImagen("assets/mundo/tesoro-abierto-con-oro-pixilart.bmp");
+    hBmpTesoroJoyas   = CargarImagen("assets/mundo/tesoro-abierto-con-piedras-preciosas-pixilart.bmp");
+    hBmpTesoroVacio   = CargarImagen("assets/mundo/tesoro-abierto-vacío-pixilart.bmp");
     // HUD
     hBmpCorazon100 = CargarImagen("assets/ui/corazon_100.bmp");
     hBmpCorazon75 = CargarImagen("assets/ui/corazon_75.bmp");
@@ -163,9 +171,12 @@ void LiberarRecursos() {
     if (hBmpInvCerrado) DeleteObject(hBmpInvCerrado);
     if (hBmpInvAbierto) DeleteObject(hBmpInvAbierto);
 
-    // Liberar Árboles
     if (hBmpArbolChico) DeleteObject(hBmpArbolChico);
     if (hBmpArbolGrande) DeleteObject(hBmpArbolGrande);
+	if(hBmpTesoroCerrado) DeleteObject(hBmpTesoroCerrado);
+    if(hBmpTesoroOro) DeleteObject(hBmpTesoroOro);
+    if(hBmpTesoroJoyas) DeleteObject(hBmpTesoroJoyas);
+    if(hBmpTesoroVacio) DeleteObject(hBmpTesoroVacio);;
 
     // Liberar Vacas
     for (int i = 0; i < 8; i++) {

@@ -42,6 +42,7 @@ extern HBITMAP hBmpIconoMadera; extern HBITMAP hBmpIconoPiedra; extern HBITMAP h
 extern HBITMAP hBmpIconoHierro; extern HBITMAP hBmpIconoComida; extern HBITMAP hBmpIconoHoja;
 extern HBITMAP hBmpIconoEspada; extern HBITMAP hBmpIconoPico;
 
+
 // 5. MUNDO
 extern HBITMAP hBmpIslaGrande;
 extern HBITMAP hBmpIslaSec1;
@@ -50,6 +51,10 @@ extern HBITMAP hBmpIslaSec3;
 extern HBITMAP hBmpIslaSec4;
 extern HBITMAP hBmpCastilloJugador;
 extern HBITMAP hBmpRoca;
+extern HBITMAP hBmpTesoroCerrado;
+extern HBITMAP hBmpTesoroOro;     
+extern HBITMAP hBmpTesoroJoyas;   
+extern HBITMAP hBmpTesoroVacio;
 
 // --- FUNCIONES ---
 void CargarRecursos();
