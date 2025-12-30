@@ -64,4 +64,8 @@ void procesarEnterMenu(HWND hwnd, EstadoJuego *estado);
 void procesarClickMochila(int mouseX, int mouseY, Jugador *jugador, HWND hwnd);
 void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, HWND hwnd);
 
+// Al final del archivo, antes del #endif
+void dibujarMina(HDC hdc, Camera cam);
+extern Unidad unidades[MAX_UNIDADES]; // Indica a otros archivos que el arreglo existe
+
 #endif /* MAPA_H */

@@ -41,6 +41,7 @@ HBITMAP hBmpTesoroCerrado = NULL;
 HBITMAP hBmpTesoroOro = NULL;
 HBITMAP hBmpTesoroJoyas = NULL;
 HBITMAP hBmpTesoroVacio = NULL;
+HBITMAP hBmpMina = NULL; // Declaración global al inicio del archivo
 
 // --- VARIABLES FALTANTES (AGREGADAS) ---
 HBITMAP hBmpArbolChico = NULL;  // Antes hBmpArbol
@@ -134,20 +135,6 @@ void CargarRecursos() {
     hBmpJugadorAnim[3][2] = CargarImagen("assets/jugador/p_der_pie2.bmp");
     hBmpJugador = CargarImagen("assets/jugador/jugador_compatible.bmp");
 
-    // Armadura
-    hBmpArmaduraAnim[0][0] = CargarImagen("assets/jugador/armadura-base-pixilart.bmp");
-    hBmpArmaduraAnim[0][1] = CargarImagen("assets/jugador/armadura-base-pie-izquierdo-pixilart(1).bmp");
-    hBmpArmaduraAnim[0][2] = CargarImagen("assets/jugador/armadura-base-pierna-derecha-pixilart(1).bmp");
-    hBmpArmaduraAnim[1][0] = CargarImagen("assets/jugador/armadura-base-espalda-pixilart.bmp");
-    hBmpArmaduraAnim[1][1] = CargarImagen("assets/jugador/armadura-base-espalda-pie-izquierdo-pixilart.bmp");
-    hBmpArmaduraAnim[1][2] = CargarImagen("assets/jugador/armadura-base-espalda-pie-derecho-pixilart.bmp");
-    hBmpArmaduraAnim[2][0] = CargarImagen("assets/jugador/armadura-base-izquierda-pixilart.bmp"); // Verifica nombre
-    hBmpArmaduraAnim[2][1] = CargarImagen("assets/jugador/armadura-base-izquierda-pie-izquierdo-pixilart.bmp");
-    hBmpArmaduraAnim[2][2] = CargarImagen("assets/jugador/armadura-base-izquierda-pie-derecho-pixilart(1).bmp");
-    hBmpArmaduraAnim[3][0] = CargarImagen("assets/jugador/armadura-base-derecha-pixilart.bmp");
-    hBmpArmaduraAnim[3][1] = CargarImagen("assets/jugador/armadura-base-derecho-pie-derecho-pixilart.bmp");
-    hBmpArmaduraAnim[3][2] = CargarImagen("assets/jugador/armadura-base-derecho-pie-izquierdo-pixilart(1).bmp");
-
     // Items
     hBmpIconoMadera = CargarImagen("assets/items/icono_madera.bmp");
     hBmpIconoPiedra = CargarImagen("assets/items/icono_piedra.bmp");
@@ -171,6 +158,10 @@ void CargarRecursos() {
     hBmpCastilloEnemigo3 = CargarImagen("assets/mundo/Castillo_enemigoTRES.bmp");
     hBmpTienda[0] = CargarImagen("assets/mundo/tienda-de-ventas-pixilart.bmp");
     hBmpTienda[1] = CargarImagen("assets/mundo/tienda-de-ventas-pixilart-movimiento.bmp");
+
+    hBmpMina = CargarImagen("assets/mundo/Mina-cueva.bmp"); 
+
+    
     // --- TESOROS ---
     hBmpTesoroCerrado = CargarImagen("assets/mundo/tesoro-pixilart.bmp");
     hBmpTesoroOro     = CargarImagen("assets/mundo/tesoro-abierto-con-oro-pixilart.bmp");
@@ -218,7 +209,8 @@ void LiberarRecursos() {
 	if(hBmpTesoroCerrado) DeleteObject(hBmpTesoroCerrado);
     if(hBmpTesoroOro) DeleteObject(hBmpTesoroOro);
     if(hBmpTesoroJoyas) DeleteObject(hBmpTesoroJoyas);
-    if(hBmpTesoroVacio) DeleteObject(hBmpTesoroVacio);;
+    if(hBmpTesoroVacio) DeleteObject(hBmpTesoroVacio);
+    if (hBmpMina) DeleteObject(hBmpMina);
 
     // Liberar Vacas
     for (int i = 0; i < 8; i++) {

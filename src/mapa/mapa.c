@@ -19,6 +19,7 @@ Arbol misArboles[MAX_ARBOLES];
 // Variable global
 Tesoro misTesoros[MAX_TESOROS];
 Unidad misUnidades[MAX_UNIDADES];
+Unidad unidades[MAX_UNIDADES];
 
 // --- INICIALIZACIÓN ---
 void inicializarIslas()
@@ -423,7 +424,6 @@ void procesarClickMochila(int mouseX, int mouseY, Jugador *jugador, HWND hwnd)
     }
 }
 
-
 // --- INTERACCIÓN TIENDA (COMPRA DE TROPAS RTS) ---
 void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, HWND hwnd) {
     if (!j->inventarioAbierto) return;
@@ -458,19 +458,13 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
             
             if (mx >= ix && mx <= ix + 100 && my >= iy && my <= iy + 50) {
                 BOOL comprado = FALSE;
-                
-                // COSTOS (Ajustados por cantidad o precio base de "desbloqueo")
-                // Aquí cobramos una tarifa base fija por el lote para no complicar,
-                // o puedes multiplicar el costo * cantidad si prefieres. 
-                // Usaremos precio fijo por "Llamada de refuerzos".
 
                 // 0. ESPADA -> CAZADORES
                 if (i == 0) {
                     int costoOro = 20; int costoHierro = 3;
                     if (j->oro >= costoOro && j->hierro >= costoHierro) {
                         j->oro -= costoOro; j->hierro -= costoHierro;
-                        j->tieneEspada = 1; // Desbloqueada visualmente
-                        
+                        j->tieneEspada = 1; 
                         spawnearEscuadron(TIPO_CAZADOR, cantidad, j->x + 50, j->y);
                         comprado = TRUE;
                     }
@@ -481,7 +475,6 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
                     if (j->oro >= costoOro && j->piedra >= costoPiedra) {
                         j->oro -= costoOro; j->piedra -= costoPiedra;
                         j->tienePico = 1; 
-                        
                         spawnearEscuadron(TIPO_MINERO, cantidad, j->x + 50, j->y);
                         comprado = TRUE;
                     }
@@ -492,35 +485,31 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
                     if (j->oro >= costoOro && j->hierro >= costoHierro) {
                         j->oro -= costoOro; j->hierro -= costoHierro;
                         j->tieneArmadura = 1;
-                        
                         spawnearEscuadron(TIPO_SOLDADO, cantidad, j->x + 50, j->y);
                         comprado = TRUE;
                     }
                 }
-                // 3. HACHA/MADERA -> LEÑADORES (Nuevo Slot)
+                // 3. HACHA/MADERA -> LEÑADORES
                 else if (i == 3) {
                     int costoOro = 20; int costoMadera = 10;
                     if (j->oro >= costoOro && j->madera >= costoMadera) {
                         j->oro -= costoOro; j->madera -= costoMadera;
-                        // j->tieneHacha = 1; // Si tienes variable hacha úsala, si no, no importa
-                        
                         spawnearEscuadron(TIPO_LENADOR, cantidad, j->x + 50, j->y);
                         comprado = TRUE;
                     }
                 }
 
                 if (comprado) {
-                    // Feedback sonoro opcional
-                    // PlaySound("assets/sonidos/create_unit.wav", ...);
                     InvalidateRect(hwnd, NULL, FALSE);
                 }
             }
         }
     } 
-    else { // --- MODO VENDER (Se mantiene igual) ---
+    else { // --- MODO VENDER ---
         int precios[] = {1, 2, 5, 1, 3}; // Oro por unidad
         int* stocks[] = {&j->madera, &j->piedra, &j->hierro, &j->hojas, &j->comida};
-        char* nombres[] = {"Madera", "Piedra", "Hierro", "Hojas", "Comida"};
+        
+        // --- AQUÍ ELIMINÉ LA LÍNEA DE "nombres" QUE DABA ERROR ---
 
         for (int i = 0; i < 5; i++) {
             int col = i % 2; int row = i / 2;
@@ -543,89 +532,92 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
     }
 }
 
+void dibujarMina(HDC hdc, Camera cam) {
+    int screenX = (int)((CUEVA_X - cam.x) * cam.zoom);
+    int screenY = (int)((CUEVA_Y - cam.y) * cam.zoom);
+    int tam = (int)(128 * cam.zoom);
 
-// 1. INICIALIZAR
+    if (hBmpMina) {
+        DibujarImagen(hdc, hBmpMina, screenX, screenY, tam, tam);
+        // Texto para confirmar ubicación
+        SetTextColor(hdc, RGB(255, 215, 0));
+        TextOut(hdc, screenX, screenY - 20, "MINA DE RECURSOS", 16);
+    }
+}
+
 void inicializarUnidades() {
-    for(int i=0; i<MAX_UNIDADES; i++) misUnidades[i].activa = 0;
+    for (int i = 0; i < MAX_UNIDADES; i++) {
+        unidades[i].activa = 0;
+        unidades[i].seleccionado = 0;
+    }
 }
 
 // 2. CREAR ESCUADRÓN (Flexible: 5, 10 o 15)
-void spawnearEscuadron(int tipo, int cantidad, int baseX, int baseY) {
-    int contados = 0;
-    
-    char* nombre = "Aldeano";
-    if (tipo == TIPO_CAZADOR) nombre = "Cazador";
-    else if (tipo == TIPO_LENADOR) nombre = "Leñador";
-    else if (tipo == TIPO_MINERO) nombre = "Minero";
-    else if (tipo == TIPO_SOLDADO) nombre = "Soldado";
+void spawnearEscuadron(int tipo, int cantidad, int x, int y) {
+    int creados = 0;
+    char* nombre;
+    switch(tipo) {
+        case TIPO_MINERO:  nombre = "Mineros"; break;
+        case TIPO_LENADOR: nombre = "Leñadores"; break;
+        case TIPO_CAZADOR: nombre = "Cazadores"; break;
+        case TIPO_SOLDADO: nombre = "Infantería"; break;
+    }
 
-    for(int i=0; i<MAX_UNIDADES; i++) {
-        if (!misUnidades[i].activa) {
-            misUnidades[i].activa = 1;
-            misUnidades[i].tipo = tipo;
-            // Dispersión para que no salgan todos en el mismo pixel
-            misUnidades[i].x = baseX + (rand() % 100 - 50); 
-            misUnidades[i].y = baseY + (rand() % 100 - 50);
-            misUnidades[i].vida = 100;
-            misUnidades[i].estado = ESTADO_IDLE;
-            misUnidades[i].seleccionado = 0;
-            misUnidades[i].timerTrabajo = 0;
-            strcpy(misUnidades[i].nombreGrupo, nombre); // Asignar nombre
-            
-            contados++;
-            if (contados >= cantidad) break; 
+    for (int i = 0; i < MAX_UNIDADES && creados < cantidad; i++) {
+        if (!unidades[i].activa) {
+            unidades[i].x = x + (creados * 10); // Espaciado pequeño
+            unidades[i].y = y + (creados * 5);
+            unidades[i].tipo = tipo;
+            unidades[i].activa = 1;
+            unidades[i].estado = ESTADO_IDLE;
+            strcpy(unidades[i].nombreGrupo, nombre);
+            creados++;
         }
     }
 }
 
 // 3. ACTUALIZAR (IA + MINERÍA)
 void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
-    for(int i=0; i<MAX_UNIDADES; i++) {
-        if (!misUnidades[i].activa) continue;
+    for (int i = 0; i < MAX_UNIDADES; i++) {
+        if (!unidades[i].activa) continue;
 
-        // --- CASO ESPECIAL: MINERO EN CUEVA ---
-        if (misUnidades[i].estado == ESTADO_EN_CUEVA) {
-            misUnidades[i].timerTrabajo++;
-            // Cada 60 frames (aprox 1 seg) da recursos
-            if (misUnidades[i].timerTrabajo > 60) {
-                // Generar recursos de 2 en 2 (Lento)
+        // 1. Lógica de Mineros en la Cueva
+        if (unidades[i].estado == ESTADO_EN_CUEVA) {
+            unidades[i].timerTrabajo++;
+            if (unidades[i].timerTrabajo >= 100) { // Cada cierto tiempo
                 j->oro += 2;
-                j->hierro += 2;
+                j->hierro += 1;
                 j->piedra += 2;
-                misUnidades[i].timerTrabajo = 0;
+                unidades[i].timerTrabajo = 0;
             }
-            // Si quieres que salgan, deberías darles otra orden, 
-            // pero por ahora solo producen infinito hasta que los muevas.
-            continue; // No se mueve ni se dibuja
+            continue; // No se mueven ni se dibujan si están dentro
         }
 
-        // --- MOVIMIENTO ---
-        if (misUnidades[i].estado == ESTADO_MOVIENDO) {
-            float dx = misUnidades[i].destinoX - misUnidades[i].x;
-            float dy = misUnidades[i].destinoY - misUnidades[i].y;
+        // 2. Movimiento suave hacia el destino
+        if (unidades[i].estado == ESTADO_MOVIENDO) {
+            float dx = unidades[i].destinoX - unidades[i].x;
+            float dy = unidades[i].destinoY - unidades[i].y;
             float dist = sqrt(dx*dx + dy*dy);
 
-            if (dist > 5) { 
-                float vel = 2.5f; 
-                misUnidades[i].x += (dx / dist) * vel;
-                misUnidades[i].y += (dy / dist) * vel;
+            if (dist > 5) {
+                unidades[i].x += (dx / dist) * 2.0f; // Velocidad 2.0
+                unidades[i].y += (dy / dist) * 2.0f;
                 
-                // Animación simple
-                if (dx > 0) misUnidades[i].direccion = DIR_DERECHA;
-                else misUnidades[i].direccion = DIR_IZQUIERDA;
-                misUnidades[i].frameAnim = (misUnidades[i].frameAnim + 1) % 4; 
-            } else {
-                // LLEGÓ A SU DESTINO
-                misUnidades[i].estado = ESTADO_IDLE;
-
-                // ** LOGICA DE ENTRAR A LA CUEVA **
-                // Si es MINERO y llegó cerca de la CUEVA
-                if (misUnidades[i].tipo == TIPO_MINERO) {
-                    float distCueva = sqrt(pow(misUnidades[i].x - CUEVA_X, 2) + pow(misUnidades[i].y - CUEVA_Y, 2));
-                    if (distCueva < 60) { // Si está cerca de la entrada
-                        misUnidades[i].estado = ESTADO_EN_CUEVA; // Desaparece y mina
-                    }
+                // Actualizar dirección para animación
+                if (abs(dx) > abs(dy)) {
+                    unidades[i].direccion = (dx > 0) ? DIR_DERECHA : DIR_IZQUIERDA;
+                } else {
+                    unidades[i].direccion = (dy > 0) ? DIR_ABAJO : DIR_ARRIBA;
                 }
+                
+                // Animar frames (0, 1, 2)
+                static int contadorAnim = 0;
+                if (++contadorAnim > 10) {
+                    unidades[i].frameAnim = (unidades[i].frameAnim + 1) % 3;
+                    contadorAnim = 0;
+                }
+            } else {
+                unidades[i].estado = ESTADO_IDLE;
             }
         }
     }
@@ -633,108 +625,66 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
 
 // 4. DIBUJAR (Nombres y Herramientas)
 void dibujarUnidades(HDC hdc, Camera cam) {
-    // Dibujamos la Cueva (Entrada) - Usamos la Roca como referencia visual si no hay otra
-    int cx = (CUEVA_X - cam.x) * cam.zoom;
-    int cy = (CUEVA_Y - cam.y) * cam.zoom;
-    int cTam = 64 * cam.zoom;
-    if (hBmpRoca) DibujarImagen(hdc, hBmpRoca, cx, cy, cTam, cTam); // Visual de la cueva
+    // El 'int i' debe ir dentro del for
+    for (int i = 0; i < MAX_UNIDADES; i++) {
+        if (!unidades[i].activa || unidades[i].estado == ESTADO_EN_CUEVA) continue;
 
-    for(int i=0; i<MAX_UNIDADES; i++) {
-        if (!misUnidades[i].activa) continue;
-        if (misUnidades[i].estado == ESTADO_EN_CUEVA) continue;
+        // DECLARA LAS VARIABLES AQUÍ (Esto quita los errores rojos de tu imagen)
+        int screenX = (int)((unidades[i].x - cam.x) * cam.zoom);
+        int screenY = (int)((unidades[i].y - cam.y) * cam.zoom);
+        int size = (int)(TAMANO_CELDA * cam.zoom);
 
-        int sx = (misUnidades[i].x - cam.x) * cam.zoom;
-        int sy = (misUnidades[i].y - cam.y) * cam.zoom;
-        int tam = 32 * cam.zoom;
-
-        if (sx < -50 || sx > 2000 || sy < -50 || sy > 2000) continue;
-
-        // 1. SELECCIONAR SPRITE CORRECTO
-        HBITMAP sprite = NULL;
-        int d = misUnidades[i].direccion; // 0=Abajo, 1=Arriba, 2=Izq, 3=Der
-        int f = misUnidades[i].frameAnim; // 0, 1, 2
-
-        // Protección por si la dirección o frame vienen mal
-        if (d < 0 || d > 3) d = 0;
-        if (f < 0 || f > 2) f = 0;
-
-        switch(misUnidades[i].tipo) {
-            case TIPO_MINERO:  
-                sprite = hBmpMineroAnim[d][f]; 
-                break;
-            case TIPO_LENADOR: 
-                sprite = hBmpLenadorAnim[d][f]; 
-                break;
-            case TIPO_CAZADOR: 
-                sprite = hBmpCazadorAnim[d][f]; 
-                break;
-            case TIPO_SOLDADO: 
-                sprite = hBmpSoldadoAnim[d][f]; 
-                break;
-            default: // Aldeano normal
-                sprite = hBmpJugadorAnim[d][f]; 
-                break;
+        HBITMAP (*anim)[3]; // Declarar el puntero de animación
+        
+        switch(unidades[i].tipo) {
+            case TIPO_MINERO:  anim = hBmpMineroAnim; break;
+            case TIPO_LENADOR: anim = hBmpLenadorAnim; break;
+            case TIPO_CAZADOR: anim = hBmpCazadorAnim; break;
+            case TIPO_SOLDADO: anim = hBmpSoldadoAnim; break;
+            default: anim = hBmpJugadorAnim; break;
         }
 
-        // Si por alguna razón la imagen específica no cargó, usamos un fallback (el jugador base)
-        if (!sprite) sprite = hBmpJugador;
-
-        // 2. DIBUJAR LA UNIDAD
-        DibujarImagen(hdc, sprite, sx, sy, tam, tam);
-
-        // (Ya NO necesitas dibujar el ícono flotante de la herramienta,
-        // porque la herramienta ya está en la mano del personaje en la imagen)
-
-        // 3. SELECCIÓN (Círculo Verde) - Se mantiene igual
-        if (misUnidades[i].seleccionado) {
-            HPEN penVerde = CreatePen(PS_SOLID, 2, RGB(0, 255, 0));
-            HBRUSH brushNulo = (HBRUSH)GetStockObject(NULL_BRUSH);
-            SelectObject(hdc, penVerde); SelectObject(hdc, brushNulo);
-            Ellipse(hdc, sx, sy + tam - 5, sx + tam, sy + tam + 5);
-            DeleteObject(penVerde);
-        }
-
-        // 4. NOMBRE ARRIBA - Se mantiene igual
-        SetBkMode(hdc, TRANSPARENT);
-        SetTextColor(hdc, RGB(255, 255, 255));
-        TextOut(hdc, sx - 10, sy - 15, misUnidades[i].nombreGrupo, strlen(misUnidades[i].nombreGrupo));
+        DibujarImagen(hdc, anim[unidades[i].direccion][unidades[i].frameAnim], 
+                     screenX, screenY, size, size);
     }
 }
 
 // 5. CONTROL (Igual que antes pero actualizado)
 void seleccionarUnidad(int mouseX, int mouseY, Camera cam) {
-    int mundoX = (mouseX / cam.zoom) + cam.x;
-    int mundoY = (mouseY / cam.zoom) + cam.y;
+    // Convertir clic de pantalla a posición de mundo
+    float mundoX = (mouseX / cam.zoom) + cam.x;
+    float mundoY = (mouseY / cam.zoom) + cam.y;
 
-    for(int i=0; i<MAX_UNIDADES; i++) {
-        if (!misUnidades[i].activa) continue;
-        // Si clickeas, toggle selección
-        if (mundoX >= misUnidades[i].x && mundoX <= misUnidades[i].x + 32 &&
-            mundoY >= misUnidades[i].y && mundoY <= misUnidades[i].y + 32) {
-            misUnidades[i].seleccionado = !misUnidades[i].seleccionado;
-            // Si estaba en la cueva, al seleccionarlo lo "sacamos"
-            if (misUnidades[i].estado == ESTADO_EN_CUEVA) {
-                misUnidades[i].estado = ESTADO_IDLE;
-                misUnidades[i].x = CUEVA_X + 40; // Aparece fuera
+    for (int i = 0; i < MAX_UNIDADES; i++) {
+        if (unidades[i].activa) {
+            // Radio de selección de 20 píxeles
+            float dist = sqrt(pow(unidades[i].x - mundoX, 2) + pow(unidades[i].y - mundoY, 2));
+            unidades[i].seleccionado = (dist < 20);
+        }
+    }
+}
+
+// Dar orden de movimiento o acción
+void ordenarUnidad(int mouseX, int mouseY, Camera cam, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    float mundoX = (mouseX / cam.zoom) + cam.x;
+    float mundoY = (mouseY / cam.zoom) + cam.y;
+
+    for (int i = 0; i < MAX_UNIDADES; i++) {
+        if (unidades[i].activa && unidades[i].seleccionado) {
+            unidades[i].destinoX = (int)mundoX;
+            unidades[i].destinoY = (int)mundoY;
+            unidades[i].estado = ESTADO_MOVIENDO;
+            
+            // Si el clic es cerca de la cueva y es minero, entrar
+            if (unidades[i].tipo == TIPO_MINERO) {
+                float distCueva = sqrt(pow(mundoX - CUEVA_X, 2) + pow(mundoY - CUEVA_Y, 2));
+                if (distCueva < 50) unidades[i].estado = ESTADO_EN_CUEVA;
             }
         }
     }
 }
 
-void ordenarUnidad(int mouseX, int mouseY, Camera cam, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
-    int mundoX = (mouseX / cam.zoom) + cam.x;
-    int mundoY = (mouseY / cam.zoom) + cam.y;
 
-    for(int i=0; i<MAX_UNIDADES; i++) {
-        if (misUnidades[i].activa && misUnidades[i].seleccionado) {
-            misUnidades[i].estado = ESTADO_MOVIENDO;
-            misUnidades[i].destinoX = mundoX;
-            misUnidades[i].destinoY = mundoY;
-            
-            // Si los mandaste a la cueva, actualizaremos el estado al llegar
-        }
-    }
-}
 
 
 

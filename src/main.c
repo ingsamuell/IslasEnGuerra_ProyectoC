@@ -108,12 +108,23 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 dibujarMenuConSprites(hdcMem, hwnd, &estadoJuego);
             } 
             else if (estadoJuego.enPartida) {
-                dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto, estadoJuego.frameTienda);
-                dibujarTesoros(hdcMem, miCamara, ancho, alto); 
-                dibujarArboles(hdcMem, miCamara, ancho, alto); 
-                dibujarVacas(hdcMem, miCamara, ancho, alto);
-                dibujarJugador(hdcMem, miJugador, miCamara);
-                dibujarHUD(hdcMem, &miJugador, ancho, alto);
+               // 1. EL FONDO (El mapa siempre va primero)
+			dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto, estadoJuego.frameTienda);
+	dibujarTesoros(hdcMem, miCamara, ancho, alto); 
+			// 2. ESTRUCTURAS FIJAS (La cueva/mina)
+			dibujarMina(hdcMem, miCamara); 
+
+		// 3. OBJETOS INTERACTIVOS (Tesoros y Árboles)
+	
+		dibujarArboles(hdcMem, miCamara, ancho, alto); 
+
+		// 4. ENTIDADES MÓVILES (Vacas, Unidades y Jugador)
+		dibujarVacas(hdcMem, miCamara, ancho, alto);
+		dibujarUnidades(hdcMem, miCamara); // Tus grupos de aldeanos/soldados
+		dibujarJugador(hdcMem, miJugador, miCamara);
+
+		// 5. INTERFAZ (HUD siempre al final para que esté arriba de todo)
+		dibujarHUD(hdcMem, &miJugador, ancho, alto);
             }
 
             BitBlt(hdc, 0, 0, ancho, alto, hdcMem, 0, 0, SRCCOPY);
@@ -159,6 +170,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     inicializarVacas();           
     inicializarArboles(mapaMundo);
     inicializarTesoros(); 
+    inicializarUnidades();
     
 
     miCamara.zoom = 3;  
