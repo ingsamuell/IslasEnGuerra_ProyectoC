@@ -11,11 +11,11 @@ void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FIL
 void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy);
 
 // IMPORTANTE: EsSuelo ahora recibe el mapa para la colisión precisa
-int EsSuelo(int x, int y);
+int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 
 /* --- SISTEMA DE VACAS --- */
 void inicializarVacas(); // Sin argumentos
-void actualizarVacas();
+void actualizarVacas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto);
 void golpearVaca(Jugador *j);
 

@@ -117,7 +117,6 @@ void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
         for (int j = 0; j < MUNDO_COLUMNAS; j++)
             mapa[i][j] = 0;
 
-<<<<<<< HEAD
     // 2. Escanear cada imagen de isla y "estamparla" en el mapa
     // Esto copia la forma exacta (sin el magenta) a la matriz de colisión
     
@@ -135,9 +134,6 @@ void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
     
     // Isla Este
     if (misIslas[4].activa) generarColisionDesdeImagen(mapa, hBmpIslaSec3, misIslas[4].x, misIslas[4].y);
-=======
-
->>>>>>> 13d885a5c65031cc00754c3da89295adcb515cbd
 }
 
 void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
@@ -660,7 +656,7 @@ void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
         int rx = rand() % (MUNDO_COLUMNAS * TAMANO_CELDA_BASE);
         int ry = rand() % (MUNDO_FILAS * TAMANO_CELDA_BASE);
 
-if (EsSuelo(rx + 16, ry + 30)) { 
+if (EsSuelo(rx + 16, ry + 30, mapa)) { 
     misArboles[contador].x = rx;
     misArboles[contador].y = ry;
     misArboles[contador].tipo = rand() % 2; 
@@ -674,7 +670,7 @@ if (EsSuelo(rx + 16, ry + 30)) {
         // ... (lógica de posición aleatoria) ...
 	int rx = rand() % MUNDO_ANCHO;
 	int ry = rand() % MUNDO_ALTO;
-        if (EsSuelo(rx + 16, ry + 30)) { 
+        if (EsSuelo(rx + 16, ry + 30, mapa)) { 
             misArboles[contador].x = rx;
             misArboles[contador].y = ry;
             misArboles[contador].tipo = rand() % 2; 
@@ -1093,17 +1089,13 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
         if (img) DibujarImagen(hdc, img, sx, sy, sw, sh);
     }
 
-<<<<<<< HEAD
-    // Dibujar Tiendas
-=======
     // 3. DIBUJAR LAS VACAS (Encima de las islas, debajo de la tienda/HUD)
     dibujarVacas(hdc, cam, ancho, alto);
     dibujarArboles(hdc, cam, ancho, alto); 
->>>>>>> 13d885a5c65031cc00754c3da89295adcb515cbd
     dibujarTiendasEnIslas(hdc, cam, ancho, alto, frameTienda);
 
     // --- DEBUG VISUAL (Opcional: Descomentar para ver la rejilla generada por la imagen) ---
-    
+    /*
     HBRUSH bTierra = CreateSolidBrush(RGB(255, 0, 0)); // Rojo
     for (int y = 0; y < MUNDO_FILAS; y++) {
         for (int x = 0; x < MUNDO_COLUMNAS; x++) {
@@ -1119,7 +1111,7 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
         }
     }
     DeleteObject(bTierra);
-    
+    */
 }
 
 
