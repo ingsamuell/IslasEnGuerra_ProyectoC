@@ -1,12 +1,23 @@
 /* src/mapa/mapa.c - VERSIÓN LIMPIA Y CORREGIDA */
-#include "mapa.h"
-#include "recursos/recursos.h"
+#include "mapa.h"          // En la misma carpeta
+#include "../global.h"     // Subir a src/
+#include "../recursos/recursos.h" // Subir a src/ y entrar a recursos/
 #include <stdio.h>
-#include <math.h>
 #include <mmsystem.h> // Necesario para PlaySound
+#include <math.h> // Necesario para calcular distancias de ataque
+#include <stdbool.h>
+
+// Referencia a las imágenes cargadas en recursos.c
+extern HBITMAP hBmpVaca[8]; 
+// Estado interno de las vacas
+Vaca manada[MAX_VACAS];
 
 #define MAX_ISLAS 5
 Isla misIslas[MAX_ISLAS];
+// Variable global de árboles
+Arbol misArboles[MAX_ARBOLES];
+// Variable global
+Tesoro misTesoros[MAX_TESOROS];
 
 // --- INICIALIZACIÓN ---
 void inicializarIslas()
@@ -106,6 +117,7 @@ void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
         for (int j = 0; j < MUNDO_COLUMNAS; j++)
             mapa[i][j] = 0;
 
+<<<<<<< HEAD
     // 2. Escanear cada imagen de isla y "estamparla" en el mapa
     // Esto copia la forma exacta (sin el magenta) a la matriz de colisión
     
@@ -123,12 +135,18 @@ void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
     
     // Isla Este
     if (misIslas[4].activa) generarColisionDesdeImagen(mapa, hBmpIslaSec3, misIslas[4].x, misIslas[4].y);
+=======
+
+>>>>>>> 13d885a5c65031cc00754c3da89295adcb515cbd
 }
 
 void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
 {
     inicializarIslas();
     inicializarMapa(mapa);
+    inicializarArboles(mapa); // Luego plantamos los árboles
+    inicializarVacas();
+
 
     jugador->x = 1600;
     jugador->y = 1600;
@@ -259,6 +277,7 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
     DibujarImagen(hdc, imgSalir, salirX, salirY, salirW, salirH);
 }
 
+
 // --- INTERACCIÓN MENÚ ---
 int verificarColisionBoton(int mouseX, int mouseY, int btnX, int btnY, int btnAncho, int btnAlto)
 {
@@ -330,40 +349,49 @@ void procesarEnterMenu(HWND hwnd, EstadoJuego *estado)
     }
 }
 
-// --- INTERACCIÓN MOCHILA (Comida) ---
 void procesarClickMochila(int mouseX, int mouseY, Jugador *jugador, HWND hwnd) {
     if (!jugador->inventarioAbierto) return;
 
-    // Coordenadas base (Deben ser iguales a dibujarHUD)
+    // Coordenadas base (Deben coincidir con dibujarHUD)
     int px = 90, py = 120;
     int startX = px + 20;
     int startY = py + 40;
 
-    // La COMIDA es el Ítem #5 en nuestra lista (índice 5)
-    // Cálculo de posición en rejilla:
-    int i = 5; 
-    int col = i % 2; // 1
-    int row = i / 2; // 2
-    
-    int itemX = startX + (col * 150); // 110 + 150 = 260
-    int itemY = startY + (row * 50);  // 160 + 100 = 260
-    
-    // Detectar clic en el icono de comida (32x32)
-    if (mouseX >= itemX && mouseX <= itemX + 32 && mouseY >= itemY && mouseY <= itemY + 32) {
+    // Definimos cuántos slots revisar (hasta el 9 para incluir armadura)
+    int totalSlots = 9; 
+
+    for (int i = 0; i < totalSlots; i++) {
+        int col = i % 2; 
+        int row = i / 2; 
         
-        // Lógica de comer
-        if (jugador->comida > 0 && jugador->vidaActual < jugador->vidaMax) {
-            jugador->vidaActual += 25; 
-            jugador->comida--;         
+        int itemX = startX + (col * 150); 
+        int itemY = startY + (row * 50);  
+        
+        // Detectar clic en el ícono (32x32)
+        if (mouseX >= itemX && mouseX <= itemX + 32 && mouseY >= itemY && mouseY <= itemY + 32) {
             
-            if (jugador->vidaActual > jugador->vidaMax) {
-                jugador->vidaActual = jugador->vidaMax;
+            // CASO 5: COMIDA
+            if (i == 5 && jugador->comida > 0 && jugador->vidaActual < jugador->vidaMax) {
+                jugador->vidaActual += 25; 
+                jugador->comida--;         
+                if (jugador->vidaActual > jugador->vidaMax) jugador->vidaActual = jugador->vidaMax;
+                InvalidateRect(hwnd, NULL, FALSE);
             }
-            
-            // Feedback sonoro (Opcional, si tienes el sonido)
-            // PlaySound(TEXT("assets/sonidos/comer.wav"), NULL, SND_FILENAME | SND_ASYNC);
-            
-            InvalidateRect(hwnd, NULL, FALSE);
+
+            // CASO 8: ARMADURA (Equipar / Desequipar)
+            else if (i == 8 && jugador->tieneArmadura) {
+                jugador->armaduraEquipada = !jugador->armaduraEquipada; // Alternar estado
+
+                if (jugador->armaduraEquipada) {
+                    // Si se la pone, ajustamos los stats como pediste (5/10)
+                    jugador->armaduraMax = 10;
+                    jugador->armaduraActual = 5; 
+                } else {
+                    // Si se la quita
+                    jugador->armaduraActual = 0;
+                }
+                InvalidateRect(hwnd, NULL, FALSE);
+            }
         }
     }
 }
@@ -379,14 +407,12 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
     // Pestaña Comprar (x: 450 a 600, y: 90 a 120)
     if (mx >= tx && mx <= tx + 150 && my >= ty - 30 && my <= ty) {
         j->modoTienda = 0; // COMPRAR
-        PlaySound(TEXT("assets/sonidos/click.wav"), NULL, SND_FILENAME | SND_ASYNC);
         InvalidateRect(hwnd, NULL, FALSE);
         return;
     }
     // Pestaña Vender (x: 600 a 750, y: 90 a 120)
     if (mx >= tx + 150 && mx <= tx + 300 && my >= ty - 30 && my <= ty) {
         j->modoTienda = 1; // VENDER
-        PlaySound(TEXT("assets/sonidos/click.wav"), NULL, SND_FILENAME | SND_ASYNC);
         InvalidateRect(hwnd, NULL, FALSE);
         return;
     }
@@ -438,7 +464,6 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
                 }
 
                 if (comprado) {
-                    PlaySound(TEXT("assets/sonidos/kaching.wav"), NULL, SND_FILENAME | SND_ASYNC);
                     InvalidateRect(hwnd, NULL, FALSE);
                 } else {
                     // Sonido de error o feedback visual opcional
@@ -466,13 +491,12 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
                 if (cantidadAVender > 0) {
                     int ganancia = cantidadAVender * precios[i];
                     char mensaje[100];
-                    sprintf(mensaje, "¿Vender %d %s por %d Oro?", cantidadAVender, nombres[i], ganancia);
+                    sprintf(mensaje, "Vender %d %s por %d Oro?", cantidadAVender, nombres[i], ganancia);
 
                     // --- VENTANA DE CONFIRMACIÓN ---
                     if (MessageBox(hwnd, mensaje, "Confirmar Venta", MB_YESNO | MB_ICONQUESTION) == IDYES) {
                         *stocks[i] -= cantidadAVender;
                         j->oro += ganancia;
-                        PlaySound(TEXT("assets/sonidos/kaching.wav"), NULL, SND_FILENAME | SND_ASYNC);
                         InvalidateRect(hwnd, NULL, FALSE);
                     }
                 }
@@ -480,6 +504,373 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
         }
     }
 }
+
+// 1. INICIALIZAR (Posiciones variadas y setup de patrulla)
+void inicializarVacas() {
+    for(int i=0; i<MAX_VACAS; i++) manada[i].activa = 0;
+
+    // Crear vacas
+    for(int i=0; i<5; i++) { // Pongamos 5 para probar
+        manada[i].activa = 1;
+        
+        // POSICIÓN X: Separadas horizontalmente
+        manada[i].x = 1200 + (i * 80); 
+        
+        // POSICIÓN Y: Aleatoria para que no estén en línea recta
+        // Variamos entre 1350 y 1550 aprox
+        manada[i].y = 1350 + (rand() % 200); 
+
+        // Guardar el inicio para limitar los 100 píxeles
+        manada[i].xInicial = manada[i].x;
+        
+        // Dirección inicial aleatoria (1 = Derecha, -1 = Izquierda)
+        manada[i].direccion = (rand() % 2 == 0) ? 1 : -1;
+
+        // Configuración vida
+        manada[i].vida = 5;
+        manada[i].estadoVida = 0; // Viva
+        manada[i].tiempoMuerte = 300;
+
+        // Frame inicial según dirección
+        // Si va a la derecha (1), frame 4. Si izquierda (-1), frame 0.
+        manada[i].frameAnim = (manada[i].direccion == 1) ? 4 : 0;
+    }
+}
+
+// 2. ACTUALIZAR (Lógica de 100px y Animación Dividida)
+void actualizarVacas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    for(int i=0; i<MAX_VACAS; i++) {
+        if(!manada[i].activa) continue;
+
+        // SI ESTÁ MUERTA, QUIETA
+        if (manada[i].estadoVida == 1) {
+            manada[i].tiempoMuerte--;
+            if (manada[i].tiempoMuerte <= 0) manada[i].activa = 0;
+            continue; 
+        }
+
+        // --- LÓGICA DE PATRULLA (100 PX) ---
+        int velocidad = 1; // Velocidad de la vaca
+
+        if (manada[i].direccion == 1) { 
+            // CAMINANDO A LA DERECHA
+            manada[i].x += velocidad;
+            
+            // Si se aleja 100px del inicio, dar vuelta
+            if (manada[i].x >= manada[i].xInicial + 100) {
+                manada[i].direccion = -1; // Cambiar a Izquierda
+                manada[i].frameAnim = 0;  // Resetear animación a set de izquierda
+            }
+
+        } else {
+            // CAMINANDO A LA IZQUIERDA
+            manada[i].x -= velocidad;
+
+            // Si vuelve al inicio (o se pasa), dar vuelta
+            if (manada[i].x <= manada[i].xInicial) {
+                manada[i].direccion = 1; // Cambiar a Derecha
+                manada[i].frameAnim = 4; // Resetear animación a set de derecha
+            }
+        }
+
+        // --- ANIMACIÓN SEPARADA (0-3 IZQ, 4-7 DER) ---
+        manada[i].contadorAnim++;
+        if(manada[i].contadorAnim > 8) { // Ajusta este número para velocidad de patas
+            manada[i].frameAnim++;
+
+            if (manada[i].direccion == 1) {
+                // Rango Derecha: 4, 5, 6, 7 -> vuelve a 4
+                if (manada[i].frameAnim > 7) manada[i].frameAnim = 4;
+            } 
+            else {
+                // Rango Izquierda: 0, 1, 2, 3 -> vuelve a 0
+                if (manada[i].frameAnim > 3) manada[i].frameAnim = 0;
+            }
+            
+            manada[i].contadorAnim = 0;
+        }
+    }
+}
+
+// 3. GOLPEAR (Usando estadoVida)
+void golpearVaca(Jugador *j) {
+    int rango = 60; 
+    int jx = j->x + 16;
+    int jy = j->y + 16;
+
+    for(int i=0; i<MAX_VACAS; i++) {
+        if(!manada[i].activa) continue;
+        if(manada[i].estadoVida == 1) continue; // No golpear cadáveres
+
+        int vx = manada[i].x + 16;
+        int vy = manada[i].y + 16;
+
+        if(abs(jx - vx) < rango && abs(jy - vy) < rango) {
+            manada[i].vida--;
+
+            if(manada[i].vida <= 0) {
+                manada[i].estadoVida = 1; // <--- CAMBIO A MUERTA
+                
+                int comidaGanada = 7 + (rand() % 4); 
+                j->comida += comidaGanada;
+            }
+            return;
+        }
+    }
+}
+
+// 4. DIBUJAR (Mostrar imagen muerta si estadoViva es 1)
+void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto) {
+    for(int i=0; i<MAX_VACAS; i++) {
+        if(!manada[i].activa) continue;
+
+        int sx = (manada[i].x - cam.x) * cam.zoom;
+        int sy = (manada[i].y - cam.y) * cam.zoom;
+        int tam = 32 * cam.zoom;
+
+        if (sx > -tam && sx < ancho && sy > -tam && sy < alto) {
+            
+            // --- CORRECCIÓN VISUAL ---
+            if (manada[i].estadoVida == 1) {
+                // DIBUJAR MUERTA
+                if(hBmpVacaMuerta) 
+                    DibujarImagen(hdc, hBmpVacaMuerta, sx, sy, tam, tam);
+            } 
+            else {
+                // DIBUJAR VIVA
+                if(hBmpVaca[manada[i].frameAnim]) 
+                    DibujarImagen(hdc, hBmpVaca[manada[i].frameAnim], sx, sy, tam, tam);
+            }
+        }
+    }
+}
+// 1. INICIALIZAR ÁRBOLES (Aleatorio inteligente)
+void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    int contador = 0;
+    int intentos = 0;
+
+    // Limpiamos el array primero
+    for(int i=0; i<MAX_ARBOLES; i++) misArboles[i].activa = 0;
+
+    // Intentamos colocar árboles hasta llenar el cupo o cansarnos
+    while (contador < MAX_ARBOLES && intentos < 5000) {
+        intentos++;
+
+        // Coordenada aleatoria en todo el mundo (3200x3200 aprox)
+        int rx = rand() % (MUNDO_COLUMNAS * TAMANO_CELDA_BASE);
+        int ry = rand() % (MUNDO_FILAS * TAMANO_CELDA_BASE);
+
+if (EsSuelo(rx + 16, ry + 30)) { 
+    misArboles[contador].x = rx;
+    misArboles[contador].y = ry;
+    misArboles[contador].tipo = rand() % 2; 
+    misArboles[contador].activa = 1;
+    misArboles[contador].vida = 5; // <--- ¡TODOS CON 5 DE VIDA!
+    contador++;
+}
+    }
+    
+    while (contador < MAX_ARBOLES && intentos < 5000) {
+        // ... (lógica de posición aleatoria) ...
+	int rx = rand() % MUNDO_ANCHO;
+	int ry = rand() % MUNDO_ALTO;
+        if (EsSuelo(rx + 16, ry + 30)) { 
+            misArboles[contador].x = rx;
+            misArboles[contador].y = ry;
+            misArboles[contador].tipo = rand() % 2; 
+            misArboles[contador].activa = 1;
+            
+            // --- NUEVO ---
+            misArboles[contador].vida = 5; // Empiezan con 5 golpes de resistencia
+            // -------------
+            
+            contador++;
+        }
+}
+}
+
+// 2. DIBUJAR ÁRBOLES
+void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto) {
+    for (int i = 0; i < MAX_ARBOLES; i++) {
+        if (!misArboles[i].activa) continue;
+
+        // Calcular posición en pantalla
+        int sx = (misArboles[i].x - cam.x) * cam.zoom;
+        int sy = (misArboles[i].y - cam.y) * cam.zoom;
+        
+        // El árbol grande mide el doble (64px) aprox, el chico 32px
+        int tamBase = 32 * cam.zoom;
+        if (misArboles[i].tipo == 1) tamBase = 64 * cam.zoom; 
+
+        // Optimización: Solo dibujar si está en pantalla
+        if (sx > -tamBase && sx < ancho && sy > -tamBase && sy < alto) {
+            HBITMAP img = (misArboles[i].tipo == 1) ? hBmpArbolGrande : hBmpArbolChico;
+            if(img) DibujarImagen(hdc, img, sx, sy, tamBase, tamBase);
+        }
+    }
+}
+
+// --- FUNCIÓN DE TALAR ---
+void talarArbol(Jugador *j) {
+    int rango = 40; // Distancia para poder golpear (píxeles)
+
+    // Centro del jugador
+    int jx = j->x + 16;
+    int jy = j->y + 16;
+
+    for (int i = 0; i < MAX_ARBOLES; i++) {
+        if (!misArboles[i].activa) continue;
+
+        // Calcular centro del árbol (aprox)
+        int tam = (misArboles[i].tipo == 1) ? 64 : 32;
+        int ax = misArboles[i].x + (tam / 2);
+        int ay = misArboles[i].y + (tam / 2);
+
+        // Verificar distancia (Si está cerca)
+        if (abs(jx - ax) < rango && abs(jy - ay) < rango) {
+
+            // 1. Restar vida
+            misArboles[i].vida--;
+
+            // (Opcional) Efecto visual o sonoro aquí
+            // PlaySound("assets/sonidos/golpe.wav", ...);
+
+            // 2. ¿Se cayó el árbol?
+            if (misArboles[i].vida <= 0) {
+                misArboles[i].activa = 0; // Desaparece
+
+                // 3. Dar recompensa
+                int maderaGanada = (misArboles[i].tipo == 1) ? 5 : 3;
+                j->madera += maderaGanada;
+
+                // Feedback (Mensaje temporal o sonido de premio)
+                // PlaySound("assets/sonidos/madera.wav", ...);
+            }
+
+            return; // Solo golpeamos un árbol a la vez
+        }
+    }
+}
+
+
+// 1. INICIALIZAR TESOROS (Escondidos detrás de árboles)
+void inicializarTesoros() {
+    // Tesoro 1: TIPO ORO (0)
+    // Escondido "detrás" de un árbol (Y menor que el árbol para que el árbol lo tape si dibujas el árbol después)
+    // O simplemente cerca de coordenadas boscosas.
+    misTesoros[0].x = 1320; 
+    misTesoros[0].y = 1250; 
+    misTesoros[0].tipo = 0; // Solo Oro
+    misTesoros[0].estado = 0; // Cerrado
+    misTesoros[0].activa = 1;
+
+    // Tesoro 2: TIPO JOYAS/HIERRO (1)
+    misTesoros[1].x = 1850; 
+    misTesoros[1].y = 1550; 
+    misTesoros[1].tipo = 1; // Oro + Hierro
+    misTesoros[1].estado = 0; // Cerrado
+    misTesoros[1].activa = 1;
+}
+
+// --- 2. ABRIR TESORO (Lógica de 2 Pasos) ---
+void abrirTesoro(Jugador *j) {
+    int rango = 60; // Distancia para interactuar
+    int jx = j->x + 16;
+    int jy = j->y + 16;
+
+    for(int i = 0; i < MAX_TESOROS; i++) {
+        if(!misTesoros[i].activa) continue;
+        
+        // Si ya está vacío (Estado 2), no hacemos nada
+        if(misTesoros[i].estado == 2) continue; 
+
+        int tx = misTesoros[i].x + 16;
+        int ty = misTesoros[i].y + 16;
+
+        if(abs(jx - tx) < rango && abs(jy - ty) < rango) {
+            
+            // PASO 1: ABRIR EL COFRE
+            if (misTesoros[i].estado == 0) {
+                misTesoros[i].estado = 1; // Pasa a "Abierto con cosas"
+                return; // Terminamos por este frame
+            }
+
+            // PASO 2: TOMAR EL LOOT
+            if (misTesoros[i].estado == 1) {
+                // Generar Loot Random
+                int oroGanado = 30 + (rand() % 11); // 30-40
+                
+                if(misTesoros[i].tipo == 0) {
+                    // Solo Oro
+                    j->oro += oroGanado;
+                } 
+                else {
+                    // Oro + Hierro (Joyas)
+                    int hierroGanado = 15 + (rand() % 11); // 15-25
+                    j->oro += oroGanado;
+                    j->hierro += hierroGanado;
+                }
+
+                misTesoros[i].estado = 2; // Pasa a "Vacío"
+                return;
+            }
+        }
+    }
+}
+
+// --- 3. DIBUJAR TESOROS CON TEXTO ---
+void dibujarTesoros(HDC hdc, Camera cam, int ancho, int alto) {
+    // Calculamos la posición aproximada del jugador (centro de pantalla)
+    // para saber si mostrar el mensaje.
+    int jugadorScreenX = ancho / 2;
+    int jugadorScreenY = alto / 2;
+
+    for(int i = 0; i < MAX_TESOROS; i++) {
+        if(!misTesoros[i].activa) continue;
+
+        int sx = (misTesoros[i].x - cam.x) * cam.zoom;
+        int sy = (misTesoros[i].y - cam.y) * cam.zoom;
+        int tam = 32 * cam.zoom;
+
+        // Solo dibujar si está en pantalla
+        if(sx > -tam && sx < ancho && sy > -tam && sy < alto) {
+            HBITMAP img = NULL;
+            
+            // SELECCIÓN DE IMAGEN SEGÚN ESTADO
+            if(misTesoros[i].estado == 0) {
+                img = hBmpTesoroCerrado;
+            } 
+            else if(misTesoros[i].estado == 1) {
+                // Está abierto pero lleno: mostramos Oro o Joyas
+                if(misTesoros[i].tipo == 0) img = hBmpTesoroOro;
+                else img = hBmpTesoroJoyas;
+            } 
+            else {
+                img = hBmpTesoroVacio; // Ya lo tomaste
+            }
+
+            if(img) DibujarImagen(hdc, img, sx, sy, tam, tam);
+
+            int dist = sqrt(pow(sx + (tam/2) - jugadorScreenX, 2) + pow(sy + (tam/2) - jugadorScreenY, 2));
+            
+            if (dist < 100 && misTesoros[i].estado < 2) { // 100px de radio en pantalla
+                SetBkMode(hdc, TRANSPARENT);
+                SetTextColor(hdc, RGB(255, 255, 0)); // Amarillo
+                
+                char mensaje[64];
+                if (misTesoros[i].estado == 0) {
+                    sprintf(mensaje, "ESPACIO: Abrir Tesoro");
+                } else {
+                    sprintf(mensaje, "ESPACIO: Tomar Objetos");
+                }
+                
+                // Dibujar texto centrado sobre el cofre
+                TextOut(hdc, sx - 20, sy - 20, mensaje, strlen(mensaje));
+            }
+        }
+    }
+}
+
 
 // --- DIBUJADO DE TIENDAS ---
 void dibujarTiendasEnIslas(HDC hdc, Camera cam, int ancho, int alto, int frameTienda)
@@ -646,19 +1037,22 @@ void dibujarJugador(HDC hdc, Jugador jugador, Camera cam)
     int cx = (r.right / 2) - (tam / 2);
     int cy = (r.bottom / 2) - (tam / 2);
 
-    // 1. Cuerpo
-    HBITMAP sprite = hBmpJugadorAnim[jugador.direccion][jugador.frameAnim];
-    DibujarImagen(hdc, (sprite ? sprite : hBmpJugador), cx, cy, tam, tam);
-
-    // 2. Armadura (Usa la variable externa de recursos.h)
+    // LÓGICA DE VISIBILIDAD
     if (jugador.armaduraEquipada)
     {
+        // SOLO DIBUJAR ARMADURA (El personaje desaparece)
         HBITMAP sArma = hBmpArmaduraAnim[jugador.direccion][jugador.frameAnim];
         if (sArma)
             DibujarImagen(hdc, sArma, cx, cy, tam, tam);
     }
+    else
+    {
+        // DIBUJAR JUGADOR NORMAL (Sin armadura)
+        HBITMAP sprite = hBmpJugadorAnim[jugador.direccion][jugador.frameAnim];
+        DibujarImagen(hdc, (sprite ? sprite : hBmpJugador), cx, cy, tam, tam);
+    }
 
-    // 3. Destello
+    // Destello (Efecto de daño o magia)
     if (jugador.frameDestello > 0)
     {
         HBRUSH luz = CreateSolidBrush(RGB(255, 255, 255));
@@ -668,17 +1062,16 @@ void dibujarJugador(HDC hdc, Jugador jugador, Camera cam)
         DeleteObject(luz);
     }
 }
-
 // --- DIBUJADO PRINCIPAL (MAPA + HUD) ---
 void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda)
 {
-    // Fondo de Agua
+    // 1. FONDO DE AGUA (Primero de todo, para que sea la base)
     HBRUSH agua = CreateSolidBrush(RGB(0, 100, 180));
     RECT r = {0, 0, ancho, alto};
     FillRect(hdc, &r, agua);
     DeleteObject(agua);
 
-    // Dibujar las 5 Islas
+    // 2. DIBUJAR LAS 5 ISLAS
     for (int i = 0; i < MAX_ISLAS; i++)
     {
         if (!misIslas[i].activa) continue;
@@ -700,7 +1093,13 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
         if (img) DibujarImagen(hdc, img, sx, sy, sw, sh);
     }
 
+<<<<<<< HEAD
     // Dibujar Tiendas
+=======
+    // 3. DIBUJAR LAS VACAS (Encima de las islas, debajo de la tienda/HUD)
+    dibujarVacas(hdc, cam, ancho, alto);
+    dibujarArboles(hdc, cam, ancho, alto); 
+>>>>>>> 13d885a5c65031cc00754c3da89295adcb515cbd
     dibujarTiendasEnIslas(hdc, cam, ancho, alto, frameTienda);
 
     // --- DEBUG VISUAL (Opcional: Descomentar para ver la rejilla generada por la imagen) ---
@@ -722,6 +1121,7 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
     DeleteObject(bTierra);
     
 }
+
 
 void dibujarItemRejilla(HDC hdc, HBITMAP icono, int cantidad, int maximo, int x, int y, const char *nombre)
 {
@@ -756,91 +1156,53 @@ void dibujarItemRejilla(HDC hdc, HBITMAP icono, int cantidad, int maximo, int x,
 
 void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
 {
-    // 1. VIDA (Código original)
+    // 1. VIDA
     for (int i = 0; i < 5; i++)
     {
         int vida = jugador->vidaActual - (i * 20);
         HBITMAP cor = hBmpCorazon0;
-        if (vida >= 20)
-            cor = hBmpCorazon100;
-        else if (vida >= 15)
-            cor = hBmpCorazon75;
-        else if (vida >= 10)
-            cor = hBmpCorazon50;
-        else if (vida >= 5)
-            cor = hBmpCorazon25;
+        if (vida >= 20) cor = hBmpCorazon100;
+        else if (vida >= 15) cor = hBmpCorazon75;
+        else if (vida >= 10) cor = hBmpCorazon50;
+        else if (vida >= 5) cor = hBmpCorazon25;
         DibujarImagen(hdc, cor, 20 + (i * 32), 20, 32, 32);
     }
 
-    // 2. ARMADURA (Código original)
+    // 2. ARMADURA (Texto corregido a Actual / Max)
     HBITMAP bmpEscudo = hBmpEscudo0;
-    float pEscudo = (jugador->armaduraMax > 0) ? (float)jugador->armaduraActual / jugador->armaduraMax : 0;
-    if (pEscudo >= 0.8)
-        bmpEscudo = hBmpEscudo100;
-    else if (pEscudo >= 0.6)
-        bmpEscudo = hBmpEscudo75;
-    else if (pEscudo >= 0.4)
-        bmpEscudo = hBmpEscudo50;
-    else if (pEscudo > 0)
-        bmpEscudo = hBmpEscudo25;
-    if (bmpEscudo)
-        DibujarImagen(hdc, bmpEscudo, 20, 60, 48, 48);
+    if (jugador->armaduraActual > 0) bmpEscudo = hBmpEscudo100; // Icono lleno si tiene algo
+    if (bmpEscudo) DibujarImagen(hdc, bmpEscudo, 20, 60, 48, 48);
 
-    char tEscudo[10];
-    sprintf(tEscudo, "%d", jugador->armaduraActual);
+    char tEscudo[16];
+    // Muestra "5 / 10" o "0 / 100"
+    sprintf(tEscudo, "%d / %d", jugador->armaduraActual, jugador->armaduraMax);
+    
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, RGB(255, 255, 255));
     TextOut(hdc, 75, 75, tEscudo, strlen(tEscudo));
 
     // 3. ICONO DE MOCHILA
     HBITMAP bmpBolso = (jugador->inventarioAbierto) ? hBmpInvAbierto : hBmpInvCerrado;
-    if (bmpBolso)
-        DibujarImagen(hdc, bmpBolso, 20, 120, 64, 64);
+    if (bmpBolso) DibujarImagen(hdc, bmpBolso, 20, 120, 64, 64);
 
-    // --- 4. PANEL DE INVENTARIO MEJORADO (REJILLA) ---
+    // --- 4. PANEL DE INVENTARIO (REJILLA) ---
     if (jugador->inventarioAbierto)
     {
-
-        // A. Calcular Capacidad Máxima
-        int maxCapacidad = 50; // Nivel 1
-        if (jugador->nivelMochila == 2)
-            maxCapacidad = 150;
-        if (jugador->nivelMochila == 3)
-            maxCapacidad = 300;
-
-        // B. Definir cuántos huecos mostramos
-        // Nivel 1: 6 items (Materiales)
-        // Nivel 2: 8 items (+ Herramientas)
-        // Nivel 3: 9 items (+ Armadura)
-        int totalItems = 6;
-        if (jugador->nivelMochila >= 2)
-            totalItems = 8;
-        if (jugador->nivelMochila >= 3)
-            totalItems = 9;
-
-        // C. Calcular Altura del Fondo (Adaptable)
-        int filas = (totalItems + 1) / 2;    // División entera redondeada hacia arriba
-        int alturaFondo = (filas * 50) + 60; // 50px por fila + margen
-
+        int totalItems = 9; // Mostramos hasta 9 espacios fijos para ver los comprables
+        int filas = (totalItems + 1) / 2;
+        int alturaFondo = (filas * 50) + 60;
         int px = 90, py = 120;
         int anchoFondo = 320;
 
-        // Dibujar Fondo Gris Oscuro
+        // Fondo
         HBRUSH fondo = CreateSolidBrush(RGB(30, 30, 35));
         RECT r = {px, py, px + anchoFondo, py + alturaFondo};
-        FillRect(hdc, &r, fondo);
-        DeleteObject(fondo);
-
-        // Borde Blanco Fino
+        FillRect(hdc, &r, fondo); DeleteObject(fondo);
         HBRUSH borde = CreateSolidBrush(RGB(255, 255, 255));
-        FrameRect(hdc, &r, borde);
-        DeleteObject(borde);
+        FrameRect(hdc, &r, borde); DeleteObject(borde);
 
-        // Título
-        SetTextColor(hdc, RGB(255, 215, 0)); // Dorado
-        char titulo[50];
-        sprintf(titulo, "MOCHILA (NVL %d)", jugador->nivelMochila);
-        TextOut(hdc, px + 100, py + 10, titulo, strlen(titulo));
+        SetTextColor(hdc, RGB(255, 215, 0));
+        TextOut(hdc, px + 100, py + 10, "MOCHILA", 7);
 
         // D. Dibujar la Rejilla
         int startX = px + 20;
@@ -855,86 +1217,65 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
 
             switch (i)
             {
-            case 0:
-                dibujarItemRejilla(hdc, hBmpIconoMadera, jugador->madera, maxCapacidad, itemX, itemY, "Madera");
-                break;
-            case 1:
-                dibujarItemRejilla(hdc, hBmpIconoPiedra, jugador->piedra, maxCapacidad, itemX, itemY, "Piedra");
-                break;
-            case 2:
-                dibujarItemRejilla(hdc, hBmpIconoOro, jugador->oro, maxCapacidad, itemX, itemY, "Oro");
-                break;
-            case 3:
-                dibujarItemRejilla(hdc, hBmpIconoHierro, jugador->hierro, maxCapacidad, itemX, itemY, "Hierro");
-                break;
-            // NOTA: Aquí uso hBmpIconoHoja (singular) para coincidir con recursos.h
-            case 4:
-                dibujarItemRejilla(hdc, hBmpIconoHoja, jugador->hojas, maxCapacidad, itemX, itemY, "Hojas");
-                break;
-            case 5:
-                dibujarItemRejilla(hdc, hBmpIconoComida, jugador->comida, maxCapacidad, itemX, itemY, "Comida");
-                break;
+            case 0: dibujarItemRejilla(hdc, hBmpIconoMadera, jugador->madera, 99, itemX, itemY, "Madera"); break;
+            case 1: dibujarItemRejilla(hdc, hBmpIconoPiedra, jugador->piedra, 99, itemX, itemY, "Piedra"); break;
+            case 2: dibujarItemRejilla(hdc, hBmpIconoOro, jugador->oro, 999, itemX, itemY, "Oro"); break;
+            case 3: dibujarItemRejilla(hdc, hBmpIconoHierro, jugador->hierro, 99, itemX, itemY, "Hierro"); break;
+            case 4: dibujarItemRejilla(hdc, hBmpIconoHoja, jugador->hojas, 99, itemX, itemY, "Hojas"); break;
+            case 5: dibujarItemRejilla(hdc, hBmpIconoComida, jugador->comida, 99, itemX, itemY, "Comida"); break;
 
-            // Herramientas (Nivel 2+)
+            // ÍTEMS COMPRABLES (Verificamos si los tiene para dibujarlos)
             case 6:
                 if (jugador->tieneEspada)
                     dibujarItemRejilla(hdc, hBmpIconoEspada, 1, 0, itemX, itemY, "Espada");
+                else
+                    dibujarItemRejilla(hdc, NULL, 0, 0, itemX, itemY, "---");
                 break;
             case 7:
                 if (jugador->tienePico)
                     dibujarItemRejilla(hdc, hBmpIconoPico, 1, 0, itemX, itemY, "Pico");
+                else
+                    dibujarItemRejilla(hdc, NULL, 0, 0, itemX, itemY, "---");
                 break;
-
-            // Armadura (Nivel 3+)
             case 8:
-                if (jugador->tieneArmadura)
-                    dibujarItemRejilla(hdc, hBmpArmaduraAnim[0][0], 1, 0, itemX, itemY, "Armadura");
+                if (jugador->tieneArmadura) {
+                    // Texto cambia si está equipada
+                    const char* estado = jugador->armaduraEquipada ? "EQUIPADA" : "Armadura";
+                    // Color amarillo si está equipada (lógica dentro de dibujarItemRejilla usa 'cantidad' > 0 para amarillo si max=0)
+                    dibujarItemRejilla(hdc, hBmpArmaduraAnim[0][0], 1, 0, itemX, itemY, estado);
+                } else {
+                    dibujarItemRejilla(hdc, NULL, 0, 0, itemX, itemY, "---");
+                }
                 break;
             }
         }
     }
 
-    // 5. BARRA DE EXPERIENCIA (Código original)
+    // 5. BARRA DE EXPERIENCIA (Sin cambios importantes)
     if (hBmpBarraXPVacia && hBmpBarraXPLlena)
     {
-        BITMAP bm;
-        GetObject(hBmpBarraXPVacia, sizeof(BITMAP), &bm);
-        int xpW = bm.bmWidth;
-        int xpH = bm.bmHeight;
-        int xpX = (ancho - xpW) / 2;
-        int xpY = alto - xpH - 20;
-        DibujarImagen(hdc, hBmpBarraXPVacia, xpX, xpY, xpW, xpH);
-        float pct = 0;
-        if (jugador->experienciaSiguienteNivel > 0)
-            pct = (float)jugador->experiencia / jugador->experienciaSiguienteNivel;
-        if (pct > 1)
-            pct = 1;
-        int fillW = (int)(xpW * pct);
-        if (fillW > 0)
-        {
+        BITMAP bm; GetObject(hBmpBarraXPVacia, sizeof(BITMAP), &bm);
+        int xpX = (ancho - bm.bmWidth) / 2;
+        int xpY = alto - bm.bmHeight - 20;
+        DibujarImagen(hdc, hBmpBarraXPVacia, xpX, xpY, bm.bmWidth, bm.bmHeight);
+        
+        float pct = (float)jugador->experiencia / jugador->experienciaSiguienteNivel;
+        if (pct > 1) pct = 1;
+        int fillW = (int)(bm.bmWidth * pct);
+        
+        if (fillW > 0) {
             HDC hdcMem = CreateCompatibleDC(hdc);
             HBITMAP hOld = (HBITMAP)SelectObject(hdcMem, hBmpBarraXPLlena);
-            TransparentBlt(hdc, xpX, xpY, fillW, xpH, hdcMem, 0, 0, fillW, xpH, RGB(255, 0, 255));
-            SelectObject(hdcMem, hOld);
-            DeleteDC(hdcMem);
+            TransparentBlt(hdc, xpX, xpY, fillW, bm.bmHeight, hdcMem, 0, 0, fillW, bm.bmHeight, RGB(255, 0, 255));
+            SelectObject(hdcMem, hOld); DeleteDC(hdcMem);
         }
-        char tNivel[32];
-        sprintf(tNivel, "NVL %d", jugador->nivel);
+        char tNivel[32]; sprintf(tNivel, "NVL %d", jugador->nivel);
         SetTextColor(hdc, RGB(0, 255, 255));
         TextOut(hdc, xpX - 60, xpY + 5, tNivel, strlen(tNivel));
     }
 
-    // 6. DETECCIÓN DE TIENDA (Código con coordenadas fijas de la Isla Central)
+    // 6. TIENDA (Lógica existente)
     BOOL cercaDeTienda = FALSE;
-    int tiendaX = 1450;
-    int tiendaY = 1900;
-    float dist = sqrt(pow(jugador->x - tiendaX, 2) + pow(jugador->y - tiendaY, 2));
-
-    if (dist < 80)
-        cercaDeTienda = TRUE; // Radio de interacción ajustado
-
-    if (jugador->inventarioAbierto && cercaDeTienda)
-    {
-        dibujarTiendaInteractiva(hdc, jugador);
-    }
+    if (sqrt(pow(jugador->x - 1450, 2) + pow(jugador->y - 1900, 2)) < 80) cercaDeTienda = TRUE;
+    if (jugador->inventarioAbierto && cercaDeTienda) dibujarTiendaInteractiva(hdc, jugador);
 }

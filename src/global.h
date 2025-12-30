@@ -2,15 +2,22 @@
 #define GLOBAL_H
 
 #include <windows.h> // Necesario para tipos de datos
+#include <stdbool.h> // Para el tipo bool en C
 
 // --- DEFINICIONES GLOBALES ---
+<<<<<<< HEAD
 #define MUNDO_FILAS 200       // Doble de filas
 #define MUNDO_COLUMNAS 200    // Doble de columnas
 #define TAMANO_CELDA_BASE 16  // Mitad de tamaño (Más precisión)
+=======
+#define MUNDO_FILAS 100
+#define MUNDO_COLUMNAS 100
+#define TAMANO_CELDA_BASE 32     // Tamaño base de celda
+>>>>>>> 13d885a5c65031cc00754c3da89295adcb515cbd
 #define PANTALLA_FILAS 60        // 600 / 10 = 60
 #define PANTALLA_COLUMNAS 80     // 800 / 10 = 80
 #define TAMANO_CELDA 32   
-
+#define TILE_SIZE 32
 
 // Definimos direcciones para usar nombres en lugar de números
 #define DIR_ABAJO     0
@@ -18,7 +25,16 @@
 #define DIR_IZQUIERDA 2
 #define DIR_DERECHA   3
 
-// --- ESTRUCTURA DEL JUGADOR (DEFINIDA SOLO AQUÍ) ---
+// --- LIMITES ---
+#define MUNDO_ANCHO 2000  // Ajusta este valor al tamaño real de tu mapa
+#define MUNDO_ALTO 2000   // Ajusta este valor al tamaño real de tu mapa
+#define MAX_VACAS 8
+#define VIDA_VACA 100
+#define MAX_ARBOLES 30// Un buen número para cubrir 5 islas
+// --- TESOROS ---
+#define MAX_TESOROS 2
+
+// --- ESTRUCTURA DEL JUGADOR ---
 typedef struct {
     // 1. Posición
     int x;
@@ -32,11 +48,11 @@ typedef struct {
     int armaduraMax;
 
     // 3. Progreso
-    int experiencia;
+    int experiencia;               // Se incrementa al cazar
     int experienciaSiguienteNivel;
     int nivel;
 
-    // 4. Inventario
+    // 4. Inventario y Estado
     int inventarioAbierto;
     
     // Materiales
@@ -46,33 +62,64 @@ typedef struct {
     int hierro;
     int comida;
     int hojas;
-
-// --- ANIMACIÓN ---
-    int direccion;      // 0, 1, 2, 3
-    int frameAnim;      // 0=Base, 1=PieIzq, 2=PieDer
-    int pasoAnimacion;  // Contador para velocidad de animación
-
     int carne;            // Cantidad de carne disponible
+
+    // Equipamiento y Tienda
     int tieneArmadura;    // 1 si el objeto existe en el inventario
     int armaduraEquipada; // 1 si la lleva puesta
     int tieneEspada;      // 1 si la compró
     int tienePico;        // 1 si lo compró
-    int frameDestello;    // Para el efecto visual blanco
     int nivelMochila;     // 1 = Básica, 2 = Herramientas, 3 = Completa
-    int modoTienda; // 0 = COMPRAR, 1 = VENDER
+    int modoTienda;       // 0 = COMPRAR, 1 = VENDER
 
-    } Jugador;
+    // Animación
+    int direccion;      // 0, 1, 2, 3
+    int frameAnim;      // 0=Base, 1=PieIzq, 2=PieDer
+    int pasoAnimacion;  // Contador para velocidad de animación
+    int frameDestello;  // Para el efecto visual blanco
 
-// Otras estructuras globales si las tienes (como EstadoJuego)
+} Jugador;
+
+typedef struct {
+    float x;
+    float y;
+    float xInicial;      // Para el límite de 100px
+    int direccion;       // -1: Izquierda, 1: Derecha
+    int estado;          // 0: Caminando, 1: Quieta
+    int contadorEspera;  
+    int activa;
+    int frameAnim;       // 0 a 3 (el offset se suma al dibujar)
+    int contadorAnim;
+    int vida;           // 5 golpes
+    int estadoVida;         // 0 = Viva, 1 = Muerta
+    int tiempoMuerte;   // Contador para desaparecer (5 segundos)
+} Vaca;
+
+// --- ESTRUCTURA DE ÁRBOL ---
+typedef struct {
+    int x;
+    int y;
+    int tipo;   // 0 = Árbol Chico, 1 = Árbol Grande
+    int activa; // 1 = Existe
+    int vida;   // <--- NUEVO: Vida del árbol (5 golpes)
+} Arbol;
+
+
+typedef struct {
+    int x;
+    int y;
+    int tipo;   // 0 = Solo Oro, 1 = Oro + Hierro (Joyas)
+    int estado; // 0 = Cerrado, 1 = Abierto/Vacío
+    int activa; // 1 = Existe
+} Tesoro;
+// --- OTRAS ESTRUCTURAS ---
 typedef struct {
     int mostrarMenu;
     int enPartida;
     int mostrarResumen; // Inventario
     int opcionSeleccionada;
-    
     POINT puntoMouse;
-        int frameTienda;      // Contador para la animación del gato
-
+    int frameTienda;    // Contador para la animación del gato
 } EstadoJuego;
 
 typedef struct {
@@ -82,12 +129,12 @@ typedef struct {
 } Camera;
 
 typedef struct {
-    int x;          // Posición X en el mundo (esquina superior izquierda de la imagen)
+    int x;          // Posición X en el mundo
     int y;          // Posición Y en el mundo
     int ancho;      // Ancho de la imagen
     int alto;       // Alto de la imagen
-    int margen;     // Cuántos píxeles de "borde de agua" tiene la imagen (para la colisión)
-    int activa;     // 1 = Existe, 0 = No existe (útil para islas que aparecen/desaparecen)
+    int margen;     // Borde de agua
+    int activa;     // 1 = Existe
 } Isla;
 
 #endif

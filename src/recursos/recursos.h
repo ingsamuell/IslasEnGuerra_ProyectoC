@@ -16,48 +16,46 @@ extern HBITMAP hBmpTitulo;
 extern HBITMAP hBmpBoton;
 extern HBITMAP hBmpBotonSel;
 
-// 2. JUGADOR Y TIENDA
+// 2. JUGADOR Y ENTIDADES
 extern HBITMAP hBmpJugador;
 extern HBITMAP hBmpJugadorAnim[4][3];
 extern HBITMAP hBmpTienda[2];
 extern HBITMAP hBmpArmaduraAnim[4][3];
+extern HBITMAP hBmpVaca[8]; 
+extern HBITMAP hBmpVacaMuerta; // Nueva variable
+extern HBITMAP hBmpArbolChico;
+extern HBITMAP hBmpArbolGrande;
+
+// (Opcional, pero útil si lo usas en otros lados)
+extern char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
 
 // 3. INTERFAZ (UI)
 extern HBITMAP hBmpInvCerrado;
 extern HBITMAP hBmpInvAbierto;
-extern HBITMAP hBmpCorazon100;
-extern HBITMAP hBmpCorazon75;
-extern HBITMAP hBmpCorazon50;
-extern HBITMAP hBmpCorazon25;
-extern HBITMAP hBmpCorazon0;
-extern HBITMAP hBmpEscudo100;
-extern HBITMAP hBmpEscudo75;
-extern HBITMAP hBmpEscudo50;
-extern HBITMAP hBmpEscudo25;
-extern HBITMAP hBmpEscudo0;
-extern HBITMAP hBmpBarraXPVacia;
-extern HBITMAP hBmpBarraXPLlena;
+extern HBITMAP hBmpCorazon100; extern HBITMAP hBmpCorazon75; extern HBITMAP hBmpCorazon50;
+extern HBITMAP hBmpCorazon25; extern HBITMAP hBmpCorazon0;
+extern HBITMAP hBmpEscudo100; extern HBITMAP hBmpEscudo75; extern HBITMAP hBmpEscudo50;
+extern HBITMAP hBmpEscudo25; extern HBITMAP hBmpEscudo0;
+extern HBITMAP hBmpBarraXPVacia; extern HBITMAP hBmpBarraXPLlena;
 
-// 4. ITEMS E ICONOS
-extern HBITMAP hBmpIconoMadera;
-extern HBITMAP hBmpIconoPiedra;
-extern HBITMAP hBmpIconoOro;
-extern HBITMAP hBmpIconoHierro;
-extern HBITMAP hBmpIconoComida;
-extern HBITMAP hBmpIconoHoja;
-extern HBITMAP hBmpIconoEspada;
-extern HBITMAP hBmpIconoPico;
+// 4. ITEMS
+extern HBITMAP hBmpIconoMadera; extern HBITMAP hBmpIconoPiedra; extern HBITMAP hBmpIconoOro;
+extern HBITMAP hBmpIconoHierro; extern HBITMAP hBmpIconoComida; extern HBITMAP hBmpIconoHoja;
+extern HBITMAP hBmpIconoEspada; extern HBITMAP hBmpIconoPico;
 
-// 5. MUNDO (NUEVAS ISLAS)
-extern HBITMAP hBmpIslaGrande; // Central (1000x1000)
-extern HBITMAP hBmpIslaSec1;   // Oeste (320x250)
-extern HBITMAP hBmpIslaSec2;   // Norte (700x700)
-extern HBITMAP hBmpIslaSec3;   // Este (400x400)
-extern HBITMAP hBmpIslaSec4;   // Sur (500x500)
 
+// 5. MUNDO
+extern HBITMAP hBmpIslaGrande;
+extern HBITMAP hBmpIslaSec1;
+extern HBITMAP hBmpIslaSec2;
+extern HBITMAP hBmpIslaSec3;
+extern HBITMAP hBmpIslaSec4;
 extern HBITMAP hBmpCastilloJugador;
-extern HBITMAP hBmpArbol;
 extern HBITMAP hBmpRoca;
+extern HBITMAP hBmpTesoroCerrado;
+extern HBITMAP hBmpTesoroOro;     
+extern HBITMAP hBmpTesoroJoyas;   
+extern HBITMAP hBmpTesoroVacio;
 
 // --- FUNCIONES ---
 void CargarRecursos();
