@@ -143,7 +143,7 @@ void CargarRecursos() {
     hBmpTesoroCerrado = CargarImagen("assets/mundo/tesoro-pixilart.bmp");
     hBmpTesoroOro     = CargarImagen("assets/mundo/tesoro-abierto-con-oro-pixilart.bmp");
     hBmpTesoroJoyas   = CargarImagen("assets/mundo/tesoro-abierto-con-piedras-preciosas-pixilart.bmp");
-    hBmpTesoroVacio   = CargarImagen("assets/mundo/tesoro-abierto-vacío-pixilart.bmp");
+    hBmpTesoroVacio   = CargarImagen("assets/mundo/tesoro-abierto-vacio-pixilart.bmp");
     // HUD
     hBmpCorazon100 = CargarImagen("assets/ui/corazon_100.bmp");
     hBmpCorazon75 = CargarImagen("assets/ui/corazon_75.bmp");
