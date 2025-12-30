@@ -22,6 +22,7 @@ extern HBITMAP hBmpJugadorAnim[4][3];
 extern HBITMAP hBmpTienda[2];
 extern HBITMAP hBmpArmaduraAnim[4][3];
 extern HBITMAP hBmpVaca[8]; 
+extern HBITMAP hBmpVacaMuerta; // Nueva variable
 extern HBITMAP hBmpArbolChico;
 extern HBITMAP hBmpArbolGrande;
 

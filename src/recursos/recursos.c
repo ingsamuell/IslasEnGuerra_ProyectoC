@@ -40,6 +40,7 @@ HBITMAP hBmpTesoroVacio = NULL;
 HBITMAP hBmpArbolChico = NULL;  // Antes hBmpArbol
 HBITMAP hBmpArbolGrande = NULL; 
 HBITMAP hBmpVaca[8] = {NULL};   // Array para las vacas
+HBITMAP hBmpVacaMuerta = NULL;
 
 // Items
 HBITMAP hBmpIconoMadera = NULL; HBITMAP hBmpIconoPiedra = NULL; HBITMAP hBmpIconoOro = NULL;
@@ -86,6 +87,7 @@ void CargarRecursos() {
     hBmpVaca[5] = CargarImagen("assets/mundo/vaca-5.bmp");
     hBmpVaca[6] = CargarImagen("assets/mundo/vaca-6.bmp");
     hBmpVaca[7] = CargarImagen("assets/mundo/vaca-7.bmp");
+	hBmpVacaMuerta = CargarImagen("assets/mundo/vaca_muerta.bmp");
 
     // Jugador
     hBmpJugadorAnim[0][0] = CargarImagen("assets/jugador/p_frente_base.bmp");
@@ -182,8 +184,7 @@ void LiberarRecursos() {
     for (int i = 0; i < 8; i++) {
         if(hBmpVaca[i]) DeleteObject(hBmpVaca[i]);
     }
-    
-    // ... resto de liberaciones (Jugador, Items, etc.) ...
+    if(hBmpVacaMuerta) DeleteObject(hBmpVacaMuerta);
 }
 
 void DibujarImagen(HDC hdcDestino, HBITMAP hBitmap, int x, int y, int ancho, int alto) {

@@ -81,6 +81,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                         // Intentar talar lo que esté enfrente
                         talarArbol(&miJugador);
                         abrirTesoro(&miJugador);
+                        golpearVaca(&miJugador);
                         
                         // (Si implementas golpearVaca después, puedes poner ambas aquí 
                         // y el juego decidirá qué golpeó primero)
