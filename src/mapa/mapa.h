@@ -17,6 +17,7 @@ int EsSuelo(int x, int y);
 void inicializarVacas(); // Sin argumentos
 void actualizarVacas();
 void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto);
+void golpearVaca(Jugador *j);
 
 // (Esta función aún no la hemos creado en mapa.c, la comento para evitar errores)
 // void golpearVaca(Jugador *j); 

@@ -84,6 +84,9 @@ typedef struct {
     int activa;
     int frameAnim;       // 0 a 3 (el offset se suma al dibujar)
     int contadorAnim;
+    int vida;           // 5 golpes
+    int estadoVida;         // 0 = Viva, 1 = Muerta
+    int tiempoMuerte;   // Contador para desaparecer (5 segundos)
 } Vaca;
 
 // --- ESTRUCTURA DE ÁRBOL ---
