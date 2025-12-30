@@ -63,7 +63,8 @@ extern HBITMAP hBmpTesoroCerrado;
 extern HBITMAP hBmpTesoroOro;     
 extern HBITMAP hBmpTesoroJoyas;   
 extern HBITMAP hBmpTesoroVacio;
-extern HBITMAP hBmpMina; // Añadir esto en la sección de MUNDO
+extern HBITMAP hBmpMina; 
+extern HBITMAP hBmpEstablo;
 
 // --- FUNCIONES ---
 void CargarRecursos();

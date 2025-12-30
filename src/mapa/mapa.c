@@ -20,6 +20,10 @@ Arbol misArboles[MAX_ARBOLES];
 Tesoro misTesoros[MAX_TESOROS];
 Unidad misUnidades[MAX_UNIDADES];
 Unidad unidades[MAX_UNIDADES];
+Vaca vacas[MAX_VACAS]; 
+#define ESTABLO_X 500
+#define ESTABLO_Y 400
+#define MARGEN_ESTABLO 100 // El radio de la "cerca"
 
 // --- INICIALIZACIÓN ---
 void inicializarIslas()
@@ -620,6 +624,34 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
                 unidades[i].estado = ESTADO_IDLE;
             }
         }
+        
+        // Lógica de Caza (Aldeanos con espada)
+if (unidades[i].estado == ESTADO_CAZANDO) {
+    for (int v = 0; v < MAX_VACAS; v++) {
+        if (vacas[v].activa) {
+            float dist = sqrt(pow(unidades[i].x - vacas[v].x, 2) + pow(unidades[i].y - vacas[v].y, 2));
+            
+            if (dist < 35) { // El aldeano alcanzó a la vaca
+                // --- PROGRESO DE LA ACCIÓN ---
+                unidades[i].timerTrabajo += 1; 
+
+                if (unidades[i].timerTrabajo >= 100) { // Cuando termina la barra
+                    vacas[v].activa = 0;   // La vaca muere
+                    j->comida += 10;       // Recurso ganado
+                    unidades[i].timerTrabajo = 0; 
+                    printf("¡Caza exitosa! Comida: %d\n", j->comida);
+                }
+            } else {
+                // --- TU LÓGICA DE MOVIMIENTO ---
+                // Si está lejos, la persigue
+                unidades[i].x += (vacas[v].x > unidades[i].x) ? 1.2f : -1.2f;
+                unidades[i].y += (vacas[v].y > unidades[i].y) ? 1.2f : -1.2f;
+                unidades[i].timerTrabajo = 0; // Si la vaca se aleja, el progreso se reinicia
+            }
+            break; // Solo persigue a una por vez
+        }
+    }
+}
     }
 }
 
@@ -646,21 +678,46 @@ void dibujarUnidades(HDC hdc, Camera cam) {
 
         DibujarImagen(hdc, anim[unidades[i].direccion][unidades[i].frameAnim], 
                      screenX, screenY, size, size);
+                     
+                     if (unidades[i].estado == ESTADO_CAZANDO && unidades[i].timerTrabajo > 0) {
+    int anchoBarra = 40;
+    int progreso = (unidades[i].timerTrabajo * anchoBarra) / 100;
+    
+    // Dibujamos un rectangulito verde sobre el aldeano
+    HBRUSH hBrush = CreateSolidBrush(RGB(0, 255, 0));
+    RECT r = { screenX, screenY - 10, screenX + progreso, screenY - 6 };
+    FillRect(hdc, &r, hBrush);
+    DeleteObject(hBrush);
+    
+    if (unidades[i].seleccionado) {
+    // Dibujar elipse verde en los pies
+    HPEN hPen = CreatePen(PS_SOLID, 2, RGB(0, 255, 0));
+    SelectObject(hdc, hPen);
+    SelectObject(hdc, GetStockObject(NULL_BRUSH)); // Sin relleno
+    
+    Ellipse(hdc, screenX, screenY + size - 10, screenX + size, screenY + size + 5);
+    
+    DeleteObject(hPen);
+}
+}
     }
 }
 
 // 5. CONTROL (Igual que antes pero actualizado)
-void seleccionarUnidad(int mouseX, int mouseY, Camera cam) {
-    // Convertir clic de pantalla a posición de mundo
-    float mundoX = (mouseX / cam.zoom) + cam.x;
-    float mundoY = (mouseY / cam.zoom) + cam.y;
 
+void seleccionarUnidades(int mouseX, int mouseY, Camera cam) {
     for (int i = 0; i < MAX_UNIDADES; i++) {
-        if (unidades[i].activa) {
-            // Radio de selección de 20 píxeles
-            float dist = sqrt(pow(unidades[i].x - mundoX, 2) + pow(unidades[i].y - mundoY, 2));
-            unidades[i].seleccionado = (dist < 20);
-        }
+        if (!unidades[i].activa) continue;
+
+        // Convertir posición del mundo a pantalla (igual que en el dibujo)
+        int xEnPantalla = (int)((unidades[i].x - cam.x) * cam.zoom);
+int yEnPantalla = (int)((unidades[i].y - cam.y) * cam.zoom);
+int ancho = (int)(40 * cam.zoom); // El área de click debe crecer con el zoom
+
+if (mouseX >= xEnPantalla && mouseX <= xEnPantalla + ancho &&
+    mouseY >= yEnPantalla && mouseY <= yEnPantalla + ancho) {
+    unidades[i].seleccionado = 1;
+}
     }
 }
 
@@ -684,9 +741,21 @@ void ordenarUnidad(int mouseX, int mouseY, Camera cam, char mapa[MUNDO_FILAS][MU
     }
 }
 
+void actualizarVacasEstablo() {
+    for (int i = 0; i < MAX_VACAS; i++) {
+        if (!vacas[i].activa) continue;
 
+        // Movimiento aleatorio muy pequeño (vagar)
+        vacas[i].x += (rand() % 3 - 1); 
+        vacas[i].y += (rand() % 3 - 1);
 
-
+        // Si se salen del establo, las devolvemos suavemente
+        if (vacas[i].x < ESTABLO_X - RADIO_ESTABLO) vacas[i].x++;
+        if (vacas[i].x > ESTABLO_X + RADIO_ESTABLO) vacas[i].x--;
+        if (vacas[i].y < ESTABLO_Y - RADIO_ESTABLO) vacas[i].y++;
+        if (vacas[i].y > ESTABLO_Y + RADIO_ESTABLO) vacas[i].y--;
+    }
+}
 
 // 1. INICIALIZAR (Posiciones variadas y setup de patrulla)
 void inicializarVacas()
@@ -694,31 +763,19 @@ void inicializarVacas()
     for (int i = 0; i < MAX_VACAS; i++)
         manada[i].activa = 0;
 
-    // Crear vacas
     for (int i = 0; i < 5; i++)
-    { // Pongamos 5 para probar
+    {
         manada[i].activa = 1;
 
-        // POSICIÓN X: Separadas horizontalmente
-        manada[i].x = 1200 + (i * 80);
+        // Las ponemos DENTRO del área del establo (ESTABLO_X, ESTABLO_Y)
+        manada[i].x = ESTABLO_X + (i * 30) + 20; // Un poco desplazadas
+        manada[i].y = ESTABLO_Y + 50 + (rand() % 40); // Dentro del corral
 
-        // POSICIÓN Y: Aleatoria para que no estén en línea recta
-        // Variamos entre 1350 y 1550 aprox
-        manada[i].y = 1350 + (rand() % 200);
-
-        // Guardar el inicio para limitar los 100 píxeles
-        manada[i].xInicial = manada[i].x;
-
-        // Dirección inicial aleatoria (1 = Derecha, -1 = Izquierda)
+        manada[i].xInicial = manada[i].x; // Para que su patrulla de 100px sea ahí mismo
         manada[i].direccion = (rand() % 2 == 0) ? 1 : -1;
-
-        // Configuración vida
         manada[i].vida = 5;
-        manada[i].estadoVida = 0; // Viva
+        manada[i].estadoVida = 0; 
         manada[i].tiempoMuerte = 300;
-
-        // Frame inicial según dirección
-        // Si va a la derecha (1), frame 4. Si izquierda (-1), frame 0.
         manada[i].frameAnim = (manada[i].direccion == 1) ? 4 : 0;
     }
 }
@@ -854,6 +911,20 @@ void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto)
                     DibujarImagen(hdc, hBmpVaca[manada[i].frameAnim], sx, sy, tam, tam);
             }
         }
+    }
+}
+
+void dibujarEstablo(HDC hdc, Camera cam) {
+    // Si cam.x y cam.y son 0 al inicio, lo verás en la coordenada 500 de la pantalla
+    int screenX = (int)((ESTABLO_X - cam.x) * cam.zoom);
+    int screenY = (int)((ESTABLO_Y - cam.y) * cam.zoom);
+    int tam = (int)(200 * cam.zoom); 
+
+    if (hBmpEstablo != NULL) {
+        DibujarImagen(hdc, hBmpEstablo, screenX, screenY, tam, tam);
+    } else {
+        // Si no ves la imagen, esto dibujará un cuadro para confirmar que el código pasa por aquí
+        Rectangle(hdc, screenX, screenY, screenX + tam, screenY + tam);
     }
 }
 // 1. INICIALIZAR ÁRBOLES (Aleatorio inteligente)

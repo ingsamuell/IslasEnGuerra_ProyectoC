@@ -37,13 +37,16 @@ void actualizarCamara(Camera *camara, Jugador jugador);
 //
 
 // --- SISTEMA RTS ---
+// En src/mapa/mapa.h (al final, antes del #endif)
+
+void seleccionarUnidades(int mouseX, int mouseY, Camera cam);
+void dibujarEstablo(HDC hdc, Camera cam);
 void inicializarUnidades();
 void spawnearEscuadron(int tipo, int cantidad, int x, int y); // Ahora recibe CANTIDAD
 void dibujarUnidades(HDC hdc, Camera cam);
 void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j); // Necesita al Jugador para darle recursos
 
 // Control
-void seleccionarUnidad(int mouseX, int mouseY, Camera cam);
 void ordenarUnidad(int mouseX, int mouseY, Camera cam, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 
 /* --- DIBUJADO PRINCIPAL (Partida) --- */

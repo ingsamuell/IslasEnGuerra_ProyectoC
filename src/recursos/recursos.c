@@ -42,6 +42,7 @@ HBITMAP hBmpTesoroOro = NULL;
 HBITMAP hBmpTesoroJoyas = NULL;
 HBITMAP hBmpTesoroVacio = NULL;
 HBITMAP hBmpMina = NULL; // Declaración global al inicio del archivo
+HBITMAP hBmpEstablo = NULL;
 
 // --- VARIABLES FALTANTES (AGREGADAS) ---
 HBITMAP hBmpArbolChico = NULL;  // Antes hBmpArbol
@@ -119,6 +120,7 @@ void CargarRecursos() {
     hBmpVaca[6] = CargarImagen("assets/mundo/vaca-6.bmp");
     hBmpVaca[7] = CargarImagen("assets/mundo/vaca-7.bmp");
 	hBmpVacaMuerta = CargarImagen("assets/mundo/vaca_muerta.bmp");
+	hBmpEstablo = (HBITMAP)LoadImage(NULL, "assets/animales/ranchito_vacas.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
     // Jugador
     hBmpJugadorAnim[0][0] = CargarImagen("assets/jugador/p_frente_base.bmp");
@@ -217,7 +219,7 @@ void LiberarRecursos() {
         if(hBmpVaca[i]) DeleteObject(hBmpVaca[i]);
     }
     if(hBmpVacaMuerta) DeleteObject(hBmpVacaMuerta);
-    
+    if (hBmpEstablo) DeleteObject(hBmpEstablo);
     // Liberar las matrices
     for(int i=0; i<4; i++) {
         for(int j=0; j<3; j++) {

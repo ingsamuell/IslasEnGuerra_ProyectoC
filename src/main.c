@@ -24,27 +24,38 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         case WM_ERASEBKGND:
             return 1;
 
-        case WM_LBUTTONDOWN:
-        {
-            int mouseX = LOWORD(lParam);
-            int mouseY = HIWORD(lParam);
+case WM_LBUTTONDOWN:
+{
+    int mouseX = LOWORD(lParam);
+    int mouseY = HIWORD(lParam);
 
-            if (estadoJuego.mostrarMenu) {
-                procesarClickMenu(mouseX, mouseY, hwnd, &estadoJuego);
-            }
-            else if (estadoJuego.enPartida) {
-                // Botón Mochila
-                int btnX = 20; int btnY = 120; int tamanoBolso = 64;
-                if (mouseX >= btnX && mouseX <= btnX + tamanoBolso &&
-                    mouseY >= btnY && mouseY <= btnY + tamanoBolso) {
-                    miJugador.inventarioAbierto = !miJugador.inventarioAbierto;
-                    InvalidateRect(hwnd, NULL, FALSE);
-                }
-                procesarClickMochila(mouseX, mouseY, &miJugador, hwnd);
-                procesarClickMochilaTienda(mouseX, mouseY, 0, &miJugador, hwnd);
-            }
-            return 0;
+    if (estadoJuego.mostrarMenu) {
+        procesarClickMenu(mouseX, mouseY, hwnd, &estadoJuego);
+    }
+    else if (estadoJuego.enPartida) {
+        // 1. Primero revisamos si el clic fue en el Botón Mochila
+        int btnX = 20; int btnY = 120; int tamanoBolso = 64;
+        bool clicEnUI = false;
+
+        if (mouseX >= btnX && mouseX <= btnX + tamanoBolso &&
+            mouseY >= btnY && mouseY <= btnY + tamanoBolso) {
+            miJugador.inventarioAbierto = !miJugador.inventarioAbierto;
+            clicEnUI = true;
+            InvalidateRect(hwnd, NULL, FALSE);
         }
+
+        // 2. Procesamos clics de inventario
+        procesarClickMochila(mouseX, mouseY, &miJugador, hwnd);
+        procesarClickMochilaTienda(mouseX, mouseY, 0, &miJugador, hwnd);
+
+        // 3. SI NO TOCAMOS LA UI, seleccionamos unidades en el mapa
+        // Usamos una pequeña lógica para que no selecciones unidades por accidente al tocar la mochila
+        if (!clicEnUI && !miJugador.inventarioAbierto) {
+            seleccionarUnidades(mouseX, mouseY, miCamara);
+        }
+    }
+    return 0;
+}
 
         case WM_RBUTTONDOWN:
         {
@@ -113,12 +124,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	dibujarTesoros(hdcMem, miCamara, ancho, alto); 
 			// 2. ESTRUCTURAS FIJAS (La cueva/mina)
 			dibujarMina(hdcMem, miCamara); 
-
+dibujarEstablo(hdcMem, miCamara); // <-- NUEVA LLAMADA
 		// 3. OBJETOS INTERACTIVOS (Tesoros y Árboles)
 	
 		dibujarArboles(hdcMem, miCamara, ancho, alto); 
-
-		// 4. ENTIDADES MÓVILES (Vacas, Unidades y Jugador)
+			DibujarImagen(hdcMem, hBmpEstablo, 
+              (ESTABLO_X - miCamara.x) * miCamara.zoom, 
+              (ESTABLO_Y - miCamara.y) * miCamara.zoom, 
+              200 * miCamara.zoom, 200 * miCamara.zoom);
 		dibujarVacas(hdcMem, miCamara, ancho, alto);
 		dibujarUnidades(hdcMem, miCamara); // Tus grupos de aldeanos/soldados
 		dibujarJugador(hdcMem, miJugador, miCamara);

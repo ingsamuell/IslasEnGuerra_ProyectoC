@@ -22,6 +22,10 @@
 // --- LIMITES ---
 #define MUNDO_ANCHO 2000  // Ajusta este valor al tamaño real de tu mapa
 #define MUNDO_ALTO 2000   // Ajusta este valor al tamaño real de tu mapa
+// En global.h o mapa.c
+#define ESTABLO_X 500  // Coordenada X del establo
+#define ESTABLO_Y 400  // Coordenada Y del establo
+#define RADIO_ESTABLO 150 // Tamaño del área del establo
 #define MAX_VACAS 8
 #define VIDA_VACA 100
 #define MAX_ARBOLES 30// Un buen número para cubrir 5 islas
@@ -41,6 +45,7 @@
 #define ESTADO_MOVIENDO 1
 #define ESTADO_TRABAJANDO 2 // Talando o Atacando
 #define ESTADO_EN_CUEVA 3   // Minando (Invisible)
+#define ESTADO_CAZANDO  4 
 
 // Definición de la Cueva (Ubicación fija por ahora)
 #define CUEVA_X 1800
