@@ -18,6 +18,13 @@ extern HBITMAP hBmpBotonSel;
 
 // 2. JUGADOR Y ENTIDADES
 extern HBITMAP hBmpJugador;
+
+// --- ANIMACIONES DE UNIDADES ---
+// [Dirección][Frame] -> 0:Abajo, 1:Arriba, 2:Izq, 3:Der
+extern HBITMAP hBmpMineroAnim[4][3];   // Usa Pico
+extern HBITMAP hBmpLenadorAnim[4][3];  // Usa Hacha
+extern HBITMAP hBmpCazadorAnim[4][3];  // Usa Espada (Sin armadura)
+extern HBITMAP hBmpSoldadoAnim[4][3];  // Usa Espada (Con armadura)
 extern HBITMAP hBmpJugadorAnim[4][3];
 extern HBITMAP hBmpTienda[2];
 extern HBITMAP hBmpArmaduraAnim[4][3];

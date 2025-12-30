@@ -23,6 +23,12 @@ HBITMAP hBmpJugador = NULL;
 HBITMAP hBmpJugadorAnim[4][3];
 HBITMAP hBmpArmaduraAnim[4][3] = {{NULL}};
 
+// VARIABLES GLOBALES
+HBITMAP hBmpMineroAnim[4][3];
+HBITMAP hBmpLenadorAnim[4][3];
+HBITMAP hBmpCazadorAnim[4][3];
+HBITMAP hBmpSoldadoAnim[4][3];
+
 // Tienda
 HBITMAP hBmpTienda[2] = {NULL, NULL};
 
@@ -60,6 +66,30 @@ HBITMAP CargarImagen(const char *ruta) {
     return hBmp;
 }
 
+// Función auxiliar para cargar un set completo
+// herramienta: "pico", "hacha", "espada"
+void CargarSetUnidad(HBITMAP destino[4][3], char* herramienta) {
+    char* direcciones[4] = {"base", "espalda", "izquierda", "derecha"}; // 0, 1, 2, 3
+    char ruta[128];
+
+    for (int dir = 0; dir < 4; dir++) {
+        for (int frame = 0; frame < 3; frame++) {
+            // Construimos el nombre según tu lógica:
+            // Frame 0: "Personaje-base-pico.bmp"
+            // Frame 1: "Personaje-base-1-pico.bmp"
+            
+            if (frame == 0) {
+                // Sin número para el frame base (parado)
+                sprintf(ruta, "assets/unidades/Personaje-%s-%s.bmp", direcciones[dir], herramienta);
+            } else {
+                // Con número para los pasos (1 o 2)
+                sprintf(ruta, "assets/unidades/Personaje-%s-%d-%s.bmp", direcciones[dir], frame, herramienta);
+            }
+            
+            destino[dir][frame] = CargarImagen(ruta);
+        }
+    }
+}
 void CargarRecursos() {
     hBmpFondoMenu = CargarImagen("assets/ui/fondo_menu.bmp");
 
@@ -159,7 +189,17 @@ void CargarRecursos() {
     hBmpEscudo0 = CargarImagen("assets/ui/escudo_0.bmp");
     hBmpBarraXPVacia = CargarImagen("assets/ui/barra_xp_vacia.bmp");
     hBmpBarraXPLlena = CargarImagen("assets/ui/barra_xp_llena.bmp");
+    
+    // --- CARGAR UNIDADES RTS ---
+    // Asegúrate de que las imágenes existan con estos nombres exactos
+    CargarSetUnidad(hBmpMineroAnim, "pico");
+    CargarSetUnidad(hBmpLenadorAnim, "hacha");
+    CargarSetUnidad(hBmpCazadorAnim, "espada"); 
+    // Si el soldado usa armadura, quizás sus archivos se llamen "Personaje-base-armadura.bmp"
+    // O si usa espada también pero se ve diferente, cambia el sufijo aquí:
+    CargarSetUnidad(hBmpSoldadoAnim, "armadura");
 }
+
 
 void LiberarRecursos() {
     if (hBmpBtnJugar) DeleteObject(hBmpBtnJugar);
@@ -185,6 +225,16 @@ void LiberarRecursos() {
         if(hBmpVaca[i]) DeleteObject(hBmpVaca[i]);
     }
     if(hBmpVacaMuerta) DeleteObject(hBmpVacaMuerta);
+    
+    // Liberar las matrices
+    for(int i=0; i<4; i++) {
+        for(int j=0; j<3; j++) {
+            if(hBmpMineroAnim[i][j]) DeleteObject(hBmpMineroAnim[i][j]);
+            if(hBmpLenadorAnim[i][j]) DeleteObject(hBmpLenadorAnim[i][j]);
+            if(hBmpCazadorAnim[i][j]) DeleteObject(hBmpCazadorAnim[i][j]);
+            if(hBmpSoldadoAnim[i][j]) DeleteObject(hBmpSoldadoAnim[i][j]);
+        }
+    }
 }
 
 void DibujarImagen(HDC hdcDestino, HBITMAP hBitmap, int x, int y, int ancho, int alto) {

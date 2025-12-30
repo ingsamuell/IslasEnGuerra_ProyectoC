@@ -28,6 +28,47 @@
 // --- TESOROS ---
 #define MAX_TESOROS 2
 
+
+// --- TIPOS DE UNIDADES ---
+#define TIPO_ALDEANO 0
+#define TIPO_CAZADOR 1    // Espada
+#define TIPO_LENADOR 2    // Hacha
+#define TIPO_MINERO  3    // Pico
+#define TIPO_SOLDADO 4    // Armadura
+
+// Estados
+#define ESTADO_IDLE 0
+#define ESTADO_MOVIENDO 1
+#define ESTADO_TRABAJANDO 2 // Talando o Atacando
+#define ESTADO_EN_CUEVA 3   // Minando (Invisible)
+
+// Definición de la Cueva (Ubicación fija por ahora)
+#define CUEVA_X 1800
+#define CUEVA_Y 1250
+
+#define MAX_UNIDADES 100   // Aumentamos capacidad
+
+typedef struct {
+    float x, y;
+    int tipo;           
+    int estado;         
+    int seleccionado;   
+    int activa;         
+    
+    // Movimiento
+    int destinoX, destinoY;
+    
+    // Stats y Visual
+    int vida;
+    int frameAnim;
+    int direccion;      
+    char nombreGrupo[32]; // EJ: "Leñador", "Minero"
+    int timerTrabajo;     // Para recolectar recursos poco a poco
+} Unidad;
+
+
+
+// (Mantén el resto de estructuras Jugador, Vaca, etc. igual)
 // --- ESTRUCTURA DEL JUGADOR ---
 typedef struct {
     // 1. Posición

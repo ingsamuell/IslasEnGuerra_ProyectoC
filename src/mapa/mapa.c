@@ -18,6 +18,7 @@ Isla misIslas[MAX_ISLAS];
 Arbol misArboles[MAX_ARBOLES];
 // Variable global
 Tesoro misTesoros[MAX_TESOROS];
+Unidad misUnidades[MAX_UNIDADES];
 
 // --- INICIALIZACIÓN ---
 void inicializarIslas()
@@ -422,159 +423,320 @@ void procesarClickMochila(int mouseX, int mouseY, Jugador *jugador, HWND hwnd)
     }
 }
 
-// --- INTERACCIÓN TIENDA (Compra - Venta) ---
 
-void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, HWND hwnd)
-{
-    if (!j->inventarioAbierto)
-        return;
+// --- INTERACCIÓN TIENDA (COMPRA DE TROPAS RTS) ---
+void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, HWND hwnd) {
+    if (!j->inventarioAbierto) return;
 
     int tx = 450, ty = 120; // Posición base de la tienda
 
     // 1. PESTAÑAS (Comprar / Vender)
-    // Pestaña Comprar (x: 450 a 600, y: 90 a 120)
-    if (mx >= tx && mx <= tx + 150 && my >= ty - 30 && my <= ty)
-    {
+    if (mx >= tx && mx <= tx + 150 && my >= ty - 30 && my <= ty) {
         j->modoTienda = 0; // COMPRAR
         InvalidateRect(hwnd, NULL, FALSE);
         return;
     }
-    // Pestaña Vender (x: 600 a 750, y: 90 a 120)
-    if (mx >= tx + 150 && mx <= tx + 300 && my >= ty - 30 && my <= ty)
-    {
+    if (mx >= tx + 150 && mx <= tx + 300 && my >= ty - 30 && my <= ty) {
         j->modoTienda = 1; // VENDER
         InvalidateRect(hwnd, NULL, FALSE);
         return;
     }
 
-    // 2. LÓGICA DE CLICKS SEGÚN MODO
-    // Definimos coordenadas de items (misma rejilla que el dibujo)
+    // 2. LÓGICA DE TIENDA
     int startX = tx + 20;
     int startY = ty + 40;
 
-    if (j->modoTienda == 0)
-    { // --- MODO COMPRAR ---
-        // Lista de cosas a comprar (5 items)
-        for (int i = 0; i < 5; i++)
-        {
-            int col = i % 2;
-            int row = i / 2;
-            int ix = startX + (col * 140);
-            int iy = startY + (row * 60);
-
-            if (mx >= ix && mx <= ix + 100 && my >= iy && my <= iy + 50)
-            {
-                // Precios y Lógica
+    if (j->modoTienda == 0) { // --- MODO RECLUTAR (COMPRAR) ---
+        
+        // Definir cantidad según el clic
+        int cantidad = (esClickDerecho) ? 15 : 5;
+        
+        // Items disponibles (Espada, Pico, Armadura, Hacha)
+        for (int i = 0; i < 4; i++) {
+            int col = i % 2; int row = i / 2;
+            int ix = startX + (col * 140); int iy = startY + (row * 60);
+            
+            if (mx >= ix && mx <= ix + 100 && my >= iy && my <= iy + 50) {
                 BOOL comprado = FALSE;
+                
+                // COSTOS (Ajustados por cantidad o precio base de "desbloqueo")
+                // Aquí cobramos una tarifa base fija por el lote para no complicar,
+                // o puedes multiplicar el costo * cantidad si prefieres. 
+                // Usaremos precio fijo por "Llamada de refuerzos".
 
-                // 1. ESPADA (20 Oro + 3 Hierro)
-                if (i == 0 && !j->tieneEspada)
-                {
-                    if (j->oro >= 20 && j->hierro >= 3)
-                    {
-                        j->oro -= 20;
-                        j->hierro -= 3;
-                        j->tieneEspada = 1;
+                // 0. ESPADA -> CAZADORES
+                if (i == 0) {
+                    int costoOro = 20; int costoHierro = 3;
+                    if (j->oro >= costoOro && j->hierro >= costoHierro) {
+                        j->oro -= costoOro; j->hierro -= costoHierro;
+                        j->tieneEspada = 1; // Desbloqueada visualmente
+                        
+                        spawnearEscuadron(TIPO_CAZADOR, cantidad, j->x + 50, j->y);
                         comprado = TRUE;
                     }
                 }
-                // 2. PICO (15 Oro + 5 Piedra)
-                else if (i == 1 && !j->tienePico)
-                {
-                    if (j->oro >= 15 && j->piedra >= 5)
-                    {
-                        j->oro -= 15;
-                        j->piedra -= 5;
-                        j->tienePico = 1;
+                // 1. PICO -> MINEROS
+                else if (i == 1) {
+                    int costoOro = 15; int costoPiedra = 5;
+                    if (j->oro >= costoOro && j->piedra >= costoPiedra) {
+                        j->oro -= costoOro; j->piedra -= costoPiedra;
+                        j->tienePico = 1; 
+                        
+                        spawnearEscuadron(TIPO_MINERO, cantidad, j->x + 50, j->y);
                         comprado = TRUE;
                     }
                 }
-                // 3. ARMADURA (50 Oro + 5 Hierro)
-                else if (i == 2 && !j->tieneArmadura)
-                {
-                    if (j->oro >= 50 && j->hierro >= 5)
-                    {
-                        j->oro -= 50;
-                        j->hierro -= 5;
+                // 2. ARMADURA -> SOLDADOS
+                else if (i == 2) {
+                    int costoOro = 50; int costoHierro = 10;
+                    if (j->oro >= costoOro && j->hierro >= costoHierro) {
+                        j->oro -= costoOro; j->hierro -= costoHierro;
                         j->tieneArmadura = 1;
+                        
+                        spawnearEscuadron(TIPO_SOLDADO, cantidad, j->x + 50, j->y);
                         comprado = TRUE;
                     }
                 }
-                // 4. MOCHILA NIVEL 2 (20 Oro + 30 Hojas)
-                else if (i == 3 && j->nivelMochila == 1)
-                {
-                    if (j->oro >= 20 && j->hojas >= 30)
-                    {
-                        j->oro -= 20;
-                        j->hojas -= 30;
-                        j->nivelMochila = 2;
-                        comprado = TRUE;
-                    }
-                }
-                // 5. MOCHILA NIVEL 3 (50 Oro + 10 Hierro)
-                else if (i == 4 && j->nivelMochila == 2)
-                {
-                    if (j->oro >= 50 && j->hierro >= 10)
-                    {
-                        j->oro -= 50;
-                        j->hierro -= 10;
-                        j->nivelMochila = 3;
+                // 3. HACHA/MADERA -> LEÑADORES (Nuevo Slot)
+                else if (i == 3) {
+                    int costoOro = 20; int costoMadera = 10;
+                    if (j->oro >= costoOro && j->madera >= costoMadera) {
+                        j->oro -= costoOro; j->madera -= costoMadera;
+                        // j->tieneHacha = 1; // Si tienes variable hacha úsala, si no, no importa
+                        
+                        spawnearEscuadron(TIPO_LENADOR, cantidad, j->x + 50, j->y);
                         comprado = TRUE;
                     }
                 }
 
-                if (comprado)
-                {
+                if (comprado) {
+                    // Feedback sonoro opcional
+                    // PlaySound("assets/sonidos/create_unit.wav", ...);
                     InvalidateRect(hwnd, NULL, FALSE);
                 }
-                else
-                {
-                    // Sonido de error o feedback visual opcional
+            }
+        }
+    } 
+    else { // --- MODO VENDER (Se mantiene igual) ---
+        int precios[] = {1, 2, 5, 1, 3}; // Oro por unidad
+        int* stocks[] = {&j->madera, &j->piedra, &j->hierro, &j->hojas, &j->comida};
+        char* nombres[] = {"Madera", "Piedra", "Hierro", "Hojas", "Comida"};
+
+        for (int i = 0; i < 5; i++) {
+            int col = i % 2; int row = i / 2;
+            int ix = startX + (col * 140); int iy = startY + (row * 60);
+
+            if (mx >= ix && mx <= ix + 100 && my >= iy && my <= iy + 50) {
+                int cantidadAVender = esClickDerecho ? 10 : 1;
+                int stockActual = *stocks[i];
+
+                if (cantidadAVender > stockActual) cantidadAVender = stockActual;
+
+                if (cantidadAVender > 0) {
+                    int ganancia = cantidadAVender * precios[i];
+                    *stocks[i] -= cantidadAVender;
+                    j->oro += ganancia;
+                    InvalidateRect(hwnd, NULL, FALSE);
                 }
             }
         }
     }
-    else
-    { // --- MODO VENDER ---
-        // Lista de cosas vendibles (Madera, Piedra, Hierro, Hojas, Comida)
-        int precios[] = {1, 2, 5, 1, 3}; // Oro por unidad
-        int *stocks[] = {&j->madera, &j->piedra, &j->hierro, &j->hojas, &j->comida};
-        char *nombres[] = {"Madera", "Piedra", "Hierro", "Hojas", "Comida"};
+}
 
-        for (int i = 0; i < 5; i++)
-        {
-            int col = i % 2;
-            int row = i / 2;
-            int ix = startX + (col * 140);
-            int iy = startY + (row * 60);
 
-            if (mx >= ix && mx <= ix + 100 && my >= iy && my <= iy + 50)
-            {
-                int cantidadAVender = esClickDerecho ? 10 : 1;
-                int stockActual = *stocks[i];
+// 1. INICIALIZAR
+void inicializarUnidades() {
+    for(int i=0; i<MAX_UNIDADES; i++) misUnidades[i].activa = 0;
+}
 
-                // Ajustar si no tengo 10
-                if (cantidadAVender > stockActual)
-                    cantidadAVender = stockActual;
+// 2. CREAR ESCUADRÓN (Flexible: 5, 10 o 15)
+void spawnearEscuadron(int tipo, int cantidad, int baseX, int baseY) {
+    int contados = 0;
+    
+    char* nombre = "Aldeano";
+    if (tipo == TIPO_CAZADOR) nombre = "Cazador";
+    else if (tipo == TIPO_LENADOR) nombre = "Leñador";
+    else if (tipo == TIPO_MINERO) nombre = "Minero";
+    else if (tipo == TIPO_SOLDADO) nombre = "Soldado";
 
-                if (cantidadAVender > 0)
-                {
-                    int ganancia = cantidadAVender * precios[i];
-                    char mensaje[100];
-                    sprintf(mensaje, "Vender %d %s por %d Oro?", cantidadAVender, nombres[i], ganancia);
+    for(int i=0; i<MAX_UNIDADES; i++) {
+        if (!misUnidades[i].activa) {
+            misUnidades[i].activa = 1;
+            misUnidades[i].tipo = tipo;
+            // Dispersión para que no salgan todos en el mismo pixel
+            misUnidades[i].x = baseX + (rand() % 100 - 50); 
+            misUnidades[i].y = baseY + (rand() % 100 - 50);
+            misUnidades[i].vida = 100;
+            misUnidades[i].estado = ESTADO_IDLE;
+            misUnidades[i].seleccionado = 0;
+            misUnidades[i].timerTrabajo = 0;
+            strcpy(misUnidades[i].nombreGrupo, nombre); // Asignar nombre
+            
+            contados++;
+            if (contados >= cantidad) break; 
+        }
+    }
+}
 
-                    // --- VENTANA DE CONFIRMACIÓN ---
-                    if (MessageBox(hwnd, mensaje, "Confirmar Venta", MB_YESNO | MB_ICONQUESTION) == IDYES)
-                    {
-                        *stocks[i] -= cantidadAVender;
-                        j->oro += ganancia;
-                        InvalidateRect(hwnd, NULL, FALSE);
+// 3. ACTUALIZAR (IA + MINERÍA)
+void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
+    for(int i=0; i<MAX_UNIDADES; i++) {
+        if (!misUnidades[i].activa) continue;
+
+        // --- CASO ESPECIAL: MINERO EN CUEVA ---
+        if (misUnidades[i].estado == ESTADO_EN_CUEVA) {
+            misUnidades[i].timerTrabajo++;
+            // Cada 60 frames (aprox 1 seg) da recursos
+            if (misUnidades[i].timerTrabajo > 60) {
+                // Generar recursos de 2 en 2 (Lento)
+                j->oro += 2;
+                j->hierro += 2;
+                j->piedra += 2;
+                misUnidades[i].timerTrabajo = 0;
+            }
+            // Si quieres que salgan, deberías darles otra orden, 
+            // pero por ahora solo producen infinito hasta que los muevas.
+            continue; // No se mueve ni se dibuja
+        }
+
+        // --- MOVIMIENTO ---
+        if (misUnidades[i].estado == ESTADO_MOVIENDO) {
+            float dx = misUnidades[i].destinoX - misUnidades[i].x;
+            float dy = misUnidades[i].destinoY - misUnidades[i].y;
+            float dist = sqrt(dx*dx + dy*dy);
+
+            if (dist > 5) { 
+                float vel = 2.5f; 
+                misUnidades[i].x += (dx / dist) * vel;
+                misUnidades[i].y += (dy / dist) * vel;
+                
+                // Animación simple
+                if (dx > 0) misUnidades[i].direccion = DIR_DERECHA;
+                else misUnidades[i].direccion = DIR_IZQUIERDA;
+                misUnidades[i].frameAnim = (misUnidades[i].frameAnim + 1) % 4; 
+            } else {
+                // LLEGÓ A SU DESTINO
+                misUnidades[i].estado = ESTADO_IDLE;
+
+                // ** LOGICA DE ENTRAR A LA CUEVA **
+                // Si es MINERO y llegó cerca de la CUEVA
+                if (misUnidades[i].tipo == TIPO_MINERO) {
+                    float distCueva = sqrt(pow(misUnidades[i].x - CUEVA_X, 2) + pow(misUnidades[i].y - CUEVA_Y, 2));
+                    if (distCueva < 60) { // Si está cerca de la entrada
+                        misUnidades[i].estado = ESTADO_EN_CUEVA; // Desaparece y mina
                     }
                 }
             }
         }
     }
 }
+
+// 4. DIBUJAR (Nombres y Herramientas)
+void dibujarUnidades(HDC hdc, Camera cam) {
+    // Dibujamos la Cueva (Entrada) - Usamos la Roca como referencia visual si no hay otra
+    int cx = (CUEVA_X - cam.x) * cam.zoom;
+    int cy = (CUEVA_Y - cam.y) * cam.zoom;
+    int cTam = 64 * cam.zoom;
+    if (hBmpRoca) DibujarImagen(hdc, hBmpRoca, cx, cy, cTam, cTam); // Visual de la cueva
+
+    for(int i=0; i<MAX_UNIDADES; i++) {
+        if (!misUnidades[i].activa) continue;
+        if (misUnidades[i].estado == ESTADO_EN_CUEVA) continue;
+
+        int sx = (misUnidades[i].x - cam.x) * cam.zoom;
+        int sy = (misUnidades[i].y - cam.y) * cam.zoom;
+        int tam = 32 * cam.zoom;
+
+        if (sx < -50 || sx > 2000 || sy < -50 || sy > 2000) continue;
+
+        // 1. SELECCIONAR SPRITE CORRECTO
+        HBITMAP sprite = NULL;
+        int d = misUnidades[i].direccion; // 0=Abajo, 1=Arriba, 2=Izq, 3=Der
+        int f = misUnidades[i].frameAnim; // 0, 1, 2
+
+        // Protección por si la dirección o frame vienen mal
+        if (d < 0 || d > 3) d = 0;
+        if (f < 0 || f > 2) f = 0;
+
+        switch(misUnidades[i].tipo) {
+            case TIPO_MINERO:  
+                sprite = hBmpMineroAnim[d][f]; 
+                break;
+            case TIPO_LENADOR: 
+                sprite = hBmpLenadorAnim[d][f]; 
+                break;
+            case TIPO_CAZADOR: 
+                sprite = hBmpCazadorAnim[d][f]; 
+                break;
+            case TIPO_SOLDADO: 
+                sprite = hBmpSoldadoAnim[d][f]; 
+                break;
+            default: // Aldeano normal
+                sprite = hBmpJugadorAnim[d][f]; 
+                break;
+        }
+
+        // Si por alguna razón la imagen específica no cargó, usamos un fallback (el jugador base)
+        if (!sprite) sprite = hBmpJugador;
+
+        // 2. DIBUJAR LA UNIDAD
+        DibujarImagen(hdc, sprite, sx, sy, tam, tam);
+
+        // (Ya NO necesitas dibujar el ícono flotante de la herramienta,
+        // porque la herramienta ya está en la mano del personaje en la imagen)
+
+        // 3. SELECCIÓN (Círculo Verde) - Se mantiene igual
+        if (misUnidades[i].seleccionado) {
+            HPEN penVerde = CreatePen(PS_SOLID, 2, RGB(0, 255, 0));
+            HBRUSH brushNulo = (HBRUSH)GetStockObject(NULL_BRUSH);
+            SelectObject(hdc, penVerde); SelectObject(hdc, brushNulo);
+            Ellipse(hdc, sx, sy + tam - 5, sx + tam, sy + tam + 5);
+            DeleteObject(penVerde);
+        }
+
+        // 4. NOMBRE ARRIBA - Se mantiene igual
+        SetBkMode(hdc, TRANSPARENT);
+        SetTextColor(hdc, RGB(255, 255, 255));
+        TextOut(hdc, sx - 10, sy - 15, misUnidades[i].nombreGrupo, strlen(misUnidades[i].nombreGrupo));
+    }
+}
+
+// 5. CONTROL (Igual que antes pero actualizado)
+void seleccionarUnidad(int mouseX, int mouseY, Camera cam) {
+    int mundoX = (mouseX / cam.zoom) + cam.x;
+    int mundoY = (mouseY / cam.zoom) + cam.y;
+
+    for(int i=0; i<MAX_UNIDADES; i++) {
+        if (!misUnidades[i].activa) continue;
+        // Si clickeas, toggle selección
+        if (mundoX >= misUnidades[i].x && mundoX <= misUnidades[i].x + 32 &&
+            mundoY >= misUnidades[i].y && mundoY <= misUnidades[i].y + 32) {
+            misUnidades[i].seleccionado = !misUnidades[i].seleccionado;
+            // Si estaba en la cueva, al seleccionarlo lo "sacamos"
+            if (misUnidades[i].estado == ESTADO_EN_CUEVA) {
+                misUnidades[i].estado = ESTADO_IDLE;
+                misUnidades[i].x = CUEVA_X + 40; // Aparece fuera
+            }
+        }
+    }
+}
+
+void ordenarUnidad(int mouseX, int mouseY, Camera cam, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    int mundoX = (mouseX / cam.zoom) + cam.x;
+    int mundoY = (mouseY / cam.zoom) + cam.y;
+
+    for(int i=0; i<MAX_UNIDADES; i++) {
+        if (misUnidades[i].activa && misUnidades[i].seleccionado) {
+            misUnidades[i].estado = ESTADO_MOVIENDO;
+            misUnidades[i].destinoX = mundoX;
+            misUnidades[i].destinoY = mundoY;
+            
+            // Si los mandaste a la cueva, actualizaremos el estado al llegar
+        }
+    }
+}
+
+
 
 // 1. INICIALIZAR (Posiciones variadas y setup de patrulla)
 void inicializarVacas()
