@@ -21,8 +21,7 @@ Tesoro misTesoros[MAX_TESOROS];
 Unidad misUnidades[MAX_UNIDADES];
 Unidad unidades[MAX_UNIDADES];
 Vaca vacas[MAX_VACAS]; 
-#define ESTABLO_X 500
-#define ESTABLO_Y 400
+
 #define MARGEN_ESTABLO 100 // El radio de la "cerca"
 
 // --- INICIALIZACIÓN ---
@@ -763,19 +762,36 @@ void inicializarVacas()
     for (int i = 0; i < MAX_VACAS; i++)
         manada[i].activa = 0;
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 7; i++)
     {
         manada[i].activa = 1;
 
-        // Las ponemos DENTRO del área del establo (ESTABLO_X, ESTABLO_Y)
-        manada[i].x = ESTABLO_X + (i * 30) + 20; // Un poco desplazadas
-        manada[i].y = ESTABLO_Y + 50 + (rand() % 40); // Dentro del corral
+        // --- LÓGICA DE AGRUPAMIENTO NATURAL ---
+        // Definimos un área central en el establo
+        int basePoolX = ESTABLO_X + 1;
+        int basePoolY = ESTABLO_Y + 1;
 
-        manada[i].xInicial = manada[i].x; // Para que su patrulla de 100px sea ahí mismo
+        // Distribución por "parejas" o grupos pequeños usando el índice i
+        // Las vacas con i par e impar se mantienen cerca en el eje Y
+        manada[i].x = basePoolX + (rand() % 150); // Se esparcen en un ancho de 150px
+        manada[i].y = basePoolY + ( (i / 2) * 40 ) + (rand() % 30); 
+
+        // Un pequeño truco: si son las vacas 0 y 1, o 3 y 4, 
+        // les damos un empujón extra para que se encimen un poco
+        if (i % 2 == 0) {
+            manada[i].x += rand() % 15;
+            manada[i].y -= rand() % 10;
+        }
+
+        // --- DIRECCIONES Y PATRULLA ---
+        manada[i].xInicial = manada[i].x; 
         manada[i].direccion = (rand() % 2 == 0) ? 1 : -1;
+        
         manada[i].vida = 5;
         manada[i].estadoVida = 0; 
         manada[i].tiempoMuerte = 300;
+
+        // Animación según dirección inicial
         manada[i].frameAnim = (manada[i].direccion == 1) ? 4 : 0;
     }
 }
@@ -806,7 +822,7 @@ void actualizarVacas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
             manada[i].x += velocidad;
 
             // Si se aleja 100px del inicio, dar vuelta
-            if (manada[i].x >= manada[i].xInicial + 100)
+            if (manada[i].x >= manada[i].xInicial + 30)
             {
                 manada[i].direccion = -1; // Cambiar a Izquierda
                 manada[i].frameAnim = 0;  // Resetear animación a set de izquierda

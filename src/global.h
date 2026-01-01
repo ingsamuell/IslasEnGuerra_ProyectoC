@@ -23,9 +23,9 @@
 #define MUNDO_ANCHO 2000  // Ajusta este valor al tamaño real de tu mapa
 #define MUNDO_ALTO 2000   // Ajusta este valor al tamaño real de tu mapa
 // En global.h o mapa.c
-#define ESTABLO_X 500  // Coordenada X del establo
-#define ESTABLO_Y 400  // Coordenada Y del establo
-#define RADIO_ESTABLO 150 // Tamaño del área del establo
+#define ESTABLO_X 1350 // Coordenada X del establo
+#define ESTABLO_Y 1420   // Coordenada Y del establo
+#define RADIO_ESTABLO 100 // Tamaño del área del establo
 #define MAX_VACAS 8
 #define VIDA_VACA 100
 #define MAX_ARBOLES 30// Un buen número para cubrir 5 islas
