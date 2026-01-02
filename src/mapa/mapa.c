@@ -16,6 +16,7 @@ Particula chispas[MAX_PARTICULAS];
 #define MAX_ISLAS 5
 Isla misIslas[MAX_ISLAS];
 TextoFlotante listaTextos[MAX_TEXTOS] = {0};
+#define MAX_TEXTOS_FLOTANTES 20
 // Variable global de árboles
 Arbol misArboles[MAX_ARBOLES];
 // Variable global
@@ -102,6 +103,19 @@ void actualizarLogicaSistema() {
     }
     
     // 2. Podrías mover aquí también la lógica de chispas si quieres centralizar
+}
+void crearTextoFlotante(int x, int y, const char* formato, int cantidad, COLORREF color) {
+    for (int i = 0; i < MAX_TEXTOS_FLOTANTES; i++) {
+        if (!listaTextos[i].activo) {
+            listaTextos[i].x = (float)x;
+            listaTextos[i].y = (float)y;
+            sprintf(listaTextos[i].texto, "+%d %s", cantidad, formato);
+            listaTextos[i].vida = 40; // Duración en frames
+            listaTextos[i].color = color;
+            listaTextos[i].activo = true;
+            break;
+        }
+    }
 }
 void actualizarYDibujarTextos(HDC hdc, Camera cam) {
     SetBkMode(hdc, TRANSPARENT);
@@ -936,6 +950,7 @@ void golpearVaca(Jugador *j)
 
                 int comidaGanada = 7 + (rand() % 4);
                 j->comida += comidaGanada;
+				crearTextoFlotante(vx, vy, "Comida", comidaGanada, RGB(255, 100, 100));
             }
             return;
         }
@@ -1105,6 +1120,8 @@ void talarArbol(Jugador *j)
             // 2. ¿Se cayó el árbol?
             if (misArboles[i].vida <= 0)
             {
+            	int maderaGanadas = (misArboles[i].tipo == 1) ? 5 : 3;
+   				int hojasGanadass = (misArboles[i].tipo == 1) ? 10 : 4;
                 misArboles[i].activa = 0; // El árbol desaparece
 
                 // 3. DAR RECOMPENSA (Madera y HOJAS)
@@ -1122,7 +1139,8 @@ void talarArbol(Jugador *j)
                 // Sumar al inventario del jugador
                 j->madera += maderaGanada;
                 j->hojas += hojasGanadas; // <--- ¡AQUÍ SE SUMAN LAS HOJAS!
-
+				crearTextoFlotante(ax, ay, "Madera", maderaGanadas, RGB(150, 75, 0));
+    			crearTextoFlotante(ax, ay - 15, "Hojas", hojasGanadass, RGB(50, 200, 50));
                 
             }
 
@@ -1189,6 +1207,7 @@ void abrirTesoro(Jugador *j)
                 {
                     // Solo Oro
                     j->oro += oroGanado;
+                    crearTextoFlotante(tx, ty, "Oro", oroGanado, RGB(255, 255, 0));
                 }
                 else
                 {
@@ -1196,6 +1215,9 @@ void abrirTesoro(Jugador *j)
                     int hierroGanado = 15 + (rand() % 11); // 15-25
                     j->oro += oroGanado;
                     j->hierro += hierroGanado;
+    				crearTextoFlotante(tx, ty, "Oro", 5, RGB(180, 180, 180));
+    				crearTextoFlotante(tx, ty, "Hierro", 3, RGB(255, 215, 0));
+					}
                 }
 
                 misTesoros[i].estado = 2; // Pasa a "Vacío"
@@ -1203,7 +1225,7 @@ void abrirTesoro(Jugador *j)
             }
         }
     }
-}
+
 
 // --- 3. DIBUJAR TESOROS CON TEXTO ---
 void dibujarTesoros(HDC hdc, Camera cam, int ancho, int alto)
@@ -1342,8 +1364,15 @@ void picarMina(Jugador *j) {
                     misMinas[i].activa = 0;
                     if (misMinas[i].tipo == 0) j->piedra += 5; // Recompensa Piedra
                     else j->hierro += 3;                      // Recompensa Hierro
+				if (misMinas[i].tipo == 0) {
+    				
+    			crearTextoFlotante(mx, my, "Piedra", 5, RGB(180, 180, 180));
+				} else {
+    			
+    			crearTextoFlotante(mx, my, "Hierro", 3, RGB(255, 215, 0));
+					}
                 }
-                return; // Importante: salir tras encontrar la mina más cercana
+                return; 
             // }
         }
     }
