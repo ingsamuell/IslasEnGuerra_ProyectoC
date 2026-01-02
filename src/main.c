@@ -239,9 +239,9 @@ miJugador.nivelMochila = 1;
 miJugador.cantMineros = 0;
 miJugador.cantLenadores = 0;
 miJugador.cantCazadores = 0;
-miJugador.tienePico = TRUE;
-miJugador.tieneHacha = TRUE;
-miJugador.tieneEspada = TRUE;
+miJugador.tienePico = FALSE;
+miJugador.tieneHacha = FALSE;
+miJugador.tieneEspada = FALSE;
 
     miCamara.zoom = 3;  
     actualizarCamara(&miCamara, miJugador);
