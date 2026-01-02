@@ -1161,6 +1161,11 @@ void golpearVaca(Jugador *j)
         if (abs(jx - vx) < rango && abs(jy - vy) < rango)
         {
             manada[i].vida--;
+            if (rand() % 2 == 0) {
+            crearChispas(manada[i].x + 16, manada[i].y + 16, RGB(200, 0, 0)); // Rojo
+        } else {
+            crearChispas(manada[i].x + 16, manada[i].y + 16, RGB(240, 240, 240)); // Blanco/Gris
+        }
 
             if (manada[i].vida <= 0)
             {
@@ -1334,7 +1339,11 @@ void talarArbol(Jugador *j)
         {
             // 1. Restar vida
             misArboles[i].vida--;
-
+			if (rand() % 2 == 0) {
+    	crearChispas(ax, ay, RGB(139, 69, 19)); // Marrón Madera
+			} else {
+    	crearChispas(ax, ay, RGB(34, 139, 34));  // Verde Hojas
+			}
             // 2. ¿Se cayó el árbol?
             if (misArboles[i].vida <= 0)
             {
