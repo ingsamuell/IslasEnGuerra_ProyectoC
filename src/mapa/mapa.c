@@ -21,6 +21,8 @@ Tesoro misTesoros[MAX_TESOROS];
 Unidad misUnidades[MAX_UNIDADES];
 Unidad unidades[MAX_UNIDADES];
 Vaca vacas[MAX_VACAS]; 
+extern Jugador miJugador;            // <--- SOLUCIÓN AL ERROR
+extern Unidad unidades[MAX_UNIDADES]; // <--- NECESARIO PARA crearUnidadEnMapa
 
 #define MARGEN_ESTABLO 100 // El radio de la "cerca"
 
@@ -433,103 +435,87 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
 
     int tx = 450, ty = 120; // Posición base de la tienda
 
-    // 1. PESTAÑAS (Comprar / Vender)
-    if (mx >= tx && mx <= tx + 150 && my >= ty - 30 && my <= ty) {
-        j->modoTienda = 0; // COMPRAR
-        InvalidateRect(hwnd, NULL, FALSE);
-        return;
-    }
-    if (mx >= tx + 150 && mx <= tx + 300 && my >= ty - 30 && my <= ty) {
-        j->modoTienda = 1; // VENDER
-        InvalidateRect(hwnd, NULL, FALSE);
-        return;
+    // 1. PESTAÑAS (Zona de detección ampliada para que no falle)
+    if (my >= ty - 40 && my <= ty + 5) { 
+        if (mx >= tx && mx <= tx + 150) {
+            j->modoTienda = 0; // COMPRAR
+            InvalidateRect(hwnd, NULL, FALSE);
+            return;
+        }
+        if (mx >= tx + 150 && mx <= tx + 300) {
+            j->modoTienda = 1; // VENDER
+            InvalidateRect(hwnd, NULL, FALSE);
+            return;
+        }
     }
 
-    // 2. LÓGICA DE TIENDA
+    // 2. LÓGICA DE TIENDA (Rejilla de 6 espacios)
     int startX = tx + 20;
     int startY = ty + 40;
 
-    if (j->modoTienda == 0) { // --- MODO RECLUTAR (COMPRAR) ---
-        
-        // Definir cantidad según el clic
+    if (j->modoTienda == 0) { // --- MODO COMPRAR ---
         int cantidad = (esClickDerecho) ? 15 : 5;
-        
-        // Items disponibles (Espada, Pico, Armadura, Hacha)
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 6; i++) {
             int col = i % 2; int row = i / 2;
-            int ix = startX + (col * 140); int iy = startY + (row * 60);
-            
-            if (mx >= ix && mx <= ix + 100 && my >= iy && my <= iy + 50) {
-                BOOL comprado = FALSE;
+            int ix = startX + (col * 140); 
+            int iy = startY + (row * 65); // Sincronizado con el dibujo
 
-                // 0. ESPADA -> CAZADORES
-                if (i == 0) {
-                    int costoOro = 20; int costoHierro = 3;
-                    if (j->oro >= costoOro && j->hierro >= costoHierro) {
-                        j->oro -= costoOro; j->hierro -= costoHierro;
-                        j->tieneEspada = 1; 
+            if (mx >= ix && mx <= ix + 130 && my >= iy && my <= iy + 60) {
+                BOOL comprado = FALSE;
+                if (i == 0) { // Espada
+                    if (j->oro >= 20 && j->hierro >= 3) {
+                        j->oro -= 20; j->hierro -= 3;
                         spawnearEscuadron(TIPO_CAZADOR, cantidad, j->x + 50, j->y);
                         comprado = TRUE;
                     }
                 }
-                // 1. PICO -> MINEROS
-                else if (i == 1) {
-                    int costoOro = 15; int costoPiedra = 5;
-                    if (j->oro >= costoOro && j->piedra >= costoPiedra) {
-                        j->oro -= costoOro; j->piedra -= costoPiedra;
-                        j->tienePico = 1; 
+                else if (i == 1) { // Pico
+                    if (j->oro >= 15 && j->piedra >= 5) {
+                        j->oro -= 15; j->piedra -= 5;
                         spawnearEscuadron(TIPO_MINERO, cantidad, j->x + 50, j->y);
                         comprado = TRUE;
                     }
                 }
-                // 2. ARMADURA -> SOLDADOS
-                else if (i == 2) {
-                    int costoOro = 50; int costoHierro = 10;
-                    if (j->oro >= costoOro && j->hierro >= costoHierro) {
-                        j->oro -= costoOro; j->hierro -= costoHierro;
-                        j->tieneArmadura = 1;
+                else if (i == 2) { // Armadura
+                    if (j->oro >= 50 && j->hierro >= 10) {
+                        j->oro -= 50; j->hierro -= 10;
                         spawnearEscuadron(TIPO_SOLDADO, cantidad, j->x + 50, j->y);
                         comprado = TRUE;
                     }
                 }
-                // 3. HACHA/MADERA -> LEÑADORES
-                else if (i == 3) {
-                    int costoOro = 20; int costoMadera = 10;
-                    if (j->oro >= costoOro && j->madera >= costoMadera) {
-                        j->oro -= costoOro; j->madera -= costoMadera;
+                else if (i == 3) { // Hacha
+                    if (j->oro >= 20 && j->madera >= 10) {
+                        j->oro -= 20; j->madera -= 10;
                         spawnearEscuadron(TIPO_LENADOR, cantidad, j->x + 50, j->y);
                         comprado = TRUE;
                     }
                 }
+                // i == 4 y i == 5 pueden ser para las mochilas nivel 2 y 3
 
-                if (comprado) {
-                    InvalidateRect(hwnd, NULL, FALSE);
-                }
+                if (comprado) InvalidateRect(hwnd, NULL, FALSE);
+                break;
             }
         }
     } 
     else { // --- MODO VENDER ---
-        int precios[] = {1, 2, 5, 1, 3}; // Oro por unidad
-        int* stocks[] = {&j->madera, &j->piedra, &j->hierro, &j->hojas, &j->comida};
-        
-        // --- AQUÍ ELIMINÉ LA LÍNEA DE "nombres" QUE DABA ERROR ---
+        int precios[] = {1, 2, 5, 1, 3, 10}; 
+        int* stocks[] = {&j->madera, &j->piedra, &j->hierro, &j->hojas, &j->comida, &j->oro};
 
-        for (int i = 0; i < 5; i++) {
-            int col = i % 2; int row = i / 2;
-            int ix = startX + (col * 140); int iy = startY + (row * 60);
+        for (int i = 0; i < 6; i++) {
+            int ix = startX + ((i % 2) * 140); 
+            int iy = startY + ((i / 2) * 65);
 
-            if (mx >= ix && mx <= ix + 100 && my >= iy && my <= iy + 50) {
-                int cantidadAVender = esClickDerecho ? 10 : 1;
-                int stockActual = *stocks[i];
-
-                if (cantidadAVender > stockActual) cantidadAVender = stockActual;
-
-                if (cantidadAVender > 0) {
-                    int ganancia = cantidadAVender * precios[i];
-                    *stocks[i] -= cantidadAVender;
-                    j->oro += ganancia;
-                    InvalidateRect(hwnd, NULL, FALSE);
+            if (mx >= ix && mx <= ix + 130 && my >= iy && my <= iy + 60) {
+                if (i < 5) { // No vendemos el slot 6 (oro)
+                    int cantidadAVender = (esClickDerecho) ? 10 : 1;
+                    if (*stocks[i] > 0) {
+                        if (cantidadAVender > *stocks[i]) cantidadAVender = *stocks[i];
+                        *stocks[i] -= cantidadAVender;
+                        j->oro += (cantidadAVender * precios[i]);
+                        InvalidateRect(hwnd, NULL, FALSE);
+                    }
                 }
+                break;
             }
         }
     }
@@ -1221,7 +1207,73 @@ void dibujarTesoros(HDC hdc, Camera cam, int ancho, int alto)
         }
     }
 }
+void crearUnidadEnMapa(int tipo) {
+    // Buscamos un slot libre en el array de unidades
+    for (int i = 0; i < MAX_UNIDADES; i++) {
+        if (!unidades[i].activa) {
+            unidades[i].activa = 1;
+            unidades[i].tipo = tipo;
+            
+            // Aparece cerca del jugador (con un pequeño desfase aleatorio)
+            unidades[i].x = miJugador.x + (rand() % 40 - 20);
+            unidades[i].y = miJugador.y + (rand() % 40 - 20);
+            
+            unidades[i].vida = 100;
+            unidades[i].estado = 0; // Estado inicial (ej. quieto o siguiendo)
+            unidades[i].frameAnim = 0;
+            
+            // Si es un soldado, podrías darle más vida
+            if (tipo == TIPO_SOLDADO) {
+                unidades[i].vida = 200;
+            }
 
+            return; // Salimos tras crear la unidad
+        }
+    }
+    // Opcional: Si llegamos aquí, el array está lleno
+    // MessageBox(NULL, "Población máxima alcanzada", "Aviso", MB_OK);
+}
+void reclutarTrabajador(Jugador *j, int tipo) {
+    switch(tipo) {
+        case 0: // Cazador
+            if(j->oro >= 20) { 
+                j->oro -= 20; j->cantCazadores++; j->tieneEspada = TRUE; 
+                crearUnidadEnMapa(TIPO_CAZADOR); 
+            } break;
+        case 1: // Minero
+            if(j->oro >= 15) { 
+                j->oro -= 15; j->cantMineros++; j->tienePico = TRUE; 
+                crearUnidadEnMapa(TIPO_MINERO);
+            } break;
+        case 2: // Leñador
+            if(j->oro >= 10) { 
+                j->oro -= 10; j->cantLenadores++; j->tieneHacha = TRUE; 
+                crearUnidadEnMapa(TIPO_LENADOR);
+            } break;
+        case 3: // SOLDADO (Nuevo)
+            // El soldado podría pedir Oro y Hierro para ser más balanceado
+            if(j->oro >= 40 && j->hierro >= 10) { 
+                j->oro -= 40; 
+                j->hierro -= 10;
+                j->cantSoldados++; 
+                j->tieneArmadura = TRUE; // Al comprar soldados, desbloqueas visualmente la armadura
+                crearUnidadEnMapa(TIPO_SOLDADO);
+            } break;
+    }
+
+    // --- LÓGICA DE NIVEL DE MOCHILA ---
+    // Nivel 2: Necesitas el set básico de herramientas (Espada, Pico, Hacha)
+    if(j->nivelMochila == 1 && j->tieneEspada && j->tienePico && j->tieneHacha) {
+        j->nivelMochila = 2;
+        MessageBox(NULL, "Mochila Nivel 2! Has equipado las herramientas basicas.", "LOGRO", MB_OK | MB_ICONINFORMATION);
+    }
+    
+    // Nivel 3: Se desbloquea al reclutar a tu primer Soldado (opcional)
+    if(j->nivelMochila == 2 && j->cantSoldados > 0) {
+        j->nivelMochila = 3;
+        MessageBox(NULL, "Mochila Nivel 3! La armada te respalda.", "LOGRO", MB_OK | MB_ICONINFORMATION);
+    }
+}
 // --- DIBUJADO DE TIENDAS ---
 void dibujarTiendasEnIslas(HDC hdc, Camera cam, int ancho, int alto, int frameTienda)
 {
@@ -1254,179 +1306,146 @@ void dibujarPrecio(HDC hdc, int x, int y, const char *costo1, const char *costo2
     // Dibujar Línea 2 justo debajo (Ej: "3 Hierro")
     TextOut(hdc, x, y + 12, costo2, strlen(costo2));
 }
-
+void venderItem(Jugador *j, int indice) {
+    int precios[] = {1, 2, 5, 1, 3, 8};
+    switch(indice) {
+        case 0: if(j->madera > 0) { j->madera--; j->oro += precios[0]; } break;
+        case 1: if(j->piedra > 0) { j->piedra--; j->oro += precios[1]; } break;
+        case 2: if(j->hierro > 0) { j->hierro--; j->oro += precios[2]; } break;
+        case 3: if(j->hojas > 0)  { j->hojas--;  j->oro += precios[3]; } break;
+        case 4: if(j->comida > 0) { j->comida--; j->oro += precios[4]; } break;
+        case 5: if(j->cantHachas > 0) { j->cantHachas--; j->oro += precios[5]; } break;
+    }
+}
 void dibujarTiendaInteractiva(HDC hdc, Jugador *j)
 {
-    int tx = 450, ty = 120; // Posición base
+    int tx = 450, ty = 120; // Posición base de la tienda
 
-    // 0. Detectar Mouse (Para Hover)
+    // 0. Detectar Mouse (Para efectos de Hover)
     POINT p;
     GetCursorPos(&p);
     ScreenToClient(WindowFromDC(hdc), &p);
     int mx = p.x;
     int my = p.y;
 
-    // 1. PESTAÑAS Y FONDO (Igual que antes)
-    HBRUSH bComprar = CreateSolidBrush((j->modoTienda == 0) ? RGB(50, 50, 60) : RGB(30, 30, 30));
-    HBRUSH bVender = CreateSolidBrush((j->modoTienda == 1) ? RGB(50, 50, 60) : RGB(30, 30, 30));
-    RECT rC = {tx, ty - 30, tx + 150, ty};
-    RECT rV = {tx + 150, ty - 30, tx + 300, ty};
+    // 1. DIBUJAR PESTAÑAS CON EFECTO HOVER
+    // Pestaña COMPRAR
+    BOOL hoverC = (mx >= tx && mx <= tx + 150 && my >= ty - 40 && my <= ty);
+    COLORREF colorC = (j->modoTienda == 0) ? RGB(80, 80, 90) : (hoverC ? RGB(60, 60, 70) : RGB(35, 35, 40));
+    HBRUSH bComprar = CreateSolidBrush(colorC);
+    RECT rC = {tx, ty - 35, tx + 150, ty}; // ty - 35 para que sea una barra gruesa
     FillRect(hdc, &rC, bComprar);
     DeleteObject(bComprar);
+
+    // Pestaña VENDER
+    BOOL hoverV = (mx >= tx + 150 && mx <= tx + 300 && my >= ty - 40 && my <= ty);
+    COLORREF colorV = (j->modoTienda == 1) ? RGB(80, 80, 90) : (hoverV ? RGB(60, 60, 70) : RGB(35, 35, 40));
+    HBRUSH bVender = CreateSolidBrush(colorV);
+    RECT rV = {tx + 150, ty - 35, tx + 300, ty};
     FillRect(hdc, &rV, bVender);
     DeleteObject(bVender);
+
+    // Textos de las pestañas
     SetBkMode(hdc, TRANSPARENT);
-    SetTextColor(hdc, RGB(255, 215, 0));
+    SetTextColor(hdc, RGB(255, 215, 0)); // Dorado
     TextOut(hdc, tx + 40, ty - 25, "COMPRAR", 7);
     TextOut(hdc, tx + 195, ty - 25, "VENDER", 6);
 
+    // 2. FONDO PRINCIPAL DE LA TIENDA
     HBRUSH fondo = CreateSolidBrush(RGB(40, 40, 45));
     RECT rMain = {tx, ty, tx + 300, ty + 350};
     FillRect(hdc, &rMain, fondo);
     DeleteObject(fondo);
+    
     HBRUSH borde = CreateSolidBrush(RGB(255, 255, 255));
     FrameRect(hdc, &rMain, borde);
     DeleteObject(borde);
 
-    // 3. CONTENIDO (REJILLA)
+    // 3. CONTENIDO DE LA REJILLA
     int startX = tx + 20;
     int startY = ty + 40;
 
-    if (j->modoTienda == 0)
-    { // --- MODO COMPRAR (ACTUALIZADO) ---
-        for (int i = 0; i < 5; i++)
+    if (j->modoTienda == 0) // --- MODO COMPRAR ---
+    {
+        for (int i = 0; i < 6; i++) 
         {
             int col = i % 2;
             int row = i / 2;
             int x = startX + (col * 140);
-            int y = startY + (row * 60);
+            int y = startY + (row * 65);
+
+            // Efecto Hover en el Item
+            if (mx >= x && mx <= x + 130 && my >= y && my <= y + 60) {
+                HBRUSH hHover = CreateSolidBrush(RGB(60, 60, 70));
+                RECT rH = {x - 5, y - 5, x + 135, y + 60};
+                FillRect(hdc, &rH, hHover);
+                DeleteObject(hHover);
+            }
 
             HBITMAP icono = NULL;
-            // Usamos dos cadenas para los costos
-            char costo1[32] = "";
-            char costo2[32] = "";
-            BOOL alcanzable = FALSE;
-            BOOL comprado = FALSE;
+            char costo1[32] = "", costo2[32] = "";
+            BOOL alcanzable = FALSE, comprado = FALSE;
 
-            switch (i)
-            {
-            case 0: // Espada
-                icono = hBmpIconoEspada;
-                sprintf(costo1, "20 Oro");
-                sprintf(costo2, "3 Hierro");
-                if (j->tieneEspada)
-                    comprado = TRUE;
-                else if (j->oro >= 20 && j->hierro >= 3)
-                    alcanzable = TRUE;
-                break;
-            case 1: // Pico
-                icono = hBmpIconoPico;
-                sprintf(costo1, "15 Oro");
-                sprintf(costo2, "5 Piedra");
-                if (j->tienePico)
-                    comprado = TRUE;
-                else if (j->oro >= 15 && j->piedra >= 5)
-                    alcanzable = TRUE;
-                break;
-            case 2: // Armadura
-                icono = hBmpArmaduraAnim[0][0];
-                sprintf(costo1, "50 Oro");
-                sprintf(costo2, "5 Hierro");
-                if (j->tieneArmadura)
-                    comprado = TRUE;
-                else if (j->oro >= 50 && j->hierro >= 5)
-                    alcanzable = TRUE;
-                break;
-            case 3: // Mochila 2
-                icono = hBmpInvAbierto;
-                sprintf(costo1, "20 Oro");
-                sprintf(costo2, "30 Hojas");
-                if (j->nivelMochila >= 2)
-                    comprado = TRUE;
-                else if (j->oro >= 20 && j->hojas >= 30)
-                    alcanzable = TRUE;
-                break;
-            case 4: // Mochila 3
-                icono = hBmpInvAbierto;
-                sprintf(costo1, "50 Oro");
-                sprintf(costo2, "10 Hierro");
-                if (j->nivelMochila >= 3)
-                    comprado = TRUE;
-                else if (j->nivelMochila == 2 && j->oro >= 50 && j->hierro >= 10)
-                    alcanzable = TRUE;
-                else if (j->nivelMochila < 2)
-                {
-                    sprintf(costo1, "Req. Nivel 2");
-                    costo2[0] = '\0'; // <--- CORRECCIÓN AQUÍ (Cadena vacía segura)
-                }
-                break;
+            switch (i) {
+                case 0: icono = hBmpIconoEspada; sprintf(costo1, "20 Oro"); sprintf(costo2, "3 Hierro");
+                        if (j->tieneEspada) comprado = TRUE; else if (j->oro >= 20 && j->hierro >= 3) alcanzable = TRUE; break;
+                case 1: icono = hBmpIconoPico; sprintf(costo1, "15 Oro"); sprintf(costo2, "5 Piedra");
+                        if (j->tienePico) comprado = TRUE; else if (j->oro >= 15 && j->piedra >= 5) alcanzable = TRUE; break;
+                case 2: icono = hBmpIconoHacha; sprintf(costo1, "10 Oro"); sprintf(costo2, "10 Mad.");
+                        if (j->tieneHacha) comprado = TRUE; else if (j->oro >= 10 && j->madera >= 10) alcanzable = TRUE; break;
+                case 3: icono = hBmpIconoArmaduraInv; sprintf(costo1, "40 Oro"); sprintf(costo2, "10 Hierro");
+                        if (j->tieneArmadura) comprado = TRUE; else if (j->oro >= 40 && j->hierro >= 10) alcanzable = TRUE; break;
+                case 4: icono = hBmpInvCerrado; sprintf(costo1, "20 Oro"); sprintf(costo2, "30 Hojas");
+                        if (j->nivelMochila >= 2) comprado = TRUE; else if (j->oro >= 20 && j->hojas >= 30) alcanzable = TRUE; break;
+                case 5: icono = hBmpInvCerrado; 
+                        if (j->nivelMochila >= 3) comprado = TRUE;
+                        else if (j->nivelMochila == 2) { 
+                            sprintf(costo1, "50 Oro"); sprintf(costo2, "10 Hierro");
+                            if (j->oro >= 50 && j->hierro >= 10) alcanzable = TRUE;
+                        } else sprintf(costo1, "Req. Nivel 2"); break;
             }
 
-            // DIBUJAR ÍTEM Y PRECIO
-            if (icono)
-                DibujarImagen(hdc, icono, x, y, 32, 32);
-            if (comprado)
-            {
+            if (icono) DibujarImagen(hdc, icono, x, y, 32, 32);
+            if (comprado) {
                 SetTextColor(hdc, RGB(100, 100, 100));
                 TextOut(hdc, x + 40, y + 8, "COMPRADO", 8);
-            }
-            else
-            {
+            } else {
                 dibujarPrecio(hdc, x + 40, y + 8, costo1, costo2, alcanzable);
-            }
-
-            // HOVER TOOLTIP (Combina las dos líneas para la descripción abajo)
-            // CORRECCIÓN AQUÍ: Aumentamos seguridad con tooltip[100]
-            if (mx >= x && mx <= x + 100 && my >= y && my <= y + 40 && !comprado && costo1[0] != '\0')
-            {
-                char tooltip[100]; // <--- AUMENTADO DE 64 A 100
-
-                if (costo2[0] != '\0')
-                    sprintf(tooltip, "Costo: %s - %s", costo1, costo2);
-                else
-                    sprintf(tooltip, "%s", costo1);
-
-                SetTextColor(hdc, RGB(255, 255, 255));
-                TextOut(hdc, tx + 20, ty + 320, tooltip, strlen(tooltip));
             }
         }
     }
-    else
-    { // --- MODO VENDER (Sin cambios, ya estaba bien) ---
-        int precios[] = {1, 2, 5, 1, 3};
-        char *nombres[] = {"Madera", "Piedra", "Hierro", "Hojas", "Comida"};
-        HBITMAP iconos[] = {hBmpIconoMadera, hBmpIconoPiedra, hBmpIconoHierro, hBmpIconoHoja, hBmpIconoComida};
-        int cantidades[] = {j->madera, j->piedra, j->hierro, j->hojas, j->comida};
+    else // --- MODO VENDER ---
+    {
+        int precios[] = {1, 2, 5, 1, 3, 8}; 
+        char *nombres[] = {"Madera", "Piedra", "Hierro", "Hojas", "Comida", "Hacha"};
+        HBITMAP iconos[] = {hBmpIconoMadera, hBmpIconoPiedra, hBmpIconoHierro, hBmpIconoHoja, hBmpIconoComida, hBmpIconoHacha};
+        int cantidades[] = {j->madera, j->piedra, j->hierro, j->hojas, j->comida, j->cantHachas};
 
-        for (int i = 0; i < 5; i++)
-        {
-            int col = i % 2;
-            int row = i / 2;
-            int x = startX + (col * 140);
-            int y = startY + (row * 60);
+        for (int i = 0; i < 6; i++) {
+            int x = startX + ((i % 2) * 140);
+            int y = startY + ((i / 2) * 65);
 
-            if (iconos[i])
-                DibujarImagen(hdc, iconos[i], x, y, 32, 32);
-
-            char texto[32];
-            sprintf(texto, "%s (x%d)", nombres[i], cantidades[i]);
-            SetTextColor(hdc, RGB(255, 255, 255));
-            TextOut(hdc, x + 40, y, texto, strlen(texto));
-
-            char precio[32];
-            sprintf(precio, "+%d Oro c/u", precios[i]);
-            SetTextColor(hdc, RGB(255, 215, 0));
-            TextOut(hdc, x + 40, y + 16, precio, strlen(precio));
-
-            if (mx >= x && mx <= x + 100 && my >= y && my <= y + 40)
-            {
-                SetTextColor(hdc, RGB(200, 200, 200));
-                TextOut(hdc, tx + 20, ty + 320, "Click: Vender 1 | Der: 10", 25);
+            // Efecto Hover en Venta
+            if (mx >= x && mx <= x + 130 && my >= y && my <= y + 60) {
+                HBRUSH hHoverV = CreateSolidBrush(RGB(60, 60, 70));
+                RECT rHoverV = {x - 5, y - 5, x + 135, y + 60};
+                FillRect(hdc, &rHoverV, hHoverV);
+                DeleteObject(hHoverV);
             }
+
+            if (iconos[i]) DibujarImagen(hdc, iconos[i], x, y, 32, 32);
+            
+            char txt[32]; 
+            sprintf(txt, "%s (x%d)", nombres[i], cantidades[i]);
+            SetTextColor(hdc, RGB(255, 255, 255)); 
+            TextOut(hdc, x + 40, y, txt, (int)strlen(txt));
+            
+            sprintf(txt, "+%d Oro", precios[i]);
+            SetTextColor(hdc, RGB(255, 215, 0)); 
+            TextOut(hdc, x + 40, y + 16, txt, (int)strlen(txt));
         }
     }
 }
-
 // --- DIBUJADO DE JUGADOR ---
 void dibujarJugador(HDC hdc, Jugador jugador, Camera cam)
 {
@@ -1536,27 +1555,27 @@ void dibujarItemRejilla(HDC hdc, HBITMAP icono, int cantidad, int maximo, int x,
     if (icono)
         DibujarImagen(hdc, icono, x, y, 32, 32);
 
-    // 2. Texto del Nombre (Gris Claro)
+    // 2. Texto del Nombre
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, RGB(200, 200, 200));
     TextOut(hdc, x + 40, y - 5, nombre, strlen(nombre));
 
-    // 3. Texto de Cantidad (Blanco o Rojo si está lleno)
+    // 3. Texto de Cantidad
     char buf[32];
     if (maximo > 0)
     {
-        // Modo Material: "12 / 50"
+        // Formato para Recursos: "12 / 99"
         sprintf(buf, "%d / %d", cantidad, maximo);
         if (cantidad >= maximo)
-            SetTextColor(hdc, RGB(255, 100, 100)); // Rojo si lleno
+            SetTextColor(hdc, RGB(255, 100, 100)); // Rojo si está lleno
         else
-            SetTextColor(hdc, RGB(255, 255, 255)); // Blanco normal
+            SetTextColor(hdc, RGB(255, 255, 255)); // Blanco
     }
     else
     {
-        // Modo Herramienta: "Equipado" o "En Bolsa"
-        sprintf(buf, "%s", cantidad ? "Equipado" : "En Bolsa");
-        SetTextColor(hdc, RGB(255, 255, 0)); // Dorado
+        // Formato para Población/Equipo: "x5"
+        sprintf(buf, "x%d", cantidad);
+        SetTextColor(hdc, RGB(255, 215, 0)); // Dorado
     }
     TextOut(hdc, x + 40, y + 12, buf, strlen(buf));
 }
@@ -1595,92 +1614,72 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
     TextOut(hdc, 75, 75, tEscudo, strlen(tEscudo));
 
     // 3. ICONO DE MOCHILA
+
     HBITMAP bmpBolso = (jugador->inventarioAbierto) ? hBmpInvAbierto : hBmpInvCerrado;
     if (bmpBolso)
         DibujarImagen(hdc, bmpBolso, 20, 120, 64, 64);
 
-    // --- 4. PANEL DE INVENTARIO (REJILLA) ---
-    if (jugador->inventarioAbierto)
-    {
-        int totalItems = 9; // Mostramos hasta 9 espacios fijos para ver los comprables
-        int filas = (totalItems + 1) / 2;
-        int alturaFondo = (filas * 50) + 60;
-        int px = 90, py = 120;
-        int anchoFondo = 320;
+// --- 4. PANEL DE INVENTARIO Y POBLACIÓN REORGANIZADO ---
+if (jugador->inventarioAbierto)
+{
+    int px = 90, py = 120;
+    int anchoFondo = 360; 
+    int alturaFondo = 420; // Aumentamos un poco el fondo total para el nuevo espacio
 
-        // Fondo
-        HBRUSH fondo = CreateSolidBrush(RGB(30, 30, 35));
-        RECT r = {px, py, px + anchoFondo, py + alturaFondo};
-        FillRect(hdc, &r, fondo);
-        DeleteObject(fondo);
-        HBRUSH borde = CreateSolidBrush(RGB(255, 255, 255));
-        FrameRect(hdc, &r, borde);
-        DeleteObject(borde);
+    // Dibujar Fondo y Borde
+    HBRUSH fondo = CreateSolidBrush(RGB(30, 30, 35));
+    RECT r = {px, py, px + anchoFondo, py + alturaFondo};
+    FillRect(hdc, &r, fondo);
+    DeleteObject(fondo);
+    HBRUSH borde = CreateSolidBrush(RGB(255, 255, 255));
+    FrameRect(hdc, &r, borde);
+    DeleteObject(borde);
 
-        SetTextColor(hdc, RGB(255, 215, 0));
-        TextOut(hdc, px + 100, py + 10, "MOCHILA", 7);
+    int startX = px + 20;
+    int startY = py + 40;
 
-        // D. Dibujar la Rejilla
-        int startX = px + 20;
-        int startY = py + 40;
+    // --- SECCIÓN 1: RECURSOS Y EQUIPO ---
+    SetTextColor(hdc, RGB(255, 215, 0));
+    TextOut(hdc, px + 20, py + 10, "RECURSOS Y EQUIPO", 17);
 
-        for (int i = 0; i < totalItems; i++)
-        {
-            int col = i % 2;
-            int row = i / 2;
-            int itemX = startX + (col * 150);
-            int itemY = startY + (row * 50);
+    // Fila 1: Madera y Piedra
+    dibujarItemRejilla(hdc, hBmpIconoMadera, jugador->madera, 99, startX, startY, "Madera");
+    dibujarItemRejilla(hdc, hBmpIconoPiedra, jugador->piedra, 99, startX + 170, startY, "Piedra");
 
-            switch (i)
-            {
-            case 0:
-                dibujarItemRejilla(hdc, hBmpIconoMadera, jugador->madera, 99, itemX, itemY, "Madera");
-                break;
-            case 1:
-                dibujarItemRejilla(hdc, hBmpIconoPiedra, jugador->piedra, 99, itemX, itemY, "Piedra");
-                break;
-            case 2:
-                dibujarItemRejilla(hdc, hBmpIconoOro, jugador->oro, 999, itemX, itemY, "Oro");
-                break;
-            case 3:
-                dibujarItemRejilla(hdc, hBmpIconoHierro, jugador->hierro, 99, itemX, itemY, "Hierro");
-                break;
-            case 4:
-                dibujarItemRejilla(hdc, hBmpIconoHoja, jugador->hojas, 99, itemX, itemY, "Hojas");
-                break;
-            case 5:
-                dibujarItemRejilla(hdc, hBmpIconoComida, jugador->comida, 99, itemX, itemY, "Comida");
-                break;
+    // Fila 2: Oro e Hierro
+    dibujarItemRejilla(hdc, hBmpIconoOro, jugador->oro, 999, startX, startY + 50, "Oro");
+    dibujarItemRejilla(hdc, hBmpIconoHierro, jugador->hierro, 99, startX + 170, startY + 50, "Hierro");
 
-            // ÍTEMS COMPRABLES (Verificamos si los tiene para dibujarlos)
-            case 6:
-                if (jugador->tieneEspada)
-                    dibujarItemRejilla(hdc, hBmpIconoEspada, 1, 0, itemX, itemY, "Espada");
-                else
-                    dibujarItemRejilla(hdc, NULL, 0, 0, itemX, itemY, "---");
-                break;
-            case 7:
-                if (jugador->tienePico)
-                    dibujarItemRejilla(hdc, hBmpIconoPico, 1, 0, itemX, itemY, "Pico");
-                else
-                    dibujarItemRejilla(hdc, NULL, 0, 0, itemX, itemY, "---");
-                break;
-            case 8:
-                if (jugador->tieneArmadura)
-                {
-                    // Texto cambia si está equipada
-                    const char *estado = jugador->armaduraEquipada ? "EQUIPADA" : "Armadura";
-                    // Color amarillo si está equipada (lógica dentro de dibujarItemRejilla usa 'cantidad' > 0 para amarillo si max=0)
-                    dibujarItemRejilla(hdc, hBmpArmaduraAnim[0][0], 1, 0, itemX, itemY, estado);
-                }
-                else
-                {
-                    dibujarItemRejilla(hdc, NULL, 0, 0, itemX, itemY, "---");
-                }
-                break;
-            }
-        }
-    }
+    // Fila 3: Hojas y Comida
+    dibujarItemRejilla(hdc, hBmpIconoHoja, jugador->hojas, 99, startX, startY + 100, "Hojas");
+    dibujarItemRejilla(hdc, hBmpIconoComida, jugador->comida, 99, startX + 170, startY + 100, "Comida");
+
+    // Fila 4: Bolso/Nivel (Ahora tiene más aire arriba)
+    char tBolso[16]; sprintf(tBolso, "Nivel %d", jugador->nivelMochila);
+    dibujarItemRejilla(hdc, hBmpInvCerrado, 1, 0, startX, startY + 150, tBolso);
+
+    // --- LÍNEA DIVISORIA (MÁS ABAJO) ---
+    HPEN penDiv = CreatePen(PS_SOLID, 1, RGB(100, 100, 100));
+    HPEN oldPen = (HPEN)SelectObject(hdc, penDiv);
+    MoveToEx(hdc, px + 10, py + 245, NULL); // Bajamos de 215 a 245
+    LineTo(hdc, px + anchoFondo - 10, py + 245);
+    SelectObject(hdc, oldPen);
+    DeleteObject(penDiv);
+
+    // --- SECCIÓN 2: POBLACIÓN ---
+    SetTextColor(hdc, RGB(0, 255, 255));
+    TextOut(hdc, px + 20, py + 255, "POBLACION / UNIDADES", 20); // Bajamos de 225 a 255
+
+    int popY = py + 285; // Bajamos el inicio de los iconos de población
+
+    // Población Fila 1: Leñadores y Mineros
+    dibujarItemRejilla(hdc, hBmpLenadorAnim[DIR_ABAJO][0], jugador->cantLenadores, 0, startX, popY, "Lenadores");
+    dibujarItemRejilla(hdc, hBmpMineroAnim[DIR_ABAJO][0], jugador->cantMineros, 0, startX + 170, popY, "Mineros");
+
+    // Población Fila 2: Cazadores y Soldados
+    dibujarItemRejilla(hdc, hBmpCazadorAnim[DIR_ABAJO][0], jugador->cantCazadores, 0, startX, popY + 50, "Cazadores");
+    dibujarItemRejilla(hdc, hBmpSoldadoAnim[DIR_ABAJO][0], jugador->cantSoldados, 0, startX + 170, popY + 50, "Soldados");
+}
 
     // 5. BARRA DE EXPERIENCIA (Sin cambios importantes)
     if (hBmpBarraXPVacia && hBmpBarraXPLlena)

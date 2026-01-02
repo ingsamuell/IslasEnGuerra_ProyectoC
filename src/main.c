@@ -33,10 +33,10 @@ case WM_LBUTTONDOWN:
         procesarClickMenu(mouseX, mouseY, hwnd, &estadoJuego);
     }
     else if (estadoJuego.enPartida) {
-        // 1. Primero revisamos si el clic fue en el Botón Mochila
-        int btnX = 20; int btnY = 120; int tamanoBolso = 64;
         bool clicEnUI = false;
 
+        // 1. Botón Mochila (Icono del bolso a la izquierda)
+        int btnX = 20; int btnY = 120; int tamanoBolso = 64;
         if (mouseX >= btnX && mouseX <= btnX + tamanoBolso &&
             mouseY >= btnY && mouseY <= btnY + tamanoBolso) {
             miJugador.inventarioAbierto = !miJugador.inventarioAbierto;
@@ -44,13 +44,44 @@ case WM_LBUTTONDOWN:
             InvalidateRect(hwnd, NULL, FALSE);
         }
 
-        // 2. Procesamos clics de inventario
-        procesarClickMochila(mouseX, mouseY, &miJugador, hwnd);
-        procesarClickMochilaTienda(mouseX, mouseY, 0, &miJugador, hwnd);
+        // 2. Si la mochila/tienda está abierta
+        if (miJugador.inventarioAbierto) {
+            int tx = 450; int ty = 120;
 
-        // 3. SI NO TOCAMOS LA UI, seleccionamos unidades en el mapa
-        // Usamos una pequeña lógica para que no selecciones unidades por accidente al tocar la mochila
-        if (!clicEnUI && !miJugador.inventarioAbierto) {
+            // --- NUEVO: DETECTAR CLIC EN PESTAÑAS (COMPRAR / VENDER) ---
+            // Si el clic cae en la barra de arriba (la que no te funcionaba)
+            if (mouseY >= ty - 40 && mouseY <= ty) {
+                if (mouseX >= tx && mouseX <= tx + 150) {
+                    miJugador.modoTienda = 0; // Pestaña Comprar
+                    clicEnUI = true;
+                    InvalidateRect(hwnd, NULL, FALSE);
+                }
+                else if (mouseX >= tx + 150 && mouseX <= tx + 300) {
+                    miJugador.modoTienda = 1; // Pestaña Vender
+                    clicEnUI = true;
+                    InvalidateRect(hwnd, NULL, FALSE);
+                }
+            }
+
+            // 3. Procesar Contenido de la Tienda (Solo si no tocamos las pestañas)
+            if (!clicEnUI) {
+                // Llamamos a la función que ya tiene toda la lógica de vender y comprar
+                // Esto es mucho más limpio que tener los 'for' aquí metidos.
+                procesarClickMochilaTienda(mouseX, mouseY, FALSE, &miJugador, hwnd);
+                
+                // Si el clic cayó dentro del rectángulo de la tienda, es clic en UI
+                if (mouseX >= tx && mouseX <= tx + 300 && mouseY >= ty - 40 && mouseY <= ty + 350) {
+                    clicEnUI = true;
+                }
+            }
+            
+            // Procesar clics de la mochila personal (equipar/usar items)
+            procesarClickMochila(mouseX, mouseY, &miJugador, hwnd);
+        }
+
+        // 4. Selección de unidades en el mapa
+        // Solo si no tocamos ningún elemento de la interfaz
+        if (!clicEnUI) {
             seleccionarUnidades(mouseX, mouseY, miCamara);
         }
     }
@@ -184,7 +215,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     inicializarArboles(mapaMundo);
     inicializarTesoros(); 
     inicializarUnidades();
-    
+miJugador.nivelMochila = 1;
+miJugador.cantMineros = 0;
+miJugador.cantLenadores = 0;
+miJugador.cantCazadores = 0;
+miJugador.tienePico = FALSE;
+miJugador.tieneHacha = FALSE;
+miJugador.tieneEspada = FALSE;
 
     miCamara.zoom = 3;  
     actualizarCamara(&miCamara, miJugador);

@@ -50,6 +50,10 @@ extern HBITMAP hBmpIconoMadera; extern HBITMAP hBmpIconoPiedra; extern HBITMAP h
 extern HBITMAP hBmpIconoHierro; extern HBITMAP hBmpIconoComida; extern HBITMAP hBmpIconoHoja;
 extern HBITMAP hBmpIconoEspada; extern HBITMAP hBmpIconoPico;
 
+extern HBITMAP hBmpIconoHacha;
+extern HBITMAP hBmpIconoArmaduraInv;
+extern HBITMAP hBmpIconoSoldadoInv;
+
 
 // 5. MUNDO
 extern HBITMAP hBmpIslaGrande;
@@ -70,5 +74,6 @@ extern HBITMAP hBmpEstablo;
 void CargarRecursos();
 void LiberarRecursos();
 void DibujarImagen(HDC hdcDestino, HBITMAP hBitmap, int x, int y, int ancho, int alto);
+void reclutarTrabajador(Jugador *j, int tipo);
 
 #endif

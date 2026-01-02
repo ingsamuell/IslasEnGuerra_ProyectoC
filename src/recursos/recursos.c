@@ -53,7 +53,9 @@ HBITMAP hBmpVacaMuerta = NULL;
 // Items
 HBITMAP hBmpIconoMadera = NULL; HBITMAP hBmpIconoPiedra = NULL; HBITMAP hBmpIconoOro = NULL;
 HBITMAP hBmpIconoHierro = NULL; HBITMAP hBmpIconoComida = NULL; HBITMAP hBmpIconoHoja = NULL;
-HBITMAP hBmpIconoEspada = NULL; HBITMAP hBmpIconoPico = NULL;
+HBITMAP hBmpIconoEspada = NULL; HBITMAP hBmpIconoPico = NULL; HBITMAP hBmpIconoArmaduraInv = NULL;
+HBITMAP hBmpIconoHacha = NULL;
+HBITMAP hBmpIconoBolso = NULL;
 
 // HUD
 HBITMAP hBmpCorazon100 = NULL; HBITMAP hBmpCorazon75 = NULL; HBITMAP hBmpCorazon50 = NULL;
@@ -137,15 +139,19 @@ void CargarRecursos() {
     hBmpJugadorAnim[3][2] = CargarImagen("assets/jugador/p_der_pie2.bmp");
     hBmpJugador = CargarImagen("assets/jugador/jugador_compatible.bmp");
 
-    // Items
-    hBmpIconoMadera = CargarImagen("assets/items/icono_madera.bmp");
-    hBmpIconoPiedra = CargarImagen("assets/items/icono_piedra.bmp");
-    hBmpIconoOro = CargarImagen("assets/items/icono_oro.bmp");
-    hBmpIconoHierro = CargarImagen("assets/items/icono_hierro.bmp");
-    hBmpIconoComida = CargarImagen("assets/items/icono_comida.bmp");
-    hBmpIconoHoja = CargarImagen("assets/items/icono_hoja.bmp");
-    hBmpIconoEspada = CargarImagen("assets/items/item_espada.bmp");
-    hBmpIconoPico = CargarImagen("assets/items/item_pico.bmp");
+    // Items    
+    hBmpIconoMadera = (HBITMAP)LoadImage(NULL, "assets/items/icono_madera.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    hBmpIconoPiedra = (HBITMAP)LoadImage(NULL, "assets/items/icono_piedra.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    hBmpIconoOro = (HBITMAP)LoadImage(NULL, "assets/items/icono_oro.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    hBmpIconoHierro = (HBITMAP)LoadImage(NULL, "assets/items/icono_hierro.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    hBmpIconoHoja = (HBITMAP)LoadImage(NULL, "assets/items/icono_hoja.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    hBmpIconoComida = (HBITMAP)LoadImage(NULL, "assets/items/icono_comida.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+
+    // NUEVOS ITEMS DE TU IMAGEN
+    hBmpIconoEspada = (HBITMAP)LoadImage(NULL, "assets/items/item_espada.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    hBmpIconoPico = (HBITMAP)LoadImage(NULL, "assets/items/item_pico.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    hBmpIconoHacha = (HBITMAP)LoadImage(NULL, "assets/items/Hacha.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    hBmpIconoArmaduraInv = (HBITMAP)LoadImage(NULL, "assets/items/icono_armadura_inv.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
     // Mundo
     hBmpIslaCentral = CargarImagen("assets/mundo/ISLA_1.bmp");
@@ -213,6 +219,20 @@ void LiberarRecursos() {
     if(hBmpTesoroJoyas) DeleteObject(hBmpTesoroJoyas);
     if(hBmpTesoroVacio) DeleteObject(hBmpTesoroVacio);
     if (hBmpMina) DeleteObject(hBmpMina);
+// --- NUEVOS ÍTEMS DE LA MOCHILA ---
+    if (hBmpIconoEspada) DeleteObject(hBmpIconoEspada);
+    if (hBmpIconoPico) DeleteObject(hBmpIconoPico);
+    if (hBmpIconoHacha) DeleteObject(hBmpIconoHacha);
+    if (hBmpIconoArmaduraInv) DeleteObject(hBmpIconoArmaduraInv);
+    if (hBmpIconoBolso) DeleteObject(hBmpIconoBolso);
+    
+    // ICONOS DE RECURSOS (Si los cargaste por separado)
+    if (hBmpIconoMadera) DeleteObject(hBmpIconoMadera);
+    if (hBmpIconoPiedra) DeleteObject(hBmpIconoPiedra);
+    if (hBmpIconoOro) DeleteObject(hBmpIconoOro);
+    if (hBmpIconoHierro) DeleteObject(hBmpIconoHierro);
+    if (hBmpIconoHoja) DeleteObject(hBmpIconoHoja);
+    if (hBmpIconoComida) DeleteObject(hBmpIconoComida);
 
     // Liberar Vacas
     for (int i = 0; i < 8; i++) {

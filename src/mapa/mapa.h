@@ -58,6 +58,10 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j);
 void dibujarPrecio(HDC hdc, int x, int y, const char* costo1, const char* costo2, BOOL alcanzable);
 void dibujarItemRejilla(HDC hdc, HBITMAP icono, int cantidad, int maximo, int x, int y, const char *nombre);
 
+// --- LÓGICA DE RECLUTAMIENTO ---
+void reclutarTrabajador(Jugador *j, int tipo);
+void crearUnidadEnMapa(int tipo);
+
 /* --- DIBUJADO DE MENÚ --- */
 void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado);
 

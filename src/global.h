@@ -111,7 +111,16 @@ typedef struct {
     int tienePico;        // 1 si lo compró
     int nivelMochila;     // 1 = Básica, 2 = Herramientas, 3 = Completa
     int modoTienda;       // 0 = COMPRAR, 1 = VENDER
-
+    
+    // Contadores de oficios/unidades
+    int cantMineros;
+    int cantLenadores;
+    int cantCazadores;
+    int cantSoldados;
+    int cantHachas;
+    
+    // Flags para saber si ya compró al menos uno
+    BOOL tieneHacha;
     // Animación
     int direccion;      // 0, 1, 2, 3
     int frameAnim;      // 0=Base, 1=PieIzq, 2=PieDer
