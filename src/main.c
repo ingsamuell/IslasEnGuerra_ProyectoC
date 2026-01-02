@@ -124,6 +124,7 @@ case WM_LBUTTONDOWN:
                         talarArbol(&miJugador);
                         abrirTesoro(&miJugador);
                         golpearVaca(&miJugador);
+                        picarMina(&miJugador);
                         
                         // (Si implementas golpearVaca después, puedes poner ambas aquí 
                         // y el juego decidirá qué golpeó primero)
@@ -136,46 +137,63 @@ case WM_LBUTTONDOWN:
             return 0;
         }
 
-        case WM_PAINT:
-        {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hwnd, &ps);
-            RECT rc; GetClientRect(hwnd, &rc);
-            int ancho = rc.right; int alto = rc.bottom;
-            HDC hdcMem = CreateCompatibleDC(hdc);
-            HBITMAP hbmMem = CreateCompatibleBitmap(hdc, ancho, alto);
-            HBITMAP hbmOld = (HBITMAP)SelectObject(hdcMem, hbmMem);
+       case WM_PAINT:
+{
+    PAINTSTRUCT ps;
+    HDC hdc = BeginPaint(hwnd, &ps);
+    RECT rc; GetClientRect(hwnd, &rc);
+    int ancho = rc.right; int alto = rc.bottom;
+    
+    HDC hdcMem = CreateCompatibleDC(hdc);
+    HBITMAP hbmMem = CreateCompatibleBitmap(hdc, ancho, alto);
+    HGDIOBJ hbmOld = SelectObject(hdcMem, hbmMem);
 
-            if (estadoJuego.mostrarMenu) {
-                dibujarMenuConSprites(hdcMem, hwnd, &estadoJuego);
-            } 
-            else if (estadoJuego.enPartida) {
-               // 1. EL FONDO (El mapa siempre va primero)
-			dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto, estadoJuego.frameTienda);
-	dibujarTesoros(hdcMem, miCamara, ancho, alto); 
-			// 2. ESTRUCTURAS FIJAS (La cueva/mina)
-			dibujarMina(hdcMem, miCamara); 
-dibujarEstablo(hdcMem, miCamara); // <-- NUEVA LLAMADA
-		// 3. OBJETOS INTERACTIVOS (Tesoros y Árboles)
-	
-		dibujarArboles(hdcMem, miCamara, ancho, alto); 
-			DibujarImagen(hdcMem, hBmpEstablo, 
+    if (estadoJuego.mostrarMenu) {
+        dibujarMenuConSprites(hdcMem, hwnd, &estadoJuego);
+    } 
+    else if (estadoJuego.enPartida) {
+        // 1. EL FONDO
+        dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto, estadoJuego.frameTienda);
+        dibujarTesoros(hdcMem, miCamara, ancho, alto); 
+        
+        // 2. ESTRUCTURAS FIJAS
+        dibujarMina(hdcMem, miCamara); 
+        
+        // --- AQUÍ ESTABA EL ERROR: CAMBIADO hdc POR hdcMem ---
+        dibujarMinas(hdcMem, miCamara, ancho, alto); 
+        actualizarYDibujarParticulas(hdcMem, miCamara);
+        // ----------------------------------------------------
+
+        dibujarEstablo(hdcMem, miCamara);
+        
+        // 3. OBJETOS INTERACTIVOS
+        dibujarArboles(hdcMem, miCamara, ancho, alto); 
+        
+        // (Dibujo manual del establo si no usas la función de arriba)
+        DibujarImagen(hdcMem, hBmpEstablo, 
               (ESTABLO_X - miCamara.x) * miCamara.zoom, 
               (ESTABLO_Y - miCamara.y) * miCamara.zoom, 
               200 * miCamara.zoom, 200 * miCamara.zoom);
-		dibujarVacas(hdcMem, miCamara, ancho, alto);
-		dibujarUnidades(hdcMem, miCamara); // Tus grupos de aldeanos/soldados
-		dibujarJugador(hdcMem, miJugador, miCamara);
 
-		// 5. INTERFAZ (HUD siempre al final para que esté arriba de todo)
-		dibujarHUD(hdcMem, &miJugador, ancho, alto);
-            }
+        dibujarVacas(hdcMem, miCamara, ancho, alto);
+        dibujarUnidades(hdcMem, miCamara);
+        dibujarJugador(hdcMem, miJugador, miCamara);
 
-            BitBlt(hdc, 0, 0, ancho, alto, hdcMem, 0, 0, SRCCOPY);
-            SelectObject(hdcMem, hbmOld); DeleteObject(hbmMem); DeleteDC(hdcMem);
-            EndPaint(hwnd, &ps);
-            return 0;
-        }
+        // 5. INTERFAZ
+        dibujarHUD(hdcMem, &miJugador, ancho, alto);
+    }
+
+    // Copiar todo el dibujo procesado de golpe a la pantalla
+    BitBlt(hdc, 0, 0, ancho, alto, hdcMem, 0, 0, SRCCOPY);
+
+    // Limpieza
+    SelectObject(hdcMem, hbmOld); 
+    DeleteObject(hbmMem); 
+    DeleteDC(hdcMem);
+    
+    EndPaint(hwnd, &ps);
+    return 0;
+}
         default: return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
     
@@ -213,6 +231,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // CORRECCIÓN: Llamadas sin argumentos o con los correctos
     inicializarVacas();           
     inicializarArboles(mapaMundo);
+    inicializarMinas(mapaMundo);
     inicializarTesoros(); 
     inicializarUnidades();
 miJugador.nivelMochila = 1;

@@ -27,6 +27,17 @@ void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto);
 void talarArbol(Jugador *j); 
 
+// Inicializa las minas en el mapa
+void inicializarMinas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
+
+// Dibuja las minas usando los bitmaps de hierro y piedra
+void dibujarMinas(HDC hdc, Camera cam, int ancho, int alto);
+
+// Lógica para detectar si el jugador está picando una mina
+void picarMina(Jugador *j);
+void crearChispas(int x, int y, COLORREF color);
+void actualizarYDibujarParticulas(HDC hdc, Camera cam);
+
 /* --- SISTEMA DE TESOROS --- */
 void inicializarTesoros();
 void abrirTesoro(Jugador *j);

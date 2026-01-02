@@ -43,6 +43,7 @@ HBITMAP hBmpTesoroJoyas = NULL;
 HBITMAP hBmpTesoroVacio = NULL;
 HBITMAP hBmpMina = NULL; // Declaración global al inicio del archivo
 HBITMAP hBmpEstablo = NULL;
+HBITMAP hBmpHierroPicar, hBmpPiedraPicar;
 
 // --- VARIABLES FALTANTES (AGREGADAS) ---
 HBITMAP hBmpArbolChico = NULL;  // Antes hBmpArbol
@@ -166,7 +167,8 @@ void CargarRecursos() {
     hBmpCastilloEnemigo3 = CargarImagen("assets/mundo/Castillo_enemigoTRES.bmp");
     hBmpTienda[0] = CargarImagen("assets/mundo/tienda-de-ventas-pixilart.bmp");
     hBmpTienda[1] = CargarImagen("assets/mundo/tienda-de-ventas-pixilart-movimiento.bmp");
-
+	hBmpHierroPicar = (HBITMAP)LoadImage(NULL, "assets/mundo/Hierro-picar.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	hBmpPiedraPicar = (HBITMAP)LoadImage(NULL, "assets/mundo/Piedra-picar.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
     hBmpMina = CargarImagen("assets/mundo/Mina-cueva.bmp"); 
 
     

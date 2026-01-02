@@ -31,7 +31,8 @@
 #define MAX_ARBOLES 30// Un buen número para cubrir 5 islas
 // --- TESOROS ---
 #define MAX_TESOROS 2
-
+#define MAX_MINAS 20
+#define MAX_PARTICULAS 50
 
 // --- TIPOS DE UNIDADES ---
 #define TIPO_ALDEANO 0
@@ -153,6 +154,19 @@ typedef struct {
     int vida;   // <--- NUEVO: Vida del árbol (5 golpes)
 } Arbol;
 
+typedef struct {
+    float x, y;
+    int tipo;   // 0 para Piedra, 1 para Hierro
+    int vida;   // 5 golpes para recolectar
+    int activa;
+} Mina;
+typedef struct {
+    float x, y;
+    float vx, vy; // Velocidad
+    int vida;     // Duración del efecto
+    COLORREF color;
+    int activo;
+} Particula;
 
 typedef struct {
     int x;

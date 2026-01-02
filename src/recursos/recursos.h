@@ -69,6 +69,9 @@ extern HBITMAP hBmpTesoroJoyas;
 extern HBITMAP hBmpTesoroVacio;
 extern HBITMAP hBmpMina; 
 extern HBITMAP hBmpEstablo;
+extern HBITMAP hBmpHierroPicar;
+extern HBITMAP hBmpPiedraPicar;
+extern Particula chispas[MAX_PARTICULAS];
 
 // --- FUNCIONES ---
 void CargarRecursos();

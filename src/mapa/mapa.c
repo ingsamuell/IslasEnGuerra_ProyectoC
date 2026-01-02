@@ -11,7 +11,8 @@
 extern HBITMAP hBmpVaca[8];
 // Estado interno de las vacas
 Vaca manada[MAX_VACAS];
-
+Mina misMinas[MAX_MINAS];
+Particula chispas[MAX_PARTICULAS];
 #define MAX_ISLAS 5
 Isla misIslas[MAX_ISLAS];
 // Variable global de árboles
@@ -476,20 +477,21 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
                         comprado = TRUE;
                     }
                 }
-                else if (i == 2) { // Armadura
-                    if (j->oro >= 50 && j->hierro >= 10) {
-                        j->oro -= 50; j->hierro -= 10;
-                        spawnearEscuadron(TIPO_SOLDADO, cantidad, j->x + 50, j->y);
-                        comprado = TRUE;
-                    }
-                }
-                else if (i == 3) { // Hacha
+                else if (i == 2) { // Hacha
                     if (j->oro >= 20 && j->madera >= 10) {
                         j->oro -= 20; j->madera -= 10;
                         spawnearEscuadron(TIPO_LENADOR, cantidad, j->x + 50, j->y);
                         comprado = TRUE;
                     }
                 }
+                else if (i == 3) { // Armadura
+                    if (j->oro >= 50 && j->hierro >= 10) {
+                        j->oro -= 50; j->hierro -= 10;
+                        spawnearEscuadron(TIPO_SOLDADO, cantidad, j->x + 50, j->y);
+                        comprado = TRUE;
+                    }
+                }
+                
                 // i == 4 y i == 5 pueden ser para las mochilas nivel 2 y 3
 
                 if (comprado) InvalidateRect(hwnd, NULL, FALSE);
@@ -1019,7 +1021,7 @@ void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto)
     }
 }
 
-// --- FUNCIÓN DE TALAR ---
+// --- FUNCIÓN DE TALAR ACTUALIZADA ---
 void talarArbol(Jugador *j)
 {
     int rango = 40; // Distancia para poder golpear (píxeles)
@@ -1041,31 +1043,37 @@ void talarArbol(Jugador *j)
         // Verificar distancia (Si está cerca)
         if (abs(jx - ax) < rango && abs(jy - ay) < rango)
         {
-
             // 1. Restar vida
             misArboles[i].vida--;
-
-            // (Opcional) Efecto visual o sonoro aquí
-            // PlaySound("assets/sonidos/golpe.wav", ...);
 
             // 2. ¿Se cayó el árbol?
             if (misArboles[i].vida <= 0)
             {
-                misArboles[i].activa = 0; // Desaparece
+                misArboles[i].activa = 0; // El árbol desaparece
 
-                // 3. Dar recompensa
-                int maderaGanada = (misArboles[i].tipo == 1) ? 5 : 3;
+                // 3. DAR RECOMPENSA (Madera y HOJAS)
+                int maderaGanada = 0;
+                int hojasGanadas = 0;
+
+                if (misArboles[i].tipo == 1) { // Árbol Grande
+                    maderaGanada = 5;
+                    hojasGanadas = 10; // El grande da más hojas
+                } else { // Árbol Chico
+                    maderaGanada = 3;
+                    hojasGanadas = 4;  // El chico da menos
+                }
+
+                // Sumar al inventario del jugador
                 j->madera += maderaGanada;
+                j->hojas += hojasGanadas; // <--- ¡AQUÍ SE SUMAN LAS HOJAS!
 
-                // Feedback (Mensaje temporal o sonido de premio)
-                // PlaySound("assets/sonidos/madera.wav", ...);
+                
             }
 
             return; // Solo golpeamos un árbol a la vez
         }
     }
 }
-
 // 1. INICIALIZAR TESOROS (Escondidos detrás de árboles)
 void inicializarTesoros()
 {
@@ -1207,6 +1215,143 @@ void dibujarTesoros(HDC hdc, Camera cam, int ancho, int alto)
         }
     }
 }
+
+
+void inicializarMinas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    int contador = 0;
+    int intentos = 0;
+    int minX = 1200, maxX = 2000, minY = 1200, maxY = 2000;
+
+    for(int i = 0; i < MAX_MINAS; i++) misMinas[i].activa = 0;
+
+    while (contador < MAX_MINAS && intentos < 10000) {
+        intentos++;
+        int rx = minX + (rand() % (maxX - minX));
+        int ry = minY + (rand() % (maxY - minY));
+        
+        // Validar suelo (usando tu función EsSuelo)
+        if (!EsSuelo(rx + 16, ry + 16, mapa)) continue;
+
+        // Validar distancia mínima entre minas (ej. 100 píxeles)
+        int muyCerca = 0;
+        for(int i = 0; i < contador; i++) {
+            float dist = sqrt(pow(rx - misMinas[i].x, 2) + pow(ry - misMinas[i].y, 2));
+            if (dist < 100) { muyCerca = 1; break; }
+        }
+        
+        if (muyCerca) continue;
+
+        misMinas[contador].x = rx;
+        misMinas[contador].y = ry;
+        misMinas[contador].tipo = rand() % 2; // Piedra o Hierro
+        misMinas[contador].vida = 5;          // 5 toques requeridos
+        misMinas[contador].activa = 1;
+        contador++;
+    }
+}
+void picarMina(Jugador *j) {
+    // Rango muy amplio para asegurar que detecte al jugador
+    float rango = 40.0f; 
+    
+    // Centro del jugador
+    float jx = j->x + 16.0f;
+    float jy = j->y + 16.0f;
+
+    for (int i = 0; i < MAX_MINAS; i++) {
+        if (!misMinas[i].activa) continue;
+
+        // Centro de la mina (basado en el sprite de 48px)
+        float mx = misMinas[i].x + 24.0f;
+        float my = misMinas[i].y + 24.0f;
+
+        // Cálculo de distancia real
+        float dx = jx - mx;
+        float dy = jy - my;
+        float distancia = sqrt(dx * dx + dy * dy);
+
+        // Debug: Si quieres ver la distancia en consola desenta la línea de abajo
+        // printf("Distancia a mina %d: %.2f\n", i, distancia);
+
+        if (distancia <= rango) {
+            // COMENTAMOS EL REQUISITO DEL PICO PARA PRUEBAS:
+            // if (j->tienePico) { 
+                
+                misMinas[i].vida--;
+
+                // Lanzar chispas: Gris para piedra, Dorado para hierro
+                COLORREF color = (misMinas[i].tipo == 0) ? RGB(200, 200, 200) : RGB(255, 215, 0);
+                crearChispas(mx, my, color);
+
+                if (misMinas[i].vida <= 0) {
+                    misMinas[i].activa = 0;
+                    if (misMinas[i].tipo == 0) j->piedra += 5; // Recompensa Piedra
+                    else j->hierro += 3;                      // Recompensa Hierro
+                }
+                return; // Importante: salir tras encontrar la mina más cercana
+            // }
+        }
+    }
+}
+
+void dibujarMinas(HDC hdc, Camera cam, int ancho, int alto) {
+    for (int i = 0; i < MAX_MINAS; i++) {
+        if (!misMinas[i].activa) continue;
+
+        int sx = (misMinas[i].x - cam.x) * cam.zoom;
+        int sy = (misMinas[i].y - cam.y) * cam.zoom;
+        int tam = 32 * cam.zoom;
+
+        if (sx > -tam && sx < ancho && sy > -tam && sy < alto) {
+            HBITMAP img = (misMinas[i].tipo == 1) ? hBmpHierroPicar : hBmpPiedraPicar;
+            if (img) DibujarImagen(hdc, img, sx, sy, tam, tam);
+        }
+    }
+}
+
+void crearChispas(int x, int y, COLORREF color) {
+    int creadas = 0;
+    for (int i = 0; i < MAX_PARTICULAS && creadas < 8; i++) {
+        if (!chispas[i].activo) {
+            chispas[i].x = x;
+            chispas[i].y = y;
+            // Velocidad aleatoria en todas direcciones
+            chispas[i].vx = (rand() % 11 - 5); 
+            chispas[i].vy = (rand() % 11 - 8); // Saltan más hacia arriba
+            chispas[i].vida = 15 + (rand() % 10);
+            chispas[i].color = color;
+            chispas[i].activo = 1;
+            creadas++;
+        }
+    }
+}
+
+void actualizarYDibujarParticulas(HDC hdc, Camera cam) {
+    for (int i = 0; i < MAX_PARTICULAS; i++) {
+        if (chispas[i].activo) {
+            // Movimiento físico simple
+            chispas[i].x += chispas[i].vx;
+            chispas[i].y += chispas[i].vy;
+            chispas[i].vy += 0.4f; // Gravedad
+            chispas[i].vida--;
+
+            if (chispas[i].vida <= 0) {
+                chispas[i].activo = 0;
+                continue;
+            }
+
+            // Convertir a coordenadas de pantalla
+            int sx = (int)((chispas[i].x - cam.x) * cam.zoom);
+            int sy = (int)((chispas[i].y - cam.y) * cam.zoom);
+
+            // Solo dibujar si está en el área visible
+            HBRUSH hBr = CreateSolidBrush(chispas[i].color);
+            RECT r = { sx, sy, sx + 4, sy + 4 };
+            FillRect(hdc, &r, hBr);
+            DeleteObject(hBr);
+        }
+    }
+}
+
 void crearUnidadEnMapa(int tipo) {
     // Buscamos un slot libre en el array de unidades
     for (int i = 0; i < MAX_UNIDADES; i++) {
