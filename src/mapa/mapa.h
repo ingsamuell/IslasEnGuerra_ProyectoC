@@ -37,6 +37,9 @@ void dibujarMinas(HDC hdc, Camera cam, int ancho, int alto);
 void picarMina(Jugador *j);
 void crearChispas(int x, int y, COLORREF color);
 void actualizarYDibujarParticulas(HDC hdc, Camera cam);
+void agregarTextoFlotante(int x, int y, char* contenido, COLORREF color);
+void actualizarYDibujarTextos(HDC hdc, Camera cam);
+void actualizarLogicaSistema();
 
 /* --- SISTEMA DE TESOROS --- */
 void inicializarTesoros();

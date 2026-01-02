@@ -178,6 +178,7 @@ case WM_LBUTTONDOWN:
         dibujarVacas(hdcMem, miCamara, ancho, alto);
         dibujarUnidades(hdcMem, miCamara);
         dibujarJugador(hdcMem, miJugador, miCamara);
+        actualizarYDibujarTextos(hdcMem, miCamara);
 
         // 5. INTERFAZ
         dibujarHUD(hdcMem, &miJugador, ancho, alto);
@@ -238,9 +239,9 @@ miJugador.nivelMochila = 1;
 miJugador.cantMineros = 0;
 miJugador.cantLenadores = 0;
 miJugador.cantCazadores = 0;
-miJugador.tienePico = FALSE;
-miJugador.tieneHacha = FALSE;
-miJugador.tieneEspada = FALSE;
+miJugador.tienePico = TRUE;
+miJugador.tieneHacha = TRUE;
+miJugador.tieneEspada = TRUE;
 
     miCamara.zoom = 3;  
     actualizarCamara(&miCamara, miJugador);
@@ -259,6 +260,7 @@ miJugador.tieneEspada = FALSE;
             if (estadoJuego.enPartida) {
                 // CORRECCIÓN: Pasar el mapa a actualizarVacas
                 actualizarVacas(mapaMundo); 
+                actualizarLogicaSistema(); // <--- Esta función debe estar en sistema.c
                 
                 // Animación tienda
                 static int timerGato = 0;

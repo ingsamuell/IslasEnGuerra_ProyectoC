@@ -15,6 +15,7 @@ Mina misMinas[MAX_MINAS];
 Particula chispas[MAX_PARTICULAS];
 #define MAX_ISLAS 5
 Isla misIslas[MAX_ISLAS];
+TextoFlotante listaTextos[MAX_TEXTOS] = {0};
 // Variable global de árboles
 Arbol misArboles[MAX_ARBOLES];
 // Variable global
@@ -74,6 +75,54 @@ void inicializarIslas()
     misIslas[4].margen = 0;
 }
 
+void agregarTextoFlotante(int x, int y, char* contenido, COLORREF color) {
+    for (int i = 0; i < MAX_TEXTOS; i++) {
+        if (!listaTextos[i].activo) {
+            listaTextos[i].x = (float)x;
+            listaTextos[i].y = (float)y;
+            strcpy(listaTextos[i].texto, contenido);
+            listaTextos[i].color = color;
+            listaTextos[i].vida = 60; // <--- Aumentado a 60 frames
+            listaTextos[i].activo = 1;
+            break;
+        }
+    }
+}
+
+void actualizarLogicaSistema() {
+    // 1. Actualizar Textos Flotantes
+    for (int i = 0; i < MAX_TEXTOS; i++) {
+        if (listaTextos[i].activo) {
+            listaTextos[i].y -= 0.8f; // Velocidad de subida
+            listaTextos[i].vida--;
+            if (listaTextos[i].vida <= 0) {
+                listaTextos[i].activo = 0;
+            }
+        }
+    }
+    
+    // 2. Podrías mover aquí también la lógica de chispas si quieres centralizar
+}
+void actualizarYDibujarTextos(HDC hdc, Camera cam) {
+    SetBkMode(hdc, TRANSPARENT);
+    for (int i = 0; i < MAX_TEXTOS; i++) {
+        if (listaTextos[i].activo) {
+
+            // Convertir posición del mundo a pantalla
+            int sx = (int)((listaTextos[i].x - cam.x) * cam.zoom);
+            int sy = (int)((listaTextos[i].y - cam.y) * cam.zoom);
+
+            // Solo dibujamos si está dentro de la pantalla (opcional pero recomendado)
+            // Dibujar sombra negra
+            SetTextColor(hdc, RGB(0, 0, 0));
+            TextOut(hdc, sx + 1, sy + 1, listaTextos[i].texto, (int)strlen(listaTextos[i].texto));
+            
+            // Dibujar texto principal
+            SetTextColor(hdc, listaTextos[i].color);
+            TextOut(hdc, sx, sy, listaTextos[i].texto, (int)strlen(listaTextos[i].texto));
+        }
+    }
+}
 // --- NUEVA FUNCIÓN MAGICA: ESCANEAR BMP ---
 void generarColisionDesdeImagen(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], HBITMAP hBmp, int mundoX, int mundoY)
 {
@@ -434,11 +483,11 @@ void procesarClickMochila(int mouseX, int mouseY, Jugador *jugador, HWND hwnd)
 void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, HWND hwnd) {
     if (!j->inventarioAbierto) return;
 
-    int tx = 450, ty = 120; // Posición base de la tienda
+    int tx = 450, ty = 120; 
 
-    // 1. PESTAÑAS (Zona de detección ampliada para que no falle)
-    if (my >= ty - 40 && my <= ty + 5) { 
-        if (mx >= tx && mx <= tx + 150) {
+    // 1. PESTAÑAS
+    if (my >= ty - 40 && my <= ty + 10) { 
+        if (mx >= tx && mx <= tx + 149) {
             j->modoTienda = 0; // COMPRAR
             InvalidateRect(hwnd, NULL, FALSE);
             return;
@@ -450,55 +499,56 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
         }
     }
 
-    // 2. LÓGICA DE TIENDA (Rejilla de 6 espacios)
     int startX = tx + 20;
     int startY = ty + 40;
 
     if (j->modoTienda == 0) { // --- MODO COMPRAR ---
         int cantidad = (esClickDerecho) ? 15 : 5;
+        
         for (int i = 0; i < 6; i++) {
-            int col = i % 2; int row = i / 2;
+            int col = i % 2; 
+            int row = i / 2;
             int ix = startX + (col * 140); 
-            int iy = startY + (row * 65); // Sincronizado con el dibujo
+            int iy = startY + (row * 65);
 
+            // Detección estricta dentro del cuadro del ítem
             if (mx >= ix && mx <= ix + 130 && my >= iy && my <= iy + 60) {
-                BOOL comprado = FALSE;
-                if (i == 0) { // Espada
+                
+                if (i == 0) { // Espada (Cazador)
                     if (j->oro >= 20 && j->hierro >= 3) {
                         j->oro -= 20; j->hierro -= 3;
                         spawnearEscuadron(TIPO_CAZADOR, cantidad, j->x + 50, j->y);
-                        comprado = TRUE;
                     }
                 }
-                else if (i == 1) { // Pico
+                else if (i == 1) { // Pico (Minero)
                     if (j->oro >= 15 && j->piedra >= 5) {
                         j->oro -= 15; j->piedra -= 5;
                         spawnearEscuadron(TIPO_MINERO, cantidad, j->x + 50, j->y);
-                        comprado = TRUE;
+
                     }
                 }
-                else if (i == 2) { // Hacha
+                else if (i == 2) { // Hacha (Leñador)
                     if (j->oro >= 20 && j->madera >= 10) {
                         j->oro -= 20; j->madera -= 10;
                         spawnearEscuadron(TIPO_LENADOR, cantidad, j->x + 50, j->y);
-                        comprado = TRUE;
+
                     }
                 }
-                else if (i == 3) { // Armadura
+                else if (i == 3) { // Armadura (Soldado)
                     if (j->oro >= 50 && j->hierro >= 10) {
                         j->oro -= 50; j->hierro -= 10;
                         spawnearEscuadron(TIPO_SOLDADO, cantidad, j->x + 50, j->y);
-                        comprado = TRUE;
+
                     }
                 }
-                
-                // i == 4 y i == 5 pueden ser para las mochilas nivel 2 y 3
 
-                if (comprado) InvalidateRect(hwnd, NULL, FALSE);
-                break;
+                InvalidateRect(hwnd, NULL, FALSE);
+                return; // Salimos de la función inmediatamente al procesar el click
             }
         }
-    } 
+    }
+   
+
     else { // --- MODO VENDER ---
         int precios[] = {1, 2, 5, 1, 3, 10}; 
         int* stocks[] = {&j->madera, &j->piedra, &j->hierro, &j->hojas, &j->comida, &j->oro};

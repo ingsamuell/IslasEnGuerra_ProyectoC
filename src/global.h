@@ -33,6 +33,7 @@
 #define MAX_TESOROS 2
 #define MAX_MINAS 20
 #define MAX_PARTICULAS 50
+#define MAX_TEXTOS 20
 
 // --- TIPOS DE UNIDADES ---
 #define TIPO_ALDEANO 0
@@ -153,6 +154,13 @@ typedef struct {
     int activa; // 1 = Existe
     int vida;   // <--- NUEVO: Vida del árbol (5 golpes)
 } Arbol;
+typedef struct {
+    float x, y;
+    char texto[32];
+    int vida;      // Duración del texto (ej. 40 frames)
+    COLORREF color;
+    int activo;
+} TextoFlotante;
 
 typedef struct {
     float x, y;

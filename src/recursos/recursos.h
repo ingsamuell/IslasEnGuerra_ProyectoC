@@ -72,6 +72,7 @@ extern HBITMAP hBmpEstablo;
 extern HBITMAP hBmpHierroPicar;
 extern HBITMAP hBmpPiedraPicar;
 extern Particula chispas[MAX_PARTICULAS];
+extern TextoFlotante listaTextos[MAX_TEXTOS];
 
 // --- FUNCIONES ---
 void CargarRecursos();
