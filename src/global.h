@@ -69,8 +69,11 @@ typedef struct {
     int vida;
     int frameAnim;
     int direccion;      
-    char nombreGrupo[32]; // EJ: "Leñador", "Minero"
-    int timerTrabajo;     // Para recolectar recursos poco a poco
+    char nombreGrupo[32]; 
+
+    int timerTrabajo;     // <--- AGREGADO: Para contar tiempo minando/cazando
+    int contadorAnim;     // <--- AGREGADO: Para la animación de caminar
+
 } Unidad;
 
 
