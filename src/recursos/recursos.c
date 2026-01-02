@@ -1,7 +1,6 @@
 /* src/recursos/recursos.c - VERSIÓN FINAL CON VACAS Y ÁRBOLES */
 #include "recursos.h"
 #include <stdio.h>
-//cambios
 // --- VARIABLES GLOBALES ---
 HBITMAP hBmpFondoMenu = NULL;
 
@@ -11,6 +10,16 @@ HBITMAP hBmpBtnInstrucciones = NULL; HBITMAP hBmpBtnSalir = NULL;
 HBITMAP hBmpTitulo = NULL; HBITMAP hBmpBoton = NULL; HBITMAP hBmpBotonSel = NULL;
 HBITMAP hBmpInvCerrado = NULL; HBITMAP hBmpInvAbierto = NULL;
 
+// SELECCIÓN DE MAPA (NUEVO)
+HBITMAP hBmpFondoSeleccionMapa = NULL;
+// Cuadros normales
+HBITMAP hBmpCuadroMapa1Normal = NULL;
+HBITMAP hBmpCuadroMapa2Normal = NULL;
+HBITMAP hBmpCuadroMapa3Normal = NULL;
+// Cuadros seleccionados
+HBITMAP hBmpCuadroMapa1Sel = NULL;
+HBITMAP hBmpCuadroMapa2Sel = NULL;
+HBITMAP hBmpCuadroMapa3Sel = NULL;
 
 HBITMAP hBmpIslaGrande = NULL;
 HBITMAP hBmpIslaSec1 = NULL;
@@ -96,6 +105,7 @@ void CargarSetUnidad(HBITMAP destino[4][3], char* herramienta) {
     }
 }
 void CargarRecursos() {
+    // 1. MENÚ
     hBmpFondoMenu = CargarImagen("assets/ui/fondo_menu.bmp");
 
     // UI
@@ -108,6 +118,17 @@ void CargarRecursos() {
     hBmpTitulo = CargarImagen("assets/ui/titulo.bmp");
     hBmpInvCerrado = CargarImagen("assets/ui/boton_inv_cerrado.bmp");
     hBmpInvAbierto = CargarImagen("assets/ui/boton_inv_abierto.bmp");
+
+    // 2. SELECCIÓN DE MAPA (NUEVO)
+    hBmpFondoSeleccionMapa = CargarImagen("assets/ui/fondo_seleccion_mapa.bmp");
+    // Cuadros normales
+    hBmpCuadroMapa1Normal = CargarImagen("assets/ui/cuadro_mapa1_normal.bmp");
+    hBmpCuadroMapa2Normal = CargarImagen("assets/ui/cuadro_mapa2_normal.bmp");
+    hBmpCuadroMapa3Normal = CargarImagen("assets/ui/cuadro_mapa3_normal.bmp");
+    // Cuadros seleccionados
+    hBmpCuadroMapa1Sel = CargarImagen("assets/ui/cuadro_mapa1_sel.bmp");
+    hBmpCuadroMapa2Sel = CargarImagen("assets/ui/cuadro_mapa2_sel.bmp");
+    hBmpCuadroMapa3Sel = CargarImagen("assets/ui/cuadro_mapa3_sel.bmp");
 
     // --- CARGAR ÁRBOLES (Usando los nombres de tu lista) ---
     hBmpArbolChico = CargarImagen("assets/mundo/Arbol_islaUno.bmp");
@@ -203,6 +224,7 @@ void CargarRecursos() {
 
 
 void LiberarRecursos() {
+    // 1. Menú
     if (hBmpBtnJugar) DeleteObject(hBmpBtnJugar);
     if (hBmpBtnPartidas) DeleteObject(hBmpBtnPartidas);
     if (hBmpBtnInstrucciones) DeleteObject(hBmpBtnInstrucciones);
@@ -213,6 +235,17 @@ void LiberarRecursos() {
     if (hBmpTitulo) DeleteObject(hBmpTitulo);
     if (hBmpInvCerrado) DeleteObject(hBmpInvCerrado);
     if (hBmpInvAbierto) DeleteObject(hBmpInvAbierto);
+
+    // 2. Selección de mapa (NUEVO)
+    if (hBmpFondoSeleccionMapa) DeleteObject(hBmpFondoSeleccionMapa);
+    // Cuadros normales
+    if (hBmpCuadroMapa1Normal) DeleteObject(hBmpCuadroMapa1Normal);
+    if (hBmpCuadroMapa2Normal) DeleteObject(hBmpCuadroMapa2Normal);
+    if (hBmpCuadroMapa3Normal) DeleteObject(hBmpCuadroMapa3Normal);
+    // Cuadros seleccionados
+    if (hBmpCuadroMapa1Sel) DeleteObject(hBmpCuadroMapa1Sel);
+    if (hBmpCuadroMapa2Sel) DeleteObject(hBmpCuadroMapa2Sel);
+    if (hBmpCuadroMapa3Sel) DeleteObject(hBmpCuadroMapa3Sel);
 
     if (hBmpArbolChico) DeleteObject(hBmpArbolChico);
     if (hBmpArbolGrande) DeleteObject(hBmpArbolGrande);

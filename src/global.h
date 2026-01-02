@@ -13,6 +13,20 @@
 #define TAMANO_CELDA 32   
 #define TILE_SIZE 32
 
+// --- ESTADOS DEL JUEGO ---
+#define ESTADO_MENU 0
+#define ESTADO_SELECCION_MAPA 1
+#define ESTADO_PARTIDA 2
+
+// --- MAPAS DISPONIBLES ---
+#define MAPA_ISLAS_OCEANO 0
+#define MAPA_ARCHIPIELAGO 1
+#define MAPA_CONTINENTE 2
+#define TOTAL_MAPAS 3
+
+// --- CONSTANTES DE ISLAS ---
+#define MAX_ISLAS 5
+
 // Definimos direcciones para usar nombres en lugar de números
 #define DIR_ABAJO     0
 #define DIR_ARRIBA    1
@@ -76,9 +90,16 @@ typedef struct {
 
 } Unidad;
 
+// --- ESTRUCTURA DE ISLA ---
+typedef struct {
+    int x;          // Posición X en el mundo
+    int y;          // Posición Y en el mundo
+    int ancho;      // Ancho de la imagen
+    int alto;       // Alto de la imagen
+    int margen;     // Borde de agua
+    int activa;     // 1 = Existe
+} Isla;
 
-
-// (Mantén el resto de estructuras Jugador, Vaca, etc. igual)
 // --- ESTRUCTURA DEL JUGADOR ---
 typedef struct {
     // 1. Posición
@@ -186,14 +207,14 @@ typedef struct {
     int estado; // 0 = Cerrado, 1 = Abierto/Vacío
     int activa; // 1 = Existe
 } Tesoro;
-// --- OTRAS ESTRUCTURAS ---
+
+// --- ESTRUCTURA DE ESTADO DEL JUEGO ---
 typedef struct {
-    int mostrarMenu;
-    int enPartida;
-    int mostrarResumen; // Inventario
+    int estadoActual;      // 0=Menu, 1=SeleccionMapa, 2=Partida
     int opcionSeleccionada;
+    int mapaSeleccionado;  // 0, 1 o 2
+    int frameTienda;       // Contador para la animación del gato
     POINT puntoMouse;
-    int frameTienda;    // Contador para la animación del gato
 } EstadoJuego;
 
 typedef struct {
@@ -202,13 +223,4 @@ typedef struct {
     int tamano_celda_actual;
 } Camera;
 
-typedef struct {
-    int x;          // Posición X en el mundo
-    int y;          // Posición Y en el mundo
-    int ancho;      // Ancho de la imagen
-    int alto;       // Alto de la imagen
-    int margen;     // Borde de agua
-    int activa;     // 1 = Existe
-} Isla;
-
-#endif
+#endif /* GLOBAL_H */

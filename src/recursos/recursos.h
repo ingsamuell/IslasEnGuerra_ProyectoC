@@ -54,7 +54,6 @@ extern HBITMAP hBmpIconoHacha;
 extern HBITMAP hBmpIconoArmaduraInv;
 extern HBITMAP hBmpIconoSoldadoInv;
 
-
 // 5. MUNDO
 extern HBITMAP hBmpIslaGrande;
 extern HBITMAP hBmpIslaSec1;
@@ -71,8 +70,17 @@ extern HBITMAP hBmpMina;
 extern HBITMAP hBmpEstablo;
 extern HBITMAP hBmpHierroPicar;
 extern HBITMAP hBmpPiedraPicar;
-extern Particula chispas[MAX_PARTICULAS];
-extern TextoFlotante listaTextos[MAX_TEXTOS];
+
+// 6. SELECCIÓN DE MAPA (NUEVO)
+extern HBITMAP hBmpFondoSeleccionMapa;
+// Cuadros normales
+extern HBITMAP hBmpCuadroMapa1Normal;
+extern HBITMAP hBmpCuadroMapa2Normal;
+extern HBITMAP hBmpCuadroMapa3Normal;
+// Cuadros seleccionados
+extern HBITMAP hBmpCuadroMapa1Sel;
+extern HBITMAP hBmpCuadroMapa2Sel;
+extern HBITMAP hBmpCuadroMapa3Sel;
 
 // --- FUNCIONES ---
 void CargarRecursos();
