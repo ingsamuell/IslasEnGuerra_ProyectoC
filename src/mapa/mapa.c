@@ -625,13 +625,15 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
         // 1. Lógica de Mineros en la Cueva
         if (unidades[i].estado == ESTADO_EN_CUEVA) {
             unidades[i].timerTrabajo++;
-            if (unidades[i].timerTrabajo >= 100) { // Cada cierto tiempo
+            if (unidades[i].timerTrabajo >= 100) { 
                 j->oro += 2;
                 j->hierro += 1;
                 j->piedra += 2;
                 unidades[i].timerTrabajo = 0;
+                
+                // Opcional: Crear texto flotante de recursos aquí
             }
-            continue; // No se mueven ni se dibujan si están dentro
+            continue; 
         }
 
         // 2. Movimiento suave hacia el destino
@@ -641,54 +643,58 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
             float dist = sqrt(dx*dx + dy*dy);
 
             if (dist > 5) {
-                unidades[i].x += (dx / dist) * 2.0f; // Velocidad 2.0
+                unidades[i].x += (dx / dist) * 2.0f; 
                 unidades[i].y += (dy / dist) * 2.0f;
                 
-                // Actualizar dirección para animación
                 if (abs(dx) > abs(dy)) {
                     unidades[i].direccion = (dx > 0) ? DIR_DERECHA : DIR_IZQUIERDA;
                 } else {
                     unidades[i].direccion = (dy > 0) ? DIR_ABAJO : DIR_ARRIBA;
                 }
                 
-                // Animar frames (0, 1, 2)
-                static int contadorAnim = 0;
-                if (++contadorAnim > 10) {
+                unidades[i].contadorAnim++;
+                if (unidades[i].contadorAnim > 10) {
                     unidades[i].frameAnim = (unidades[i].frameAnim + 1) % 3;
-                    contadorAnim = 0;
+                    unidades[i].contadorAnim = 0;
                 }
             } else {
                 unidades[i].estado = ESTADO_IDLE;
             }
         }
         
-        // Lógica de Caza (Aldeanos con espada)
-if (unidades[i].estado == ESTADO_CAZANDO) {
-    for (int v = 0; v < MAX_VACAS; v++) {
-        if (vacas[v].activa) {
-            float dist = sqrt(pow(unidades[i].x - vacas[v].x, 2) + pow(unidades[i].y - vacas[v].y, 2));
-            
-            if (dist < 35) { // El aldeano alcanzó a la vaca
-                // --- PROGRESO DE LA ACCIÓN ---
-                unidades[i].timerTrabajo += 1; 
+        // 3. Lógica de Caza (Sincronizada con 'manada')
+        if (unidades[i].estado == ESTADO_CAZANDO) {
+            bool vacaEncontrada = false;
+            for (int v = 0; v < MAX_VACAS; v++) {
+                // IMPORTANTE: Usar 'manada' y verificar que esté viva (estadoVida == 0)
+                if (manada[v].activa && manada[v].estadoVida == 0) {
+                    vacaEncontrada = true;
+                    float dist = sqrt(pow(unidades[i].x - manada[v].x, 2) + pow(unidades[i].y - manada[v].y, 2));
+                    
+                    if (dist < 35) { 
+                        unidades[i].timerTrabajo += 1; 
 
-                if (unidades[i].timerTrabajo >= 100) { // Cuando termina la barra
-                    vacas[v].activa = 0;   // La vaca muere
-                    j->comida += 10;       // Recurso ganado
-                    unidades[i].timerTrabajo = 0; 
-                    printf("¡Caza exitosa! Comida: %d\n", j->comida);
+                        if (unidades[i].timerTrabajo >= 100) { 
+                            manada[v].estadoVida = 1;   // La vaca pasa a estado muerta
+                            manada[v].tiempoMuerte = 300;
+                            j->comida += 10;            
+                            unidades[i].timerTrabajo = 0; 
+                            
+                            // Añadir texto flotante si lo tienes implementado:
+                            // crearTextoFlotante("+10 Comida", manada[v].x, manada[v].y, RGB(255, 255, 255));
+                        }
+                    } else {
+                        // Persecución
+                        unidades[i].x += (manada[v].x > unidades[i].x) ? 1.4f : -1.4f;
+                        unidades[i].y += (manada[v].y > unidades[i].y) ? 1.4f : -1.4f;
+                        unidades[i].timerTrabajo = 0; 
+                    }
+                    break; 
                 }
-            } else {
-                // --- TU LÓGICA DE MOVIMIENTO ---
-                // Si está lejos, la persigue
-                unidades[i].x += (vacas[v].x > unidades[i].x) ? 1.2f : -1.2f;
-                unidades[i].y += (vacas[v].y > unidades[i].y) ? 1.2f : -1.2f;
-                unidades[i].timerTrabajo = 0; // Si la vaca se aleja, el progreso se reinicia
             }
-            break; // Solo persigue a una por vez
+            // Si no hay vacas vivas, el aldeano vuelve a IDLE
+            if (!vacaEncontrada) unidades[i].estado = ESTADO_IDLE;
         }
-    }
-}
     }
 }
 
