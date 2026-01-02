@@ -7,7 +7,7 @@
 
 /* --- LÓGICA DEL JUEGO (Setup y Física) --- */
 void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
-void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
+void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId);
 void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy);
 
 // IMPORTANTE: EsSuelo ahora recibe el mapa para la colisión precisa
@@ -18,9 +18,6 @@ void inicializarVacas(); // Sin argumentos
 void actualizarVacas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto);
 void golpearVaca(Jugador *j);
-
-// (Esta función aún no la hemos creado en mapa.c, la comento para evitar errores)
-// void golpearVaca(Jugador *j); 
 
 /* --- SISTEMA DE ÁRBOLES --- */
 void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
@@ -51,8 +48,6 @@ void actualizarCamara(Camera *camara, Jugador jugador);
 //
 
 // --- SISTEMA RTS ---
-// En src/mapa/mapa.h (al final, antes del #endif)
-
 void seleccionarUnidades(int mouseX, int mouseY, Camera cam);
 void dibujarEstablo(HDC hdc, Camera cam);
 void inicializarUnidades();
@@ -76,14 +71,19 @@ void dibujarItemRejilla(HDC hdc, HBITMAP icono, int cantidad, int maximo, int x,
 void reclutarTrabajador(Jugador *j, int tipo);
 void crearUnidadEnMapa(int tipo);
 
-/* --- DIBUJADO DE MENÚ --- */
+/* --- DIBUJADO DE MENÚ Y SELECCIÓN DE MAPA --- */
 void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado);
+void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado);
 
 /* --- INTERACCIÓN --- */
 void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado);
 void procesarEnterMenu(HWND hwnd, EstadoJuego *estado);
 void procesarClickMochila(int mouseX, int mouseY, Jugador *jugador, HWND hwnd);
 void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, HWND hwnd);
+void procesarClickSeleccionMapa(int x, int y, HWND hwnd, EstadoJuego *estado);
+
+// Inicialización de islas con parámetro de mapa
+void inicializarIslas(int mapaId);
 
 // Al final del archivo, antes del #endif
 void dibujarMina(HDC hdc, Camera cam);

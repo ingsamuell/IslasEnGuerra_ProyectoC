@@ -1,4 +1,4 @@
-/* src/main.c - VERSIÓN CORREGIDA FINAL */
+/* src/main.c - VERSIÓN CORREGIDA FINAL CON SELECCIÓN DE MAPA */
 #include <windows.h>
 #include <stdio.h>
 #include "global.h"             
@@ -24,73 +24,77 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         case WM_ERASEBKGND:
             return 1;
 
-case WM_LBUTTONDOWN:
-{
-    int mouseX = LOWORD(lParam);
-    int mouseY = HIWORD(lParam);
+        case WM_LBUTTONDOWN:
+        {
+            int mouseX = LOWORD(lParam);
+            int mouseY = HIWORD(lParam);
 
-    if (estadoJuego.mostrarMenu) {
-        procesarClickMenu(mouseX, mouseY, hwnd, &estadoJuego);
-    }
-    else if (estadoJuego.enPartida) {
-        bool clicEnUI = false;
+            switch(estadoJuego.estadoActual)
+            {
+                case ESTADO_MENU:
+                    procesarClickMenu(mouseX, mouseY, hwnd, &estadoJuego);
+                    break;
+                    
+                case ESTADO_SELECCION_MAPA:
+                    procesarClickSeleccionMapa(mouseX, mouseY, hwnd, &estadoJuego);
+                    break;
+                    
+                case ESTADO_PARTIDA:
+                {
+                    bool clicEnUI = false;
 
-        // 1. Botón Mochila (Icono del bolso a la izquierda)
-        int btnX = 20; int btnY = 120; int tamanoBolso = 64;
-        if (mouseX >= btnX && mouseX <= btnX + tamanoBolso &&
-            mouseY >= btnY && mouseY <= btnY + tamanoBolso) {
-            miJugador.inventarioAbierto = !miJugador.inventarioAbierto;
-            clicEnUI = true;
-            InvalidateRect(hwnd, NULL, FALSE);
-        }
+                    // 1. Botón Mochila (Icono del bolso a la izquierda)
+                    int btnX = 20; int btnY = 120; int tamanoBolso = 64;
+                    if (mouseX >= btnX && mouseX <= btnX + tamanoBolso &&
+                        mouseY >= btnY && mouseY <= btnY + tamanoBolso) {
+                        miJugador.inventarioAbierto = !miJugador.inventarioAbierto;
+                        clicEnUI = true;
+                        InvalidateRect(hwnd, NULL, FALSE);
+                    }
 
-        // 2. Si la mochila/tienda está abierta
-        if (miJugador.inventarioAbierto) {
-            int tx = 450; int ty = 120;
+                    // 2. Si la mochila/tienda está abierta
+                    if (miJugador.inventarioAbierto) {
+                        int tx = 450; int ty = 120;
 
-            // --- NUEVO: DETECTAR CLIC EN PESTAÑAS (COMPRAR / VENDER) ---
-            // Si el clic cae en la barra de arriba (la que no te funcionaba)
-            if (mouseY >= ty - 40 && mouseY <= ty) {
-                if (mouseX >= tx && mouseX <= tx + 150) {
-                    miJugador.modoTienda = 0; // Pestaña Comprar
-                    clicEnUI = true;
-                    InvalidateRect(hwnd, NULL, FALSE);
-                }
-                else if (mouseX >= tx + 150 && mouseX <= tx + 300) {
-                    miJugador.modoTienda = 1; // Pestaña Vender
-                    clicEnUI = true;
-                    InvalidateRect(hwnd, NULL, FALSE);
+                        // DETECTAR CLIC EN PESTAÑAS (COMPRAR / VENDER)
+                        if (mouseY >= ty - 40 && mouseY <= ty) {
+                            if (mouseX >= tx && mouseX <= tx + 150) {
+                                miJugador.modoTienda = 0; // Pestaña Comprar
+                                clicEnUI = true;
+                                InvalidateRect(hwnd, NULL, FALSE);
+                            }
+                            else if (mouseX >= tx + 150 && mouseX <= tx + 300) {
+                                miJugador.modoTienda = 1; // Pestaña Vender
+                                clicEnUI = true;
+                                InvalidateRect(hwnd, NULL, FALSE);
+                            }
+                        }
+
+                        // 3. Procesar Contenido de la Tienda
+                        if (!clicEnUI) {
+                            procesarClickMochilaTienda(mouseX, mouseY, FALSE, &miJugador, hwnd);
+                            
+                            if (mouseX >= tx && mouseX <= tx + 300 && mouseY >= ty - 40 && mouseY <= ty + 350) {
+                                clicEnUI = true;
+                            }
+                        }
+                        
+                        procesarClickMochila(mouseX, mouseY, &miJugador, hwnd);
+                    }
+
+                    // 4. Selección de unidades en el mapa
+                    if (!clicEnUI) {
+                        seleccionarUnidades(mouseX, mouseY, miCamara);
+                    }
+                    break;
                 }
             }
-
-            // 3. Procesar Contenido de la Tienda (Solo si no tocamos las pestañas)
-            if (!clicEnUI) {
-                // Llamamos a la función que ya tiene toda la lógica de vender y comprar
-                // Esto es mucho más limpio que tener los 'for' aquí metidos.
-                procesarClickMochilaTienda(mouseX, mouseY, FALSE, &miJugador, hwnd);
-                
-                // Si el clic cayó dentro del rectángulo de la tienda, es clic en UI
-                if (mouseX >= tx && mouseX <= tx + 300 && mouseY >= ty - 40 && mouseY <= ty + 350) {
-                    clicEnUI = true;
-                }
-            }
-            
-            // Procesar clics de la mochila personal (equipar/usar items)
-            procesarClickMochila(mouseX, mouseY, &miJugador, hwnd);
+            return 0;
         }
-
-        // 4. Selección de unidades en el mapa
-        // Solo si no tocamos ningún elemento de la interfaz
-        if (!clicEnUI) {
-            seleccionarUnidades(mouseX, mouseY, miCamara);
-        }
-    }
-    return 0;
-}
 
         case WM_RBUTTONDOWN:
         {
-            if (estadoJuego.enPartida) {
+            if (estadoJuego.estadoActual == ESTADO_PARTIDA) {
                 procesarClickMochilaTienda(LOWORD(lParam), HIWORD(lParam), 1, &miJugador, hwnd);
             }
             return 0;
@@ -98,103 +102,139 @@ case WM_LBUTTONDOWN:
 
         case WM_KEYDOWN:
         {
-            if (estadoJuego.mostrarMenu) {
-                if (wParam == VK_RETURN) procesarEnterMenu(hwnd, &estadoJuego);
-            } 
-            else if (estadoJuego.enPartida) {
-                switch (wParam) {
-                    case VK_ESCAPE: 
-                        estadoJuego.enPartida = 0;
-                        estadoJuego.mostrarMenu = 1;
-                        InvalidateRect(hwnd, NULL, FALSE);
-                        return 0;
-
-                    case 'W': moverJugador(&miJugador, mapaMundo, 0, -1); break;
-                    case 'S': moverJugador(&miJugador, mapaMundo, 0, 1); break;
-                    case 'A': moverJugador(&miJugador, mapaMundo, -1, 0); break;
-                    case 'D': moverJugador(&miJugador, mapaMundo, 1, 0); break;
-                    case 'I': miJugador.inventarioAbierto = !miJugador.inventarioAbierto; break;
-
-                    case VK_ADD: case 0xBB: 
-                        miCamara.zoom += 1; if (miCamara.zoom > 5) miCamara.zoom = 5; break;
-                    case VK_SUBTRACT: case 0xBD: 
-                        miCamara.zoom -= 1; if (miCamara.zoom < 1) miCamara.zoom = 1; break;
-                        case VK_SPACE: 
-                        // Intentar talar lo que esté enfrente
-                        talarArbol(&miJugador);
-                        abrirTesoro(&miJugador);
-                        golpearVaca(&miJugador);
-                        picarMina(&miJugador);
+            switch(estadoJuego.estadoActual)
+            {
+                case ESTADO_MENU:
+                    if (wParam == VK_RETURN) 
+                        procesarEnterMenu(hwnd, &estadoJuego);
+                    break;
+                    
+                case ESTADO_SELECCION_MAPA:
+                    if (wParam == VK_RETURN)
+                    {
+                        // Confirmar selección de mapa y empezar juego
+                        estadoJuego.mapaSeleccionado = estadoJuego.opcionSeleccionada;
                         
-                        // (Si implementas golpearVaca después, puedes poner ambas aquí 
-                        // y el juego decidirá qué golpeó primero)
+                        // Inicializar juego con el mapa seleccionado
+                        inicializarJuego(&miJugador, &estadoJuego, mapaMundo, estadoJuego.mapaSeleccionado);
+                        
+                        // Inicializar estadísticas del jugador
+                        miJugador.nivelMochila = 1;
+                        miJugador.cantMineros = 0;
+                        miJugador.cantLenadores = 0;
+                        miJugador.cantCazadores = 0;
+                        miJugador.tienePico = FALSE;
+                        miJugador.tieneHacha = FALSE;
+                        miJugador.tieneEspada = FALSE;
+                        
+                        miCamara.zoom = 3;
+                        actualizarCamara(&miCamara, miJugador);
                         InvalidateRect(hwnd, NULL, FALSE);
-                        break;
-                }
-                actualizarCamara(&miCamara, miJugador);
-                InvalidateRect(hwnd, NULL, FALSE);
+                    }
+                    else if (wParam == VK_ESCAPE)
+                    {
+                        // Volver al menú
+                        estadoJuego.estadoActual = ESTADO_MENU;
+                        estadoJuego.opcionSeleccionada = 0;
+                        InvalidateRect(hwnd, NULL, FALSE);
+                    }
+                    break;
+                    
+                case ESTADO_PARTIDA:
+                    switch (wParam) {
+                        case VK_ESCAPE: 
+                            // Volver a selección de mapa
+                            estadoJuego.estadoActual = ESTADO_SELECCION_MAPA;
+                            InvalidateRect(hwnd, NULL, FALSE);
+                            return 0;
+
+                        case 'W': moverJugador(&miJugador, mapaMundo, 0, -1); break;
+                        case 'S': moverJugador(&miJugador, mapaMundo, 0, 1); break;
+                        case 'A': moverJugador(&miJugador, mapaMundo, -1, 0); break;
+                        case 'D': moverJugador(&miJugador, mapaMundo, 1, 0); break;
+                        case 'I': miJugador.inventarioAbierto = !miJugador.inventarioAbierto; break;
+
+                        case VK_ADD: case 0xBB: 
+                            miCamara.zoom += 1; if (miCamara.zoom > 5) miCamara.zoom = 5; break;
+                        case VK_SUBTRACT: case 0xBD: 
+                            miCamara.zoom -= 1; if (miCamara.zoom < 1) miCamara.zoom = 1; break;
+                            
+                        case VK_SPACE: 
+                            talarArbol(&miJugador);
+                            abrirTesoro(&miJugador);
+                            golpearVaca(&miJugador);
+                            picarMina(&miJugador);
+                            InvalidateRect(hwnd, NULL, FALSE);
+                            break;
+                    }
+                    actualizarCamara(&miCamara, miJugador);
+                    InvalidateRect(hwnd, NULL, FALSE);
+                    break;
             }
             return 0;
         }
 
-       case WM_PAINT:
-{
-    PAINTSTRUCT ps;
-    HDC hdc = BeginPaint(hwnd, &ps);
-    RECT rc; GetClientRect(hwnd, &rc);
-    int ancho = rc.right; int alto = rc.bottom;
-    
-    HDC hdcMem = CreateCompatibleDC(hdc);
-    HBITMAP hbmMem = CreateCompatibleBitmap(hdc, ancho, alto);
-    HGDIOBJ hbmOld = SelectObject(hdcMem, hbmMem);
+        case WM_PAINT:
+        {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hwnd, &ps);
+            RECT rc; GetClientRect(hwnd, &rc);
+            int ancho = rc.right; int alto = rc.bottom;
+            
+            HDC hdcMem = CreateCompatibleDC(hdc);
+            HBITMAP hbmMem = CreateCompatibleBitmap(hdc, ancho, alto);
+            HGDIOBJ hbmOld = SelectObject(hdcMem, hbmMem);
 
-    if (estadoJuego.mostrarMenu) {
-        dibujarMenuConSprites(hdcMem, hwnd, &estadoJuego);
-    } 
-    else if (estadoJuego.enPartida) {
-        // 1. EL FONDO
-        dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto, estadoJuego.frameTienda);
-        dibujarTesoros(hdcMem, miCamara, ancho, alto); 
-        
-        // 2. ESTRUCTURAS FIJAS
-        dibujarMina(hdcMem, miCamara); 
-        
-        // --- AQUÍ ESTABA EL ERROR: CAMBIADO hdc POR hdcMem ---
-        dibujarMinas(hdcMem, miCamara, ancho, alto); 
-        actualizarYDibujarParticulas(hdcMem, miCamara);
-        // ----------------------------------------------------
+            switch(estadoJuego.estadoActual)
+            {
+                case ESTADO_MENU:
+                    dibujarMenuConSprites(hdcMem, hwnd, &estadoJuego);
+                    break;
+                    
+                case ESTADO_SELECCION_MAPA:
+                    dibujarSeleccionMapa(hdcMem, hwnd, &estadoJuego);
+                    break;
+                    
+                case ESTADO_PARTIDA:
+                    // 1. EL FONDO
+                    dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto, estadoJuego.frameTienda);
+                    dibujarTesoros(hdcMem, miCamara, ancho, alto); 
+                    
+                    // 2. ESTRUCTURAS FIJAS
+                    dibujarMina(hdcMem, miCamara); 
+                    dibujarMinas(hdcMem, miCamara, ancho, alto); 
+                    actualizarYDibujarParticulas(hdcMem, miCamara);
+                    dibujarEstablo(hdcMem, miCamara);
+                    
+                    // 3. OBJETOS INTERACTIVOS
+                    dibujarArboles(hdcMem, miCamara, ancho, alto); 
+                    
+                    DibujarImagen(hdcMem, hBmpEstablo, 
+                          (ESTABLO_X - miCamara.x) * miCamara.zoom, 
+                          (ESTABLO_Y - miCamara.y) * miCamara.zoom, 
+                          200 * miCamara.zoom, 200 * miCamara.zoom);
 
-        dibujarEstablo(hdcMem, miCamara);
-        
-        // 3. OBJETOS INTERACTIVOS
-        dibujarArboles(hdcMem, miCamara, ancho, alto); 
-        
-        // (Dibujo manual del establo si no usas la función de arriba)
-        DibujarImagen(hdcMem, hBmpEstablo, 
-              (ESTABLO_X - miCamara.x) * miCamara.zoom, 
-              (ESTABLO_Y - miCamara.y) * miCamara.zoom, 
-              200 * miCamara.zoom, 200 * miCamara.zoom);
+                    dibujarVacas(hdcMem, miCamara, ancho, alto);
+                    dibujarUnidades(hdcMem, miCamara);
+                    dibujarJugador(hdcMem, miJugador, miCamara);
+                    actualizarYDibujarTextos(hdcMem, miCamara);
 
-        dibujarVacas(hdcMem, miCamara, ancho, alto);
-        dibujarUnidades(hdcMem, miCamara);
-        dibujarJugador(hdcMem, miJugador, miCamara);
-        actualizarYDibujarTextos(hdcMem, miCamara);
+                    // 4. INTERFAZ
+                    dibujarHUD(hdcMem, &miJugador, ancho, alto);
+                    break;
+            }
 
-        // 5. INTERFAZ
-        dibujarHUD(hdcMem, &miJugador, ancho, alto);
-    }
+            // Copiar todo el dibujo procesado de golpe a la pantalla
+            BitBlt(hdc, 0, 0, ancho, alto, hdcMem, 0, 0, SRCCOPY);
 
-    // Copiar todo el dibujo procesado de golpe a la pantalla
-    BitBlt(hdc, 0, 0, ancho, alto, hdcMem, 0, 0, SRCCOPY);
-
-    // Limpieza
-    SelectObject(hdcMem, hbmOld); 
-    DeleteObject(hbmMem); 
-    DeleteDC(hdcMem);
-    
-    EndPaint(hwnd, &ps);
-    return 0;
-}
+            // Limpieza
+            SelectObject(hdcMem, hbmOld); 
+            DeleteObject(hbmMem); 
+            DeleteDC(hdcMem);
+            
+            EndPaint(hwnd, &ps);
+            return 0;
+        }
         default: return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
     
@@ -226,25 +266,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     for(int i=0; i<8; i++) if(!hBmpVaca[i]) vacasFaltan++;
     if(vacasFaltan > 0) MessageBox(NULL, "Faltan imágenes de vacas en assets/animales/", "Error Recursos", MB_OK);
 
-    // Inicializar lógica
-    inicializarJuego(&miJugador, &estadoJuego, mapaMundo);
-    
-    // CORRECCIÓN: Llamadas sin argumentos o con los correctos
-    inicializarVacas();           
-    inicializarArboles(mapaMundo);
-    inicializarMinas(mapaMundo);
-    inicializarTesoros(); 
-    inicializarUnidades();
-miJugador.nivelMochila = 1;
-miJugador.cantMineros = 0;
-miJugador.cantLenadores = 0;
-miJugador.cantCazadores = 0;
-miJugador.tienePico = FALSE;
-miJugador.tieneHacha = FALSE;
-miJugador.tieneEspada = FALSE;
+    // Estado inicial del juego
+    estadoJuego.estadoActual = ESTADO_MENU;
+    estadoJuego.opcionSeleccionada = 0;  // Por defecto selecciona el primer mapa
+    estadoJuego.mapaSeleccionado = MAPA_ISLAS_OCEANO;
+    estadoJuego.frameTienda = 0;
 
+    // NOTA: No inicializamos el juego aquí todavía, solo cuando se selecciona un mapa
+    
     miCamara.zoom = 3;  
-    actualizarCamara(&miCamara, miJugador);
 
     ShowWindow(hwnd, SW_MAXIMIZE); 
     UpdateWindow(hwnd);   
@@ -257,10 +287,11 @@ miJugador.tieneEspada = FALSE;
             DispatchMessage(&msg);
         } 
         else {
-            if (estadoJuego.enPartida) {
-                // CORRECCIÓN: Pasar el mapa a actualizarVacas
+            if (estadoJuego.estadoActual == ESTADO_PARTIDA) {
+                // Actualizar sistemas del juego
                 actualizarVacas(mapaMundo); 
-                actualizarLogicaSistema(); // <--- Esta función debe estar en sistema.c
+                actualizarLogicaSistema();
+                actualizarUnidades(mapaMundo, &miJugador);
                 
                 // Animación tienda
                 static int timerGato = 0;

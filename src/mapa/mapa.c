@@ -29,19 +29,22 @@ extern Unidad unidades[MAX_UNIDADES]; // <--- NECESARIO PARA crearUnidadEnMapa
 
 #define MARGEN_ESTABLO 100 // El radio de la "cerca"
 
-// --- INICIALIZACIÓN ---
-void inicializarIslas()
+// --- INICIALIZACIÓN DE ISLAS (MODIFICADA) ---
+void inicializarIslas(int mapaId)
 {
     for (int i = 0; i < MAX_ISLAS; i++)
         misIslas[i].activa = 0;
 
+    // Los 3 mapas usarán la misma configuración por ahora
+    // (Puedes cambiar las posiciones después para cada mapa)
+    
     // ISLA CENTRAL (Grande)
     misIslas[0].activa = 1;
     misIslas[0].x = 1100;
     misIslas[0].y = 1100;
     misIslas[0].ancho = 1000;
     misIslas[0].alto = 1000;
-    misIslas[0].margen = 0; // YA NO NECESITAMOS MARGEN MANUAL, LO LEE DE LA IMAGEN
+    misIslas[0].margen = 0;
 
     // ISLA NORTE
     misIslas[1].activa = 1;
@@ -218,12 +221,15 @@ void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
         generarColisionDesdeImagen(mapa, hBmpIslaSec3, misIslas[4].x, misIslas[4].y);
 }
 
-void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
+void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId)
 {
-    inicializarIslas();
+    inicializarIslas(mapaId);
     inicializarMapa(mapa);
-    inicializarArboles(mapa); // Luego plantamos los árboles
+    inicializarArboles(mapa);
     inicializarVacas();
+    inicializarMinas(mapa);
+    inicializarTesoros(); 
+    inicializarUnidades();
 
     jugador->x = 1600;
     jugador->y = 1600;
@@ -237,14 +243,39 @@ void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FIL
     jugador->experienciaSiguienteNivel = 100;
     jugador->nivelMochila = 1;
     jugador->modoTienda = 0;
+    
+    // Inicialización de inventario y recursos
+    jugador->inventarioAbierto = 0;
+    jugador->tieneEspada = 0;
+    jugador->tienePico = 0;
+    jugador->tieneArmadura = 0;
+    jugador->tieneHacha = FALSE;
+    jugador->armaduraEquipada = 0;
+    jugador->madera = 0;
+    jugador->piedra = 0;
+    jugador->oro = 0;
+    jugador->hierro = 0;
+    jugador->comida = 0;
+    jugador->hojas = 0;
+    jugador->carne = 0;
+    
+    // Inicialización de contadores de unidades
+    jugador->cantMineros = 0;
+    jugador->cantLenadores = 0;
+    jugador->cantCazadores = 0;
+    jugador->cantSoldados = 0;
+    jugador->cantHachas = 0;
+    
+    jugador->direccion = DIR_ABAJO;
+    jugador->frameAnim = 0;
+    jugador->pasoAnimacion = 0;
+    jugador->frameDestello = 0;
 
-    // Configuración inicial
-    estado->enPartida = 0;
-    estado->mostrarMenu = 1;
-    estado->opcionSeleccionada = -1;
+    // Configuración inicial del estado
+    estado->estadoActual = ESTADO_PARTIDA;
+    estado->mapaSeleccionado = mapaId;
     estado->frameTienda = 0;
 }
-
 // --- FÍSICA Y MOVIMIENTO ---
 int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
 {
@@ -401,6 +432,193 @@ void actualizarPuntoMenu(EstadoJuego *estado, int x, int y, HWND hwnd)
         estado->opcionSeleccionada = 3;
 }
 
+// --- DIBUJADO DE SELECCIÓN DE MAPA ---
+void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
+{
+    RECT rect;
+    GetClientRect(hwnd, &rect);
+    int ancho = rect.right;
+    int alto = rect.bottom;
+
+    // 1. Fondo de selección de mapa
+    if (hBmpFondoSeleccionMapa)
+    {
+        BITMAP bm;
+        GetObject(hBmpFondoSeleccionMapa, sizeof(BITMAP), &bm);
+        HDC hdcMem = CreateCompatibleDC(hdc);
+        SelectObject(hdcMem, hBmpFondoSeleccionMapa);
+        SetStretchBltMode(hdc, HALFTONE);
+        StretchBlt(hdc, 0, 0, ancho, alto, hdcMem, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
+        DeleteDC(hdcMem);
+    }
+    else
+    {
+        // Fondo por defecto
+        HBRUSH fondo = CreateSolidBrush(RGB(30, 30, 50));
+        FillRect(hdc, &rect, fondo);
+        DeleteObject(fondo);
+    }
+
+    // 2. Título
+    SetBkMode(hdc, TRANSPARENT);
+    SetTextColor(hdc, RGB(255, 215, 0));
+    
+    HFONT hTitulo = CreateFont(48, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+                              DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
+                              CLEARTYPE_QUALITY, VARIABLE_PITCH, "Arial");
+    HFONT hOldFont = (HFONT)SelectObject(hdc, hTitulo);
+    
+    TextOut(hdc, ancho/2 - 150, 50, "SELECCIONA UN MAPA", 19);
+    
+    SelectObject(hdc, hOldFont);
+    DeleteObject(hTitulo);
+
+    // 3. Configuración de los cuadros
+    int cuadroAncho = 300;   // Ancho de tus cuadros
+    int cuadroAlto = 200;    // Alto de tus cuadros
+    int separacion = 50;     // Espacio entre cuadros
+    int totalAncho = (cuadroAncho * 3) + (separacion * 2);
+    int startX = (ancho - totalAncho) / 2;
+    int startY = alto / 2 - 100;
+
+    // 4. Dibujar los 3 cuadros
+    for (int i = 0; i < 3; i++)
+    {
+        int posX = startX + (i * (cuadroAncho + separacion));
+        int posY = startY;
+        
+        // --- DIBUJAR EL CUADRO COMPLETO SEGÚN EL ESTADO ---
+        HBITMAP cuadroADibujar = NULL;
+        
+        if (estado->opcionSeleccionada == i)
+        {
+            // Cuadro seleccionado
+            switch(i)
+            {
+                case 0: cuadroADibujar = hBmpCuadroMapa1Sel; break;
+                case 1: cuadroADibujar = hBmpCuadroMapa2Sel; break;
+                case 2: cuadroADibujar = hBmpCuadroMapa3Sel; break;
+            }
+        }
+        else
+        {
+            // Cuadro normal
+            switch(i)
+            {
+                case 0: cuadroADibujar = hBmpCuadroMapa1Normal; break;
+                case 1: cuadroADibujar = hBmpCuadroMapa2Normal; break;
+                case 2: cuadroADibujar = hBmpCuadroMapa3Normal; break;
+            }
+        }
+        
+        // Dibujar el cuadro completo
+        if (cuadroADibujar != NULL)
+        {
+            // Dibujar el cuadro con su tamaño original
+            DibujarImagen(hdc, cuadroADibujar, posX, posY, cuadroAncho, cuadroAlto);
+        }
+        else
+        {
+            // Placeholder si no hay imagen del cuadro
+            HBRUSH placeholder;
+            if (estado->opcionSeleccionada == i)
+            {
+                placeholder = CreateSolidBrush(RGB(100, 200, 100)); // Verde para seleccionado
+            }
+            else
+            {
+                placeholder = CreateSolidBrush(RGB(100, 100, 150)); // Azul para normal
+            }
+            
+            RECT cuadroRect = {posX, posY, posX + cuadroAncho, posY + cuadroAlto};
+            FillRect(hdc, &cuadroRect, placeholder);
+            DeleteObject(placeholder);
+            
+            // Dibujar borde
+            HPEN borderPen = CreatePen(PS_SOLID, 2, 
+                (estado->opcionSeleccionada == i) ? RGB(255, 215, 0) : RGB(150, 150, 150));
+            HPEN oldPen = (HPEN)SelectObject(hdc, borderPen);
+            HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, GetStockObject(NULL_BRUSH));
+            Rectangle(hdc, posX, posY, posX + cuadroAncho, posY + cuadroAlto);
+            SelectObject(hdc, oldPen);
+            SelectObject(hdc, oldBrush);
+            DeleteObject(borderPen);
+            
+            // Texto "Mapa X"
+            SetTextColor(hdc, RGB(255, 255, 255));
+            char textoMapa[20];
+            sprintf(textoMapa, "Mapa %d", i + 1);
+            TextOut(hdc, posX + cuadroAncho/2 - 30, posY + cuadroAlto/2 - 10, textoMapa, strlen(textoMapa));
+        }
+
+        // 5. Nombre del mapa (debajo del cuadro)
+        SetTextColor(hdc, RGB(255, 255, 255));
+        char nombreMapa[50];
+        
+        switch(i)
+        {
+            case 0:
+                sprintf(nombreMapa, "MAPA 1: Isla Barbara");
+                break;
+            case 1:
+                sprintf(nombreMapa, "MAPA 2: Isla Andrea");
+                break;
+            case 2:
+                sprintf(nombreMapa, "MAPA 3: Isla Samuel");
+                break;
+        }
+        
+        // Centrar el nombre debajo del cuadro
+        int textoAncho = strlen(nombreMapa) * 8; // Aproximación del ancho del texto
+        TextOut(hdc, posX + (cuadroAncho - textoAncho)/2, posY + cuadroAlto + 10, nombreMapa, strlen(nombreMapa));
+        
+        // 6. Indicador "SELECCIONADO" (opcional, si no está en tu sprite)
+        if (estado->opcionSeleccionada == i)
+        {
+            SetTextColor(hdc, RGB(255, 215, 0));
+            TextOut(hdc, posX + cuadroAncho/2 - 40, posY + cuadroAlto + 30, "SELECCIONADO", 12);
+        }
+    }
+
+    // 7. Instrucciones
+    SetTextColor(hdc, RGB(200, 200, 200));
+    TextOut(hdc, ancho/2 - 100, alto - 100, "Haz clic en un mapa para seleccionarlo", 38);
+    TextOut(hdc, ancho/2 - 80, alto - 70, "ENTER para confirmar", 21);
+    TextOut(hdc, ancho/2 - 80, alto - 40, "ESC para volver al menú", 23);
+}
+
+// --- PROCESAR CLIC EN SELECCIÓN DE MAPA ---
+void procesarClickSeleccionMapa(int x, int y, HWND hwnd, EstadoJuego *estado)
+{
+    RECT rc;
+    GetClientRect(hwnd, &rc);
+    int ancho = rc.right;
+    int alto = rc.bottom;
+
+    // Configuración de los cuadros (DEBE COINCIDIR con dibujarSeleccionMapa)
+    int cuadroAncho = 300;
+    int cuadroAlto = 200;
+    int separacion = 50;
+    int totalAncho = (cuadroAncho * 3) + (separacion * 2);
+    int startX = (ancho - totalAncho) / 2;
+    int startY = alto / 2 - 100;
+
+    // Verificar clic en cada cuadro
+    for (int i = 0; i < 3; i++)
+    {
+        int posX = startX + (i * (cuadroAncho + separacion));
+        int posY = startY;
+        
+        if (x >= posX && x <= posX + cuadroAncho && 
+            y >= posY && y <= posY + cuadroAlto)
+        {
+            estado->opcionSeleccionada = i;
+            InvalidateRect(hwnd, NULL, TRUE);
+            return;
+        }
+    }
+}
+
 void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
 {
     actualizarPuntoMenu(estado, x, y, hwnd);
@@ -408,17 +626,17 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
     {
         switch (estado->opcionSeleccionada)
         {
-        case 0:
-            estado->mostrarMenu = 0;
-            estado->enPartida = 1;
+        case 0: // JUGAR
+            estado->estadoActual = ESTADO_SELECCION_MAPA;
+            estado->opcionSeleccionada = 0; // Seleccionar primer mapa por defecto
             break;
-        case 1:
+        case 1: // PARTIDAS
             MessageBox(hwnd, "Guardado no disponible aun.", "Partidas", MB_OK);
             break;
-        case 2:
+        case 2: // INSTRUCCIONES
             MessageBox(hwnd, "WASD para moverte.", "Ayuda", MB_OK);
             break;
-        case 3:
+        case 3: // SALIR
             PostQuitMessage(0);
             return;
         }
@@ -428,10 +646,10 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
 
 void procesarEnterMenu(HWND hwnd, EstadoJuego *estado)
 {
-    if (estado->mostrarMenu)
+    if (estado->estadoActual == ESTADO_MENU && estado->opcionSeleccionada == 0)
     {
-        estado->mostrarMenu = 0;
-        estado->enPartida = 1;
+        estado->estadoActual = ESTADO_SELECCION_MAPA;
+        estado->opcionSeleccionada = 0; // Seleccionar primer mapa por defecto
         InvalidateRect(hwnd, NULL, TRUE);
     }
 }
