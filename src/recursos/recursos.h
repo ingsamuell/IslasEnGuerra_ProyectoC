@@ -70,6 +70,25 @@ extern HBITMAP hBmpMina;
 extern HBITMAP hBmpEstablo;
 extern HBITMAP hBmpHierroPicar;
 extern HBITMAP hBmpPiedraPicar;
+// Variables para mapas adicionales
+extern HBITMAP hBmpIslaGrandeMapa2;
+extern HBITMAP hBmpIslaSec1Mapa2;
+extern HBITMAP hBmpIslaSec2Mapa2;
+extern HBITMAP hBmpIslaSec3Mapa2;
+extern HBITMAP hBmpIslaSec4Mapa2;
+
+extern HBITMAP hBmpIslaGrandeMapa3;
+extern HBITMAP hBmpIslaSec1Mapa3;
+extern HBITMAP hBmpIslaSec2Mapa3;
+extern HBITMAP hBmpIslaSec3Mapa3;
+extern HBITMAP hBmpIslaSec4Mapa3;
+
+// Nuevos árboles y establos para cada mapa
+extern HBITMAP hBmpArbolChicoMapa2;
+extern HBITMAP hBmpArbolGrandeMapa2;
+
+extern HBITMAP hBmpArbolChicoMapa3;
+extern HBITMAP hBmpArbolGrandeMapa3;
 
 // 6. SELECCIÓN DE MAPA (NUEVO)
 extern HBITMAP hBmpFondoSeleccionMapa;

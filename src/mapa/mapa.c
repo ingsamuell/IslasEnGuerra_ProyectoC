@@ -7,6 +7,42 @@
 #include <math.h>     // Necesario para calcular distancias de ataque
 #include <stdbool.h>
 
+// Función para obtener la imagen correcta de isla según el mapa seleccionado
+HBITMAP obtenerImagenIsla(int indiceIsla, int mapaId) {
+    switch(mapaId) {
+        case 0: // MAPA 1 (original)
+            switch(indiceIsla) {
+                case 0: return hBmpIslaGrande;
+                case 1: return hBmpIslaSec2;
+                case 2: return hBmpIslaSec4;
+                case 3: return hBmpIslaSec1;
+                case 4: return hBmpIslaSec3;
+            }
+            break;
+            
+        case 1: // MAPA 2
+            switch(indiceIsla) {
+                case 0: return hBmpIslaGrandeMapa2;
+                case 1: return hBmpIslaSec2Mapa2;
+                case 2: return hBmpIslaSec4Mapa2;
+                case 3: return hBmpIslaSec1Mapa2;
+                case 4: return hBmpIslaSec3Mapa2;
+            }
+            break;
+            
+        case 2: // MAPA 3
+            switch(indiceIsla) {
+                case 0: return hBmpIslaGrandeMapa3;
+                case 1: return hBmpIslaSec2Mapa3;
+                case 2: return hBmpIslaSec4Mapa3;
+                case 3: return hBmpIslaSec1Mapa3;
+                case 4: return hBmpIslaSec3Mapa3;
+            }
+            break;
+    }
+    return NULL;
+}
+
 // Referencia a las imágenes cargadas en recursos.c
 extern HBITMAP hBmpVaca[8];
 // Estado interno de las vacas
@@ -35,8 +71,8 @@ void inicializarIslas(int mapaId)
     for (int i = 0; i < MAX_ISLAS; i++)
         misIslas[i].activa = 0;
 
-    // Los 3 mapas usarán la misma configuración por ahora
-    // (Puedes cambiar las posiciones después para cada mapa)
+    // MANTENEMOS LAS MISMAS POSICIONES para todos los mapas
+    // Solo cambiarán las imágenes
     
     // ISLA CENTRAL (Grande)
     misIslas[0].activa = 1;
@@ -1212,19 +1248,16 @@ void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto)
     }
 }
 
-void dibujarEstablo(HDC hdc, Camera cam) {
-    // Si cam.x y cam.y son 0 al inicio, lo verás en la coordenada 500 de la pantalla
+void dibujarEstablo(HDC hdc, Camera cam) {  // Quitar el parámetro mapaId
     int screenX = (int)((ESTABLO_X - cam.x) * cam.zoom);
     int screenY = (int)((ESTABLO_Y - cam.y) * cam.zoom);
-    int tam = (int)(200 * cam.zoom); 
+    int tam = (int)(200 * cam.zoom);
 
     if (hBmpEstablo != NULL) {
         DibujarImagen(hdc, hBmpEstablo, screenX, screenY, tam, tam);
-    } else {
-        // Si no ves la imagen, esto dibujará un cuadro para confirmar que el código pasa por aquí
-        Rectangle(hdc, screenX, screenY, screenX + tam, screenY + tam);
     }
 }
+
 // 1. INICIALIZAR ÁRBOLES (Aleatorio inteligente)
 void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     int contador = 0;
@@ -1288,8 +1321,8 @@ void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     }
 }
 
-// 2. DIBUJAR ÁRBOLES
-void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto)
+// 2. DIBUJAR ÁRBOLES (Con selección de imagen por mapa)
+void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto, int mapaId)
 {
     for (int i = 0; i < MAX_ARBOLES; i++)
     {
@@ -1308,7 +1341,21 @@ void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto)
         // Optimización: Solo dibujar si está en pantalla
         if (sx > -tamBase && sx < ancho && sy > -tamBase && sy < alto)
         {
-            HBITMAP img = (misArboles[i].tipo == 1) ? hBmpArbolGrande : hBmpArbolChico;
+            HBITMAP img = NULL;
+            
+            // SELECCIONAR IMAGEN SEGÚN MAPA
+            switch(mapaId) {
+                case 0: // Mapa 1
+                    img = (misArboles[i].tipo == 1) ? hBmpArbolGrande : hBmpArbolChico;
+                    break;
+                case 1: // Mapa 2
+                    img = (misArboles[i].tipo == 1) ? hBmpArbolGrandeMapa2 : hBmpArbolChicoMapa2;
+                    break;
+                case 2: // Mapa 3
+                    img = (misArboles[i].tipo == 1) ? hBmpArbolGrandeMapa3 : hBmpArbolChicoMapa3;
+                    break;
+            }
+            
             if (img)
                 DibujarImagen(hdc, img, sx, sy, tamBase, tamBase);
         }
@@ -1938,7 +1985,7 @@ void dibujarJugador(HDC hdc, Jugador jugador, Camera cam)
     }
 }
 // --- DIBUJADO PRINCIPAL (MAPA + HUD) ---
-void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda)
+void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda, int mapaId)
 {
     // 1. FONDO DE AGUA (Primero de todo, para que sea la base)
     HBRUSH agua = CreateSolidBrush(RGB(0, 100, 180));
@@ -1946,7 +1993,7 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
     FillRect(hdc, &r, agua);
     DeleteObject(agua);
 
-    // 2. DIBUJAR LAS 5 ISLAS
+    // 2. DIBUJAR LAS 5 ISLAS (MODIFICADO)
     for (int i = 0; i < MAX_ISLAS; i++)
     {
         if (!misIslas[i].activa)
@@ -1957,25 +2004,8 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
         int sw = misIslas[i].ancho * cam.zoom;
         int sh = misIslas[i].alto * cam.zoom;
 
-        HBITMAP img = NULL;
-        switch (i)
-        {
-        case 0:
-            img = hBmpIslaGrande;
-            break;
-        case 1:
-            img = hBmpIslaSec2;
-            break;
-        case 2:
-            img = hBmpIslaSec4;
-            break;
-        case 3:
-            img = hBmpIslaSec1;
-            break;
-        case 4:
-            img = hBmpIslaSec3;
-            break;
-        }
+        // USAR LA FUNCIÓN AUXILIAR para obtener imagen según mapa
+        HBITMAP img = obtenerImagenIsla(i, mapaId);
 
         if (img)
             DibujarImagen(hdc, img, sx, sy, sw, sh);
@@ -1983,7 +2013,7 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
 
     // 3. DIBUJAR LAS VACAS (Encima de las islas, debajo de la tienda/HUD)
     dibujarVacas(hdc, cam, ancho, alto);
-    dibujarArboles(hdc, cam, ancho, alto);
+    dibujarArboles(hdc, cam, ancho, alto, mapaId); 
     dibujarTiendasEnIslas(hdc, cam, ancho, alto, frameTienda);
 
     // --- DEBUG VISUAL (Opcional: Descomentar para ver la rejilla generada por la imagen) ---

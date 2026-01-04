@@ -197,7 +197,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     
                 case ESTADO_PARTIDA:
                     // 1. EL FONDO
-                    dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto, estadoJuego.frameTienda);
+                    dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto, estadoJuego.frameTienda, estadoJuego.mapaSeleccionado);
                     dibujarTesoros(hdcMem, miCamara, ancho, alto); 
                     
                     // 2. ESTRUCTURAS FIJAS
@@ -207,7 +207,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     dibujarEstablo(hdcMem, miCamara);
                     
                     // 3. OBJETOS INTERACTIVOS
-                    dibujarArboles(hdcMem, miCamara, ancho, alto); 
+                    //dibujarArboles(hdcMem, miCamara, ancho, alto, estadoJuego.mapaSeleccionado);
                     
                     DibujarImagen(hdcMem, hBmpEstablo, 
                           (ESTABLO_X - miCamara.x) * miCamara.zoom, 

@@ -54,6 +54,24 @@ HBITMAP hBmpMina = NULL; // Declaración global al inicio del archivo
 HBITMAP hBmpEstablo = NULL;
 HBITMAP hBmpHierroPicar, hBmpPiedraPicar;
 
+// MAPA 2
+HBITMAP hBmpIslaGrandeMapa2 = NULL;
+HBITMAP hBmpIslaSec1Mapa2 = NULL;
+HBITMAP hBmpIslaSec2Mapa2 = NULL;
+HBITMAP hBmpIslaSec3Mapa2 = NULL;
+HBITMAP hBmpIslaSec4Mapa2 = NULL;
+HBITMAP hBmpArbolChicoMapa2 = NULL;
+HBITMAP hBmpArbolGrandeMapa2 = NULL;
+
+// MAPA 3
+HBITMAP hBmpIslaGrandeMapa3 = NULL;
+HBITMAP hBmpIslaSec1Mapa3 = NULL;
+HBITMAP hBmpIslaSec2Mapa3 = NULL;
+HBITMAP hBmpIslaSec3Mapa3 = NULL;
+HBITMAP hBmpIslaSec4Mapa3 = NULL;
+HBITMAP hBmpArbolChicoMapa3 = NULL;
+HBITMAP hBmpArbolGrandeMapa3 = NULL;
+
 // --- VARIABLES FALTANTES (AGREGADAS) ---
 HBITMAP hBmpArbolChico = NULL;  // Antes hBmpArbol
 HBITMAP hBmpArbolGrande = NULL; 
@@ -192,7 +210,24 @@ void CargarRecursos() {
 	hBmpPiedraPicar = (HBITMAP)LoadImage(NULL, "assets/mundo/Piedra-picar.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
     hBmpMina = CargarImagen("assets/mundo/Mina-cueva.bmp"); 
 
-    
+    // MAPA 2
+    hBmpIslaGrandeMapa2 = CargarImagen("assets/mundo/Isla_grande_mapa2.bmp");
+    hBmpIslaSec1Mapa2 = CargarImagen("assets/mundo/islasecundaria_UNO_mapa2.bmp");
+    hBmpIslaSec2Mapa2 = CargarImagen("assets/mundo/islasecundaria_DOS_mapa2.bmp");
+    hBmpIslaSec3Mapa2 = CargarImagen("assets/mundo/islasecundaria_TRES_mapa2.bmp");
+    hBmpIslaSec4Mapa2 = CargarImagen("assets/mundo/islasecundaria_CUATRO_mapa2.bmp");
+    hBmpArbolChicoMapa2 = CargarImagen("assets/mundo/Arbol_islaUno_mapa2.bmp");
+    hBmpArbolGrandeMapa2 = CargarImagen("assets/mundo/Arbolgrande_islaUno_mapa2.bmp");
+
+    // MAPA 3
+    hBmpIslaGrandeMapa3 = CargarImagen("assets/mundo/Isla_grande_mapa3.bmp");
+    hBmpIslaSec1Mapa3 = CargarImagen("assets/mundo/islasecundaria_UNO_mapa3.bmp");
+    hBmpIslaSec2Mapa3 = CargarImagen("assets/mundo/islasecundaria_DOS_mapa3.bmp");
+    hBmpIslaSec3Mapa3 = CargarImagen("assets/mundo/islasecundaria_TRES_mapa3.bmp");
+    hBmpIslaSec4Mapa3 = CargarImagen("assets/mundo/islasecundaria_CUATRO_mapa3.bmp");
+    hBmpArbolChicoMapa3 = CargarImagen("assets/mundo/Arbol_islaUno_mapa3.bmp");
+    hBmpArbolGrandeMapa3 = CargarImagen("assets/mundo/Arbolgrande_islaUno_mapa3.bmp");
+
     // --- TESOROS ---
     hBmpTesoroCerrado = CargarImagen("assets/mundo/tesoro-pixilart.bmp");
     hBmpTesoroOro     = CargarImagen("assets/mundo/tesoro-abierto-con-oro-pixilart.bmp");

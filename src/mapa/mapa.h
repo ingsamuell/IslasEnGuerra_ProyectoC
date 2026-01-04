@@ -21,7 +21,7 @@ void golpearVaca(Jugador *j);
 
 /* --- SISTEMA DE ÁRBOLES --- */
 void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
-void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto);
+void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto, int mapaId);
 void talarArbol(Jugador *j); 
 
 // Inicializa las minas en el mapa
@@ -59,7 +59,7 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j); // 
 void ordenarUnidad(int mouseX, int mouseY, Camera cam, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 
 /* --- DIBUJADO PRINCIPAL (Partida) --- */
-void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda);
+void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda, int mapaId);
 void dibujarJugador(HDC hdc, Jugador jugador, Camera camara);
 void dibujarHUD(HDC hdc, Jugador* jugador, int anchoVentana, int altoVentana);
 void dibujarTiendasEnIslas(HDC hdc, Camera cam, int ancho, int alto, int frameTienda);
