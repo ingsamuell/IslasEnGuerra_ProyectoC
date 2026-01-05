@@ -16,7 +16,7 @@ int mouseStartX, mouseStartY;   // Punto donde hiciste clic
 TextoFlotante textos[20];
 Arbol arboles[MAX_ARBOLES];
 Mina minas[MAX_MINAS];
-
+Particula particulas[MAX_PARTICULAS];
 TextoFlotante textos[MAX_TEXTOS];
 
 /* ========== PROCEDIMIENTO DE VENTANA ========== */
@@ -125,13 +125,16 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             if (estadoJuego.estadoActual == ESTADO_PARTIDA) {
                 int mX = LOWORD(lParam);
                 int mY = HIWORD(lParam);
+                // --- CORRECCIÓN: Calcular coordenadas de mundo aquí ---
+        float mundoX = (mX / miCamara.zoom) + miCamara.x;
+        float mundoY = (mY / miCamara.zoom) + miCamara.y;
                 
                 // 1. Procesar venta si la tienda está abierta
                 procesarClickMochilaTienda(mX, mY, 1, &miJugador, hwnd);
 
                 // 2. Dar orden a unidades seleccionadas (Movimiento o Caza)
-                ordenarUnidad(mX, mY, miCamara, mapaMundo);
-                
+				ordenarUnidad(mX, mY, miCamara);
+                crearChispas(mundoX, mundoY, RGB(0, 255, 0)); // Una chispa verde donde hiciste clic
                 InvalidateRect(hwnd, NULL, FALSE);
             }
             return 0;
@@ -318,6 +321,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 actualizarVacas(mapaMundo); 
                 actualizarLogicaSistema();
                 actualizarUnidades(mapaMundo, &miJugador);
+                actualizarRegeneracionRecursos(); // <--- Llamar aquí
                 
                 // Animación tienda
                 static int timerGato = 0;

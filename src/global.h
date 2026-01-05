@@ -68,14 +68,10 @@
 // Definición de la Cueva (Ubicación fija por ahora)
 #define CUEVA_X 1800
 #define CUEVA_Y 1250
-#ifndef TILE_ARBOL
-#define TILE_ARBOL 'A'
-#endif
-
-#ifndef TILE_MINA
-#define TILE_MINA 'M'
-#endif
-
+#define TIEMPO_RESPAWN_RECURSOS 1800  // 30 segundos si el juego corre a 60 FPS
+// Vida inicial de los recursos
+#define VIDA_INICIAL_ARBOL 5
+#define VIDA_INICIAL_MINA 10
 #define MAX_UNIDADES 100   // Aumentamos capacidad
 
 
@@ -178,6 +174,7 @@ typedef struct {
     int vida;           // 5 golpes
     int estadoVida;         // 0 = Viva, 1 = Muerta
     int tiempoMuerte;   // Contador para desaparecer (5 segundos)
+    int timerRegeneracion; // <--- NUEVO: Contador de tiempo para reaparecer
 } Vaca;
 
 // --- ESTRUCTURA DE ÁRBOL ---
@@ -187,6 +184,7 @@ typedef struct {
     int tipo;   // 0 = Árbol Chico, 1 = Árbol Grande
     int activa; // 1 = Existe
     int vida;   // <--- NUEVO: Vida del árbol (5 golpes)
+    int timerRegeneracion; // <--- NUEVO: Contador de tiempo para reaparecer
 } Arbol;
 typedef struct {
     float x, y;

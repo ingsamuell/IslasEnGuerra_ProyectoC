@@ -109,6 +109,7 @@ extern Arbol arboles[MAX_ARBOLES];
 extern Mina minas[MAX_MINAS];
 extern Vaca manada[MAX_VACAS];
 extern Unidad unidades[MAX_UNIDADES];
+extern Particula particulas[MAX_PARTICULAS];
 
 // --- FUNCIONES ---
 void CargarRecursos();

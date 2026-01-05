@@ -912,43 +912,47 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
     for (int i = 0; i < MAX_UNIDADES; i++) {
         if (!unidades[i].activa) continue;
 
-        // 1. CALCULAR DISTANCIA AL DESTINO
-float dx = unidades[i].destinoX - unidades[i].x;
-float dy = unidades[i].destinoY - unidades[i].y;
-float dist = sqrt(dx*dx + dy*dy);
+        // Calcular distancia al objetivo
+        float dx = unidades[i].destinoX - unidades[i].x;
+        float dy = unidades[i].destinoY - unidades[i].y;
+        float dist = sqrt(dx * dx + dy * dy);
 
-if (unidades[i].estado == ESTADO_TALANDO || unidades[i].estado == ESTADO_MINANDO) {
-    if (dist > 30.0f) { // Todavía no llega al árbol/mina
-        unidades[i].x += (dx / dist) * 2.0f;
-        unidades[i].y += (dy / dist) * 2.0f;
-        actualizarAnimacionUnidad(&unidades[i], dx, dy);
-    } else {
-        // ¡ESTÁ CERCA! Empezar a trabajar
-        unidades[i].timerTrabajo++;
-        
-        int limite = (unidades[i].estado == ESTADO_TALANDO) ? 250 : 400;
-        
-        if (unidades[i].timerTrabajo >= limite) {
-            unidades[i].timerTrabajo = 0;
-            if (unidades[i].estado == ESTADO_TALANDO) {
-                j->madera += 10;
-                crearTextoFlotante(unidades[i].x, unidades[i].y, "Madera", 10, RGB(139, 69, 19));
-            } else {
-                j->hierro += 5;
-                crearTextoFlotante(unidades[i].x, unidades[i].y, "Hierro", 5, RGB(192, 192, 192));
-            }
-        }
-    }
-}
-        // 3. LÓGICA DE CAZA
-        else if (unidades[i].estado == ESTADO_CAZANDO) {
-            int v = unidades[i].targetIndex;
-            if (v != -1 && manada[v].activa && manada[v].estadoVida == 0) {
+        switch (unidades[i].estado) {
+            
+			case ESTADO_TALANDO:
+            case ESTADO_MINANDO:
+                if (dist > 45.0f) { // Se detiene a 45px del centro del recurso
+                    unidades[i].x += (dx / dist) * 2.0f;
+                    unidades[i].y += (dy / dist) * 2.0f;
+                    actualizarAnimacionUnidad(&unidades[i], dx, dy);
+                } else {
+                    unidades[i].timerTrabajo++;
+                    int limite = (unidades[i].estado == ESTADO_TALANDO) ? 250 : 400;
+                    
+                    if (unidades[i].timerTrabajo >= limite) {
+                        unidades[i].timerTrabajo = 0;
+                        if (unidades[i].estado == ESTADO_TALANDO) j->madera += 10;
+                        else j->hierro += 5;
+                        crearTextoFlotante(unidades[i].x, unidades[i].y, "+Recurso", 1, RGB(255, 255, 255));
+                    }
+                }
+                break;
+
+            case ESTADO_CAZANDO: {
+                int v = unidades[i].targetIndex;
+                if (v == -1 || !manada[v].activa || manada[v].estadoVida != 0) {
+                    // Si la vaca muere, intentar buscar otra automáticamente
+                    int proxima = buscarVacaCercana(unidades[i].x, unidades[i].y, 500.0f);
+                    if (proxima != -1) { unidades[i].targetIndex = proxima; }
+                    else { unidades[i].estado = ESTADO_IDLE; }
+                    break;
+                }
+
                 float dvx = manada[v].x - unidades[i].x;
                 float dvy = manada[v].y - unidades[i].y;
-                float distVaca = sqrt(dvx*dvx + dvy*dvy);
+                float distVaca = sqrt(dvx * dvx + dvy * dvy);
 
-                if (distVaca > 40.0f) {
+                if (distVaca > 35.0f) {
                     unidades[i].x += (dvx / distVaca) * 2.0f;
                     unidades[i].y += (dvy / distVaca) * 2.0f;
                     actualizarAnimacionUnidad(&unidades[i], dvx, dvy);
@@ -957,30 +961,23 @@ if (unidades[i].estado == ESTADO_TALANDO || unidades[i].estado == ESTADO_MINANDO
                     if (unidades[i].timerTrabajo >= 300) {
                         manada[v].estadoVida = 1;
                         j->comida += 15;
-                        crearTextoFlotante(manada[v].x, manada[v].y, "Comida", 15, RGB(255, 200, 0));
+                        crearTextoFlotante(manada[v].x, manada[v].y, "+15 Comida", 1, RGB(255, 200, 0));
                         unidades[i].timerTrabajo = 0;
-                        unidades[i].estado = ESTADO_IDLE;
+                        unidades[i].targetIndex = -1; 
                     }
                 }
-            } else { unidades[i].estado = ESTADO_IDLE; }
-        }
-        // 4. MOVIMIENTO SIMPLE
-        else if (unidades[i].estado == ESTADO_MOVIENDO) {
-            if (dist > 5.0f) {
-                unidades[i].x += (dx / dist) * 2.2f;
-                unidades[i].y += (dy / dist) * 2.2f;
-                actualizarAnimacionUnidad(&unidades[i], dx, dy);
-            } else {
-                unidades[i].estado = ESTADO_IDLE;
+                break;
             }
-        }
-    }
 
-    // Actualizar textos (asegúrate de que esto esté dentro de la función)
-    for (int t = 0; t < 20; t++) {
-        if (textos[t].vida > 0) {
-            textos[t].y -= 0.7f;
-            textos[t].vida--;
+            case ESTADO_MOVIENDO:
+                if (dist > 5.0f) {
+                    unidades[i].x += (dx / dist) * 2.2f;
+                    unidades[i].y += (dy / dist) * 2.2f;
+                    actualizarAnimacionUnidad(&unidades[i], dx, dy);
+                } else {
+                    unidades[i].estado = ESTADO_IDLE;
+                }
+                break;
         }
     }
 }
@@ -999,60 +996,73 @@ void actualizarAnimacionUnidad(Unidad *u, float dx, float dy) {
 // 4. DIBUJAR (Nombres y Herramientas)
 void dibujarUnidades(HDC hdc, Camera cam) {
     for (int i = 0; i < MAX_UNIDADES; i++) {
-        if (!unidades[i].activa || unidades[i].estado == ESTADO_EN_CUEVA) continue;
+        if (!unidades[i].activa) continue;
 
-        int screenX = (int)((unidades[i].x - cam.x) * cam.zoom);
-        int screenY = (int)((unidades[i].y - cam.y) * cam.zoom);
-        int size = (int)(32 * cam.zoom); // Usamos 32 o TAMANO_CELDA
+        // 1. CALCULAR POSICIÓN EN PANTALLA
+        // Convertimos las coordenadas del mundo a coordenadas de píxeles en ventana
+        int ux = (int)((unidades[i].x - cam.x) * cam.zoom);
+        int uy = (int)((unidades[i].y - cam.y) * cam.zoom);
+        int tam = (int)(TAMANO_CELDA * cam.zoom);
 
-        // 1. Lógica de selección (DEBE IR FUERA DEL IF DE CAZA)
+        // 2. SELECCIONAR EL BITMAP CORRECTO (Animación)
+        HBITMAP hBmpActual = NULL;
+        switch (unidades[i].tipo) {
+            case TIPO_MINERO:  hBmpActual = hBmpMineroAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
+            case TIPO_LENADOR: hBmpActual = hBmpLenadorAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
+            case TIPO_CAZADOR: hBmpActual = hBmpCazadorAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
+            case TIPO_SOLDADO: hBmpActual = hBmpSoldadoAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
+            default:           hBmpActual = hBmpJugadorAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
+        }
+
+        // 3. DIBUJAR EL SPRITE DE LA UNIDAD
+        DibujarImagen(hdc, hBmpActual, ux, uy, tam, tam);
+
+        // 4. DIBUJAR CÍRCULO DE SELECCIÓN (Si está seleccionada)
         if (unidades[i].seleccionado) {
-            HPEN hPen = CreatePen(PS_SOLID, 2, RGB(0, 255, 0)); // Verde AoE
-            SelectObject(hdc, hPen);
-            SelectObject(hdc, GetStockObject(NULL_BRUSH)); 
-            
-            // Elipse en la base de la unidad
-            Ellipse(hdc, screenX, screenY + size - 8, screenX + size, screenY + size + 2);
+            HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 255, 0));
+            HGDIOBJ hOld = SelectObject(hdc, hPen);
+            SelectObject(hdc, GetStockObject(NULL_BRUSH));
+            // Dibujamos una elipse a los pies de la unidad
+            Ellipse(hdc, ux, uy + tam - (int)(10 * cam.zoom), ux + tam, uy + tam);
+            SelectObject(hdc, hOld);
             DeleteObject(hPen);
         }
 
-        // 2. Selección de Animación
-        HBITMAP (*anim)[3]; 
-        switch(unidades[i].tipo) {
-            case TIPO_MINERO:  anim = hBmpMineroAnim; break;
-            case TIPO_LENADOR: anim = hBmpLenadorAnim; break;
-            case TIPO_CAZADOR: anim = hBmpCazadorAnim; break;
-            case TIPO_SOLDADO: anim = hBmpSoldadoAnim; break;
-            default:           anim = hBmpJugadorAnim; break;
+        // 5. DIBUJAR BARRA DE PROGRESO DE TRABAJO
+        if (unidades[i].estado == ESTADO_TALANDO || 
+            unidades[i].estado == ESTADO_MINANDO || 
+            unidades[i].estado == ESTADO_CAZANDO) {
+
+            // Determinar el límite según la lógica de actualizarUnidades
+            int limite = 0;
+            if (unidades[i].estado == ESTADO_TALANDO) limite = 250;
+            else if (unidades[i].estado == ESTADO_MINANDO) limite = 400;
+            else if (unidades[i].estado == ESTADO_CAZANDO) limite = 300;
+
+            if (limite > 0) {
+                int barraAncho = (int)(20 * cam.zoom);
+                int barraAlto = (int)(3 * cam.zoom);
+                int bx = ux + (tam / 2) - (barraAncho / 2);
+                int by = uy - (int)(8 * cam.zoom); // Situada arriba de la cabeza
+
+                // Dibujar Fondo de la barra (Gris oscuro)
+                HBRUSH hBrushBg = CreateSolidBrush(RGB(50, 50, 50));
+                RECT rectBg = { bx, by, bx + barraAncho, by + barraAlto };
+                FillRect(hdc, &rectBg, hBrushBg);
+                DeleteObject(hBrushBg);
+
+                // Dibujar Progreso (Verde brillante)
+                float progreso = (float)unidades[i].timerTrabajo / limite;
+                int anchoActual = (int)(barraAncho * progreso);
+                
+                if (anchoActual > 0) {
+                    HBRUSH hBrushFill = CreateSolidBrush(RGB(0, 255, 100));
+                    RECT rectFill = { bx, by, bx + anchoActual, by + barraAlto };
+                    FillRect(hdc, &rectFill, hBrushFill);
+                    DeleteObject(hBrushFill);
+                }
+            }
         }
-
-        // 3. Dibujar Sprite
-        DibujarImagen(hdc, anim[unidades[i].direccion][unidades[i].frameAnim], 
-                      screenX, screenY, size, size);
-
-        // 4. Barra de Progreso de Trabajo (Caza/Minería)
-if (unidades[i].timerTrabajo > 0) {
-    int barraX = (int)((unidades[i].x - cam.x) * cam.zoom) - 10;
-    int barraY = (int)((unidades[i].y - cam.y) * cam.zoom) - 25;
-    
-    int maxTime = 1;
-    if (unidades[i].estado == ESTADO_TALANDO) maxTime = 250;
-    else if (unidades[i].estado == ESTADO_MINANDO) maxTime = 400;
-    else if (unidades[i].estado == ESTADO_CAZANDO) maxTime = 300;
-
-    int progreso = (unidades[i].timerTrabajo * 20) / maxTime;
-
-    // Fondo rojo, relleno verde
-    HBRUSH bg = CreateSolidBrush(RGB(100, 0, 0));
-    RECT r1 = {barraX, barraY, barraX + 20, barraY + 4};
-    FillRect(hdc, &r1, bg);
-    DeleteObject(bg);
-
-    HBRUSH fg = CreateSolidBrush(RGB(0, 255, 0));
-    RECT r2 = {barraX, barraY, barraX + progreso, barraY + 4};
-    FillRect(hdc, &r2, fg);
-    DeleteObject(fg);
-}
     }
 }
 
@@ -1114,80 +1124,133 @@ void darOrdenMovimiento(Unidad unidades[], int max, int clickX, int clickY) {
 }
 
 // Dar orden de movimiento o acción
-void ordenarUnidad(int mouseX, int mouseY, Camera cam, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
-    // 1. Convertir clic de pantalla a coordenadas del mundo
-    float mundoX = (mouseX / cam.zoom) + cam.x;
-    float mundoY = (mouseY / cam.zoom) + cam.y;
+void ordenarUnidad(int mX, int mY, Camera cam) {
+    float mundoX = (mX / cam.zoom) + cam.x;
+    float mundoY = (mY / cam.zoom) + cam.y;
 
-    // 2. DETECCIÓN DE OBJETIVOS (Buscamos qué hay bajo el puntero)
-    int vacaId = -1;
-    int arbolId = -1;
-    int minaId = -1;
-
-    // ¿Es una vaca?
-    for (int v = 0; v < MAX_VACAS; v++) {
-        if (manada[v].activa && manada[v].estadoVida == 0) {
-            float d = sqrt(pow(mundoX - manada[v].x, 2) + pow(mundoY - manada[v].y, 2));
-            if (d < 40) { vacaId = v; break; }
-        }
-    }
-
-    // ¿Es un árbol? (Si no es vaca)
-    if (vacaId == -1) {
-        for (int a = 0; a < MAX_ARBOLES; a++) {
-            if (arboles[a].activa) {
-                float d = sqrt(pow(mundoX - arboles[a].x, 2) + pow(mundoY - arboles[a].y, 2));
-                if (d < 35) { arbolId = a; break; }
-            }
-        }
-    }
-
-    // ¿Es una mina? (Si no es vaca ni árbol)
-    if (vacaId == -1 && arbolId == -1) {
-        for (int m = 0; m < MAX_MINAS; m++) {
-            if (minas[m].activa) {
-                float d = sqrt(pow(mundoX - minas[m].x, 2) + pow(mundoY - minas[m].y, 2));
-                if (d < 35) { minaId = m; break; }
-            }
-        }
-    }
-
-    // 3. ASIGNAR ÓRDENES A CADA UNIDAD SELECCIONADA
     for (int i = 0; i < MAX_UNIDADES; i++) {
         if (!unidades[i].activa || !unidades[i].seleccionado) continue;
 
-        // Resetear progreso de trabajo anterior
         unidades[i].timerTrabajo = 0;
+        bool objetivoEncontrado = false;
 
-        // CASO A: CAZA (Cazadores y Soldados)
-        if (vacaId != -1 && (unidades[i].tipo == TIPO_CAZADOR || unidades[i].tipo == TIPO_SOLDADO)) {
-            unidades[i].estado = ESTADO_CAZANDO;
-            unidades[i].targetIndex = vacaId;
-            unidades[i].destinoX = (int)manada[vacaId].x;
-            unidades[i].destinoY = (int)manada[vacaId].y;
-        } 
-        // CASO B: TALA (Solo Leñadores)
-        else if (arbolId != -1 && unidades[i].tipo == TIPO_LENADOR) {
-            unidades[i].estado = ESTADO_TALANDO;
-            unidades[i].destinoX = (int)arboles[arbolId].x;
-            unidades[i].destinoY = (int)arboles[arbolId].y;
+        // --- BUSCAR ÁRBOLES ---
+        if (unidades[i].tipo == TIPO_LENADOR) {
+            for (int a = 0; a < MAX_ARBOLES; a++) {
+                if (!arboles[a].activa) continue;
+                float d = sqrt(pow(arboles[a].x - mundoX, 2) + pow(arboles[a].y - mundoY, 2));
+                if (d < 50.0f) { // Margen de 50px para el clic
+                    unidades[i].estado = ESTADO_TALANDO;
+                    unidades[i].destinoX = arboles[a].x;
+                    unidades[i].destinoY = arboles[a].y;
+                    objetivoEncontrado = true;
+                    break;
+                }
+            }
         }
-        // CASO C: MINERÍA (Solo Mineros)
-        else if (minaId != -1 && unidades[i].tipo == TIPO_MINERO) {
-            unidades[i].estado = ESTADO_MINANDO;
-            unidades[i].destinoX = (int)minas[minaId].x;
-            unidades[i].destinoY = (int)minas[minaId].y;
+
+        // --- BUSCAR MINAS ---
+        if (!objetivoEncontrado && unidades[i].tipo == TIPO_MINERO) {
+            for (int m = 0; m < MAX_MINAS; m++) {
+                if (!minas[m].activa) continue;
+                float d = sqrt(pow(minas[m].x - mundoX, 2) + pow(minas[m].y - mundoY, 2));
+                if (d < 50.0f) {
+                    unidades[i].estado = ESTADO_MINANDO;
+                    unidades[i].destinoX = minas[m].x;
+                    unidades[i].destinoY = minas[m].y;
+                    objetivoEncontrado = true;
+                    break;
+                }
+            }
         }
-        // CASO D: MOVIMIENTO NORMAL
-        else {
+
+        // --- BUSCAR VACAS (Tu lógica de caza) ---
+        if (!objetivoEncontrado && unidades[i].tipo == TIPO_CAZADOR) {
+            for (int v = 0; v < MAX_VACAS; v++) {
+                if (!manada[v].activa || manada[v].estadoVida != 0) continue;
+                float d = sqrt(pow(manada[v].x - mundoX, 2) + pow(manada[v].y - mundoY, 2));
+                if (d < 50.0f) {
+                    unidades[i].estado = ESTADO_CAZANDO;
+                    unidades[i].targetIndex = v;
+                    objetivoEncontrado = true;
+                    break;
+                }
+            }
+        }
+
+        // --- SI NO ES NADA, MOVER ---
+        if (!objetivoEncontrado) {
             unidades[i].estado = ESTADO_MOVIENDO;
-            unidades[i].targetIndex = -1;
             unidades[i].destinoX = (int)mundoX;
             unidades[i].destinoY = (int)mundoY;
         }
     }
 }
+int buscarVacaCercana(float x, float y, float rango) {
+    int mejorIndice = -1;
+    float mejorDist = rango;
 
+    for (int v = 0; v < MAX_VACAS; v++) {
+        // Solo buscamos vacas activas y que estén VIVAS (estadoVida == 0)
+        if (manada[v].activa && manada[v].estadoVida == 0) {
+            float dx = manada[v].x - x;
+            float dy = manada[v].y - y;
+            float dist = sqrt(dx * dx + dy * dy);
+            
+            if (dist < mejorDist) {
+                mejorDist = dist;
+                mejorIndice = v;
+            }
+        }
+    }
+    return mejorIndice;
+}
+
+
+// Función auxiliar para generar el efecto visual
+void crearChispaBlanca(float x, float y) {
+    for (int i = 0; i < 10; i++) { // Creamos 10 chispas pequeñas
+        int p = -1;
+        // Buscar una partícula libre en el arreglo global
+        for (int j = 0; j < MAX_PARTICULAS; j++) {
+            if (!particulas[j].activo) { p = j; break; }
+        }
+
+        if (p != -1) {
+            particulas[p].activo = 1;
+            particulas[p].x = x + (rand() % 20 - 10); // Dispersión aleatoria
+            particulas[p].y = y + (rand() % 20 - 10);
+            particulas[p].vx = (float)(rand() % 100 - 50) / 20.0f; // Velocidad aleatoria
+            particulas[p].vy = (float)(rand() % 100 - 50) / 20.0f;
+            particulas[p].vida = 30 + (rand() % 20); // Duración corta
+            particulas[p].color = RGB(255, 255, 255); // Blanco puro
+        }
+    }
+}
+
+void actualizarRegeneracionRecursos() {
+    for (int i = 0; i < MAX_ARBOLES; i++) {
+        if (!arboles[i].activa) {
+            arboles[i].timerRegeneracion++;
+            if (arboles[i].timerRegeneracion >= TIEMPO_RESPAWN_RECURSOS) {
+                arboles[i].activa = 1;
+                arboles[i].vida = 5;
+                arboles[i].timerRegeneracion = 0;
+                crearChispaBlanca(arboles[i].x, arboles[i].y); // ¡EFECTO!
+            }
+        }
+    }
+}
+void actualizarParticulas() {
+    for (int i = 0; i < MAX_PARTICULAS; i++) {
+        if (particulas[i].activo) {
+            particulas[i].x += particulas[i].vx;
+            particulas[i].y += particulas[i].vy;
+            particulas[i].vida--;
+            if (particulas[i].vida <= 0) particulas[i].activo = 0;
+        }
+    }
+}
 void actualizarVacasEstablo() {
     for (int i = 0; i < MAX_VACAS; i++) {
         if (!vacas[i].activa) continue;

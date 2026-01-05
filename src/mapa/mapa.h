@@ -55,7 +55,8 @@ void spawnearEscuadron(int tipo, int cantidad, int x, int y); // Ahora recibe CA
 void dibujarUnidades(HDC hdc, Camera cam);
 
 // Control
-void ordenarUnidad(int mouseX, int mouseY, Camera cam, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
+void ordenarUnidad(int mouseX, int mouseY, Camera cam);
+
 /* --- DIBUJADO PRINCIPAL (Partida) --- */
 void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda, int mapaId);
 void dibujarJugador(HDC hdc, Jugador jugador, Camera camara);
@@ -84,6 +85,11 @@ void dibujarInterfazSeleccion(HDC hdc); // La función del cuadro verde
 // Inicialización de islas con parámetro de mapa
 void inicializarIslas(int mapaId);
 // Prototipos de Funciones de Sistema
+int buscarVacaCercana(float x, float y, float rango);
+void actualizarRegeneracionRecursos();
+void crearChispaBlanca(float x, float y);
+void actualizarParticulas();
+void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j);
 void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j);
 void actualizarAnimacionUnidad(Unidad *u, float dx, float dy);
 void dibujarUnidades(HDC hdc, Camera cam);
