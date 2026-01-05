@@ -56,18 +56,28 @@
 #define TIPO_MINERO  3    // Pico
 #define TIPO_SOLDADO 4    // Armadura
 
-// Estados
-#define ESTADO_IDLE 0
-#define ESTADO_MOVIENDO 1
-#define ESTADO_TRABAJANDO 2 // Talando o Atacando
-#define ESTADO_EN_CUEVA 3   // Minando (Invisible)
-#define ESTADO_CAZANDO  4 
+// Estados de la unidad
+#define ESTADO_IDLE      0
+#define ESTADO_MOVIENDO  1
+#define ESTADO_CAZANDO   2
+#define ESTADO_TALANDO   3
+#define ESTADO_MINANDO   4
+#define ESTADO_EN_CUEVA  5
+
 
 // Definición de la Cueva (Ubicación fija por ahora)
 #define CUEVA_X 1800
 #define CUEVA_Y 1250
+#ifndef TILE_ARBOL
+#define TILE_ARBOL 'A'
+#endif
+
+#ifndef TILE_MINA
+#define TILE_MINA 'M'
+#endif
 
 #define MAX_UNIDADES 100   // Aumentamos capacidad
+
 
 typedef struct {
     float x, y;
@@ -84,8 +94,8 @@ typedef struct {
     int frameAnim;
     int direccion;      
     char nombreGrupo[32]; 
-
-    int timerTrabajo;     // <--- AGREGADO: Para contar tiempo minando/cazando
+    int timerTrabajo;     // Para la barra de progreso de caza/mina
+	int targetIndex;      // Para saber a qué vaca está siguiendoo
     int contadorAnim;     // <--- AGREGADO: Para la animación de caminar
 
 } Unidad;
