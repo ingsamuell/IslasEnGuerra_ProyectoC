@@ -17,7 +17,6 @@ TextoFlotante textos[20];
 Arbol arboles[MAX_ARBOLES];
 Mina minas[MAX_MINAS];
 Particula particulas[MAX_PARTICULAS];
-TextoFlotante textos[MAX_TEXTOS];
 
 /* ========== PROCEDIMIENTO DE VENTANA ========== */
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)

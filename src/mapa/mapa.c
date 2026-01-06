@@ -144,20 +144,15 @@ void actualizarLogicaSistema() {
     
     // 2. Podrías mover aquí también la lógica de chispas si quieres centralizar
 }
-void crearTextoFlotante(float x, float y, const char* etiqueta, int cantidad, COLORREF color) {
-    for (int i = 0; i < 20; i++) {
-        if (textos[i].vida <= 0) {
-            textos[i].x = x;
-            textos[i].y = y;
-            textos[i].color = color;
-            textos[i].vida = 60; // Dura 60 frames
-            
-            // Si la cantidad es > 0, ponemos el signo + (ej: +10 Madera)
-            if (cantidad > 0) {
-                sprintf(textos[i].texto, "+%d %s", cantidad, etiqueta);
-            } else {
-                sprintf(textos[i].texto, "%s", etiqueta);
-            }
+void crearTextoFlotante(int x, int y, const char* formato, int cantidad, COLORREF color) {
+    for (int i = 0; i < MAX_TEXTOS_FLOTANTES; i++) {
+        if (!listaTextos[i].activo) {
+            listaTextos[i].x = (float)x;
+            listaTextos[i].y = (float)y;
+            sprintf(listaTextos[i].texto, "+%d %s", cantidad, formato);
+            listaTextos[i].vida = 40; // Duración en frames
+            listaTextos[i].color = color;
+            listaTextos[i].activo = true;
             break;
         }
     }
@@ -877,6 +872,33 @@ void dibujarInterfazSeleccion(HDC hdc) {
     }
 } 
 
+void inicializarRecursosEstaticos(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    int contA = 0;
+    int contM = 0;
+
+    for (int f = 0; f < MUNDO_FILAS; f++) {
+        for (int c = 0; c < MUNDO_COLUMNAS; c++) {
+            // Si el mapa dice que aquí hay un árbol (Sprite de árbol)
+            if (mapa[f][c] == 'A' && contA < MAX_ARBOLES) {
+                arboles[contA].x = c * TAMANO_CELDA + 16; // Centro del sprite
+                arboles[contA].y = f * TAMANO_CELDA + 16;
+                arboles[contA].activa = 1;
+                arboles[contA].vida = 5; // 5 hachazos
+                contA++;
+            }
+            // Si el mapa dice que hay una mina
+            if ((mapa[f][c] == 'M' || mapa[f][c] == 'P') && contM < MAX_MINAS) {
+                minas[contM].x = c * TAMANO_CELDA + 16;
+                minas[contM].y = f * TAMANO_CELDA + 16;
+                minas[contM].tipo = (mapa[f][c] == 'P') ? 0 : 1; // 0: Piedra, 1: Hierro
+                minas[contM].activa = 1;
+                minas[contM].vida = 8;
+                contM++;
+            }
+        }
+    }
+}
+
 void inicializarUnidades() {
     for (int i = 0; i < MAX_UNIDADES; i++) {
         unidades[i].activa = 0;
@@ -912,39 +934,136 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
     for (int i = 0; i < MAX_UNIDADES; i++) {
         if (!unidades[i].activa) continue;
 
-        // Calcular distancia al objetivo
+        // Calcular distancia al objetivo de movimiento
         float dx = unidades[i].destinoX - unidades[i].x;
         float dy = unidades[i].destinoY - unidades[i].y;
         float dist = sqrt(dx * dx + dy * dy);
 
+       // En src/mapa/mapa.c -> actualizarUnidades
+
         switch (unidades[i].estado) {
-            
-			case ESTADO_TALANDO:
-            case ESTADO_MINANDO:
-                if (dist > 45.0f) { // Se detiene a 45px del centro del recurso
-                    unidades[i].x += (dx / dist) * 2.0f;
-                    unidades[i].y += (dy / dist) * 2.0f;
-                    actualizarAnimacionUnidad(&unidades[i], dx, dy);
+
+            case ESTADO_TALANDO: {
+            int a = unidades[i].targetIndex;
+
+            // Validación de existencia
+            if (a == -1 || !arboles[a].activa) { 
+                int nuevo = buscarArbolCercano(unidades[i].x, unidades[i].y, 150.0f);
+                if (nuevo != -1) {
+                    unidades[i].targetIndex = nuevo;
+                    unidades[i].destinoX = arboles[nuevo].x;
+                    unidades[i].destinoY = arboles[nuevo].y;
                 } else {
-                    unidades[i].timerTrabajo++;
-                    int limite = (unidades[i].estado == ESTADO_TALANDO) ? 250 : 400;
+                    unidades[i].estado = ESTADO_IDLE;
+                }
+                break; 
+            }
+
+            // CORRECCIÓN: Medimos distancia al CENTRO del árbol (+16)
+            float targetX = arboles[a].x + 16;
+            float targetY = arboles[a].y + 16;
+            
+            float dx = targetX - unidades[i].x;
+            float dy = targetY - unidades[i].y;
+            float distObjeto = sqrt(dx*dx + dy*dy);
+
+            // Aumentamos un poco la tolerancia de "llegada" (50.0f)
+            // para asegurar que empiecen a trabajar antes de chocar fisicamente
+            if (distObjeto > 50.0f) { 
+                // Moverse hacia el árbol
+                unidades[i].x += (dx / distObjeto) * 2.0f;
+                unidades[i].y += (dy / distObjeto) * 2.0f;
+                actualizarAnimacionUnidad(&unidades[i], dx, dy);
+            } else {
+                // TRABAJAR
+                unidades[i].timerTrabajo++;
+                if (unidades[i].timerTrabajo >= 250) { 
+                    unidades[i].timerTrabajo = 0;
+                    j->madera += 10;
+                    crearTextoFlotante(unidades[i].x, unidades[i].y, "Madera", 10, RGB(139, 69, 19));
                     
-                    if (unidades[i].timerTrabajo >= limite) {
-                        unidades[i].timerTrabajo = 0;
-                        if (unidades[i].estado == ESTADO_TALANDO) j->madera += 10;
-                        else j->hierro += 5;
-                        crearTextoFlotante(unidades[i].x, unidades[i].y, "+Recurso", 1, RGB(255, 255, 255));
+                    arboles[a].vida--;
+                    if (arboles[a].vida <= 0) {
+                        arboles[a].activa = 0;
+                        arboles[a].timerRegeneracion = 0;
+                        
+                        // Borrar colisión del mapa
+                        int col = (int)(arboles[a].x / TAMANO_CELDA_BASE);
+                        int fil = (int)(arboles[a].y / TAMANO_CELDA_BASE);
+                        if(fil >= 0 && fil < MUNDO_FILAS && col >= 0 && col < MUNDO_COLUMNAS)
+                             mapa[fil][col] = 1; // Restaurar a Tierra (1)
+
+                        unidades[i].targetIndex = -1;
+                        unidades[i].estado = ESTADO_IDLE;
                     }
                 }
-                break;
+            }
+            break;
+        }
 
+        case ESTADO_MINANDO: {
+            int m = unidades[i].targetIndex;
+            
+            if (m == -1 || !minas[m].activa) { 
+                int nueva = buscarMinaCercana(unidades[i].x, unidades[i].y, 150.0f);
+                if (nueva != -1) {
+                    unidades[i].targetIndex = nueva;
+                } else {
+                    unidades[i].estado = ESTADO_IDLE;
+                }
+                break; 
+            }
+
+            // CORRECCIÓN: Medimos distancia al CENTRO de la mina (+16)
+            float targetX = minas[m].x + 16;
+            float targetY = minas[m].y + 16;
+
+            float dx = targetX - unidades[i].x;
+            float dy = targetY - unidades[i].y;
+            float distMina = sqrt(dx*dx + dy*dy);
+
+            if (distMina > 50.0f) { 
+                unidades[i].x += (dx / distMina) * 2.0f;
+                unidades[i].y += (dy / distMina) * 2.0f;
+                actualizarAnimacionUnidad(&unidades[i], dx, dy);
+            } else {
+                // TRABAJAR
+                unidades[i].timerTrabajo++;
+                if (unidades[i].timerTrabajo >= 400) { 
+                    unidades[i].timerTrabajo = 0;
+                    
+                    if (minas[m].tipo == 0) {
+                        j->piedra += 10;
+                        crearTextoFlotante(unidades[i].x, unidades[i].y, "Piedra", 10, RGB(150, 150, 150));
+                    } else {
+                        j->hierro += 5;
+                        crearTextoFlotante(unidades[i].x, unidades[i].y, "Hierro", 5, RGB(192, 192, 192));
+                    }
+                    
+                    minas[m].vida--;
+                    if (minas[m].vida <= 0) {
+                        minas[m].activa = 0;
+                        
+                        // Borrar colisión del mapa
+                        int col = (int)(minas[m].x / TAMANO_CELDA_BASE);
+                        int fil = (int)(minas[m].y / TAMANO_CELDA_BASE);
+                        if(fil >= 0 && fil < MUNDO_FILAS && col >= 0 && col < MUNDO_COLUMNAS)
+                             mapa[fil][col] = 1; // Restaurar a Tierra
+
+                        unidades[i].targetIndex = -1;
+                        unidades[i].estado = ESTADO_IDLE;
+                    }
+                }
+            }
+            break;
+        }
             case ESTADO_CAZANDO: {
                 int v = unidades[i].targetIndex;
+                // Si el objetivo no existe o ya murió
                 if (v == -1 || !manada[v].activa || manada[v].estadoVida != 0) {
-                    // Si la vaca muere, intentar buscar otra automáticamente
                     int proxima = buscarVacaCercana(unidades[i].x, unidades[i].y, 500.0f);
-                    if (proxima != -1) { unidades[i].targetIndex = proxima; }
-                    else { unidades[i].estado = ESTADO_IDLE; }
+                    if (proxima != -1) unidades[i].targetIndex = proxima;
+                    else unidades[i].estado = ESTADO_IDLE;
                     break;
                 }
 
@@ -953,17 +1072,18 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
                 float distVaca = sqrt(dvx * dvx + dvy * dvy);
 
                 if (distVaca > 35.0f) {
-                    unidades[i].x += (dvx / distVaca) * 2.0f;
-                    unidades[i].y += (dvy / distVaca) * 2.0f;
+                    unidades[i].x += (dvx / distVaca) * 2.2f;
+                    unidades[i].y += (dvy / distVaca) * 2.2f;
                     actualizarAnimacionUnidad(&unidades[i], dvx, dvy);
                 } else {
                     unidades[i].timerTrabajo++;
                     if (unidades[i].timerTrabajo >= 300) {
-                        manada[v].estadoVida = 1;
+                        manada[v].estadoVida = 1; // Muerta para respawn
                         j->comida += 15;
                         crearTextoFlotante(manada[v].x, manada[v].y, "+15 Comida", 1, RGB(255, 200, 0));
                         unidades[i].timerTrabajo = 0;
-                        unidades[i].targetIndex = -1; 
+                        unidades[i].targetIndex = -1;
+                        unidades[i].estado = ESTADO_IDLE;
                     }
                 }
                 break;
@@ -978,6 +1098,19 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
                     unidades[i].estado = ESTADO_IDLE;
                 }
                 break;
+
+            case ESTADO_IDLE:
+                // Aquí podrías poner una animación de respiración o descanso
+                break;
+        }
+    }
+
+    // Actualizar textos flotantes
+    for (int t = 0; t < MAX_TEXTOS; t++) {
+        if (textos[t].activo && textos[t].vida > 0) {
+            textos[t].y -= 0.5f; // Sube despacio
+            textos[t].vida--;
+            if (textos[t].vida <= 0) textos[t].activo = 0;
         }
     }
 }
@@ -1134,28 +1267,47 @@ void ordenarUnidad(int mX, int mY, Camera cam) {
         unidades[i].timerTrabajo = 0;
         bool objetivoEncontrado = false;
 
-        // --- BUSCAR ÁRBOLES ---
+        // --- 1. BUSCAR ÁRBOLES (LEÑADORES) ---
         if (unidades[i].tipo == TIPO_LENADOR) {
             for (int a = 0; a < MAX_ARBOLES; a++) {
                 if (!arboles[a].activa) continue;
-                float d = sqrt(pow(arboles[a].x - mundoX, 2) + pow(arboles[a].y - mundoY, 2));
-                if (d < 50.0f) { // Margen de 50px para el clic
+                
+                // CORRECCIÓN: Usamos el CENTRO del árbol (Asumimos 32x32 promedio, centro +16)
+                // Si tienes árboles grandes, esto ayuda a que el clic en el medio funcione.
+                float centroArbolX = arboles[a].x + 16; 
+                float centroArbolY = arboles[a].y + 16; 
+                
+                float d = sqrt(pow(centroArbolX - mundoX, 2) + pow(centroArbolY - mundoY, 2));
+                
+                // Aumentamos el rango de clic a 60 (era 50) para facilitar la selección
+                if (d < 60.0f) { 
                     unidades[i].estado = ESTADO_TALANDO;
-                    unidades[i].destinoX = arboles[a].x;
+                    unidades[i].targetIndex = a; 
+                    
+                    // El destino es el borde del árbol, no el centro exacto (para que no se meta dentro)
+                    unidades[i].destinoX = arboles[a].x; 
                     unidades[i].destinoY = arboles[a].y;
+                    
                     objetivoEncontrado = true;
                     break;
                 }
             }
         }
 
-        // --- BUSCAR MINAS ---
+        // --- 2. BUSCAR MINAS (MINEROS) ---
         if (!objetivoEncontrado && unidades[i].tipo == TIPO_MINERO) {
             for (int m = 0; m < MAX_MINAS; m++) {
                 if (!minas[m].activa) continue;
-                float d = sqrt(pow(minas[m].x - mundoX, 2) + pow(minas[m].y - mundoY, 2));
-                if (d < 50.0f) {
+                
+                // CORRECCIÓN: Usamos el CENTRO de la mina
+                float centroMinaX = minas[m].x + 16;
+                float centroMinaY = minas[m].y + 16;
+
+                float d = sqrt(pow(centroMinaX - mundoX, 2) + pow(centroMinaY - mundoY, 2));
+                
+                if (d < 60.0f) { // Rango aumentado a 60
                     unidades[i].estado = ESTADO_MINANDO;
+                    unidades[i].targetIndex = m;
                     unidades[i].destinoX = minas[m].x;
                     unidades[i].destinoY = minas[m].y;
                     objetivoEncontrado = true;
@@ -1164,12 +1316,17 @@ void ordenarUnidad(int mX, int mY, Camera cam) {
             }
         }
 
-        // --- BUSCAR VACAS (Tu lógica de caza) ---
+        // --- 3. BUSCAR VACAS (CAZADORES) ---
         if (!objetivoEncontrado && unidades[i].tipo == TIPO_CAZADOR) {
             for (int v = 0; v < MAX_VACAS; v++) {
                 if (!manada[v].activa || manada[v].estadoVida != 0) continue;
-                float d = sqrt(pow(manada[v].x - mundoX, 2) + pow(manada[v].y - mundoY, 2));
-                if (d < 50.0f) {
+                
+                float centroVacaX = manada[v].x + 16;
+                float centroVacaY = manada[v].y + 16;
+
+                float d = sqrt(pow(centroVacaX - mundoX, 2) + pow(centroVacaY - mundoY, 2));
+                
+                if (d < 60.0f) {
                     unidades[i].estado = ESTADO_CAZANDO;
                     unidades[i].targetIndex = v;
                     objetivoEncontrado = true;
@@ -1178,7 +1335,7 @@ void ordenarUnidad(int mX, int mY, Camera cam) {
             }
         }
 
-        // --- SI NO ES NADA, MOVER ---
+        // --- 4. SI NO ES NADA, MOVER ---
         if (!objetivoEncontrado) {
             unidades[i].estado = ESTADO_MOVIENDO;
             unidades[i].destinoX = (int)mundoX;
@@ -1204,6 +1361,23 @@ int buscarVacaCercana(float x, float y, float rango) {
         }
     }
     return mejorIndice;
+}
+int buscarArbolCercano(float x, float y, float rango) {
+    for (int i = 0; i < MAX_ARBOLES; i++) {
+        if (!arboles[i].activa) continue;
+        float d = sqrt(pow(arboles[i].x - x, 2) + pow(arboles[i].y - y, 2));
+        if (d < rango) return i;
+    }
+    return -1;
+}
+
+int buscarMinaCercana(float x, float y, float rango) {
+    for (int i = 0; i < MAX_MINAS; i++) {
+        if (!minas[i].activa) continue;
+        float d = sqrt(pow(minas[i].x - x, 2) + pow(minas[i].y - y, 2));
+        if (d < rango) return i;
+    }
+    return -1;
 }
 
 
@@ -1688,8 +1862,8 @@ void abrirTesoro(Jugador *j)
                     int hierroGanado = 15 + (rand() % 11); // 15-25
                     j->oro += oroGanado;
                     j->hierro += hierroGanado;
-    				crearTextoFlotante(tx, ty, "Oro", 5, RGB(180, 180, 180));
-    				crearTextoFlotante(tx, ty, "Hierro", 3, RGB(255, 215, 0));
+    				crearTextoFlotante(tx, ty, "Hierro", 5, RGB(180, 180, 180));
+    				crearTextoFlotante(tx, ty - 15, "Oro", 3, RGB(255, 255, 0));
 					}
                 }
 
