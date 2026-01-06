@@ -32,7 +32,11 @@ extern HBITMAP hBmpVaca[8];
 extern HBITMAP hBmpVacaMuerta; // Nueva variable
 extern HBITMAP hBmpArbolChico;
 extern HBITMAP hBmpArbolGrande;
-
+// Agrega estas declaraciones extern
+extern HBITMAP hBmpIconoPescado;
+extern HBITMAP hBmpIconoCana;
+extern HBITMAP hBmpBote[2];  // 0: Izq, 1: Der
+extern HBITMAP hBmpBarco[2]; // 0: Izq, 1: Der
 // (Opcional, pero útil si lo usas en otros lados)
 extern char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
 
@@ -82,6 +86,9 @@ extern HBITMAP hBmpIslaSec1Mapa3;
 extern HBITMAP hBmpIslaSec2Mapa3;
 extern HBITMAP hBmpIslaSec3Mapa3;
 extern HBITMAP hBmpIslaSec4Mapa3;
+extern bool dibujandoCuadro;
+extern int mouseStartX, mouseStartY;
+extern int mouseActualX, mouseActualY;
 
 // Nuevos árboles y establos para cada mapa
 extern HBITMAP hBmpArbolChicoMapa2;
@@ -90,6 +97,7 @@ extern HBITMAP hBmpArbolGrandeMapa2;
 extern HBITMAP hBmpArbolChicoMapa3;
 extern HBITMAP hBmpArbolGrandeMapa3;
 
+extern TextoFlotante textos[20];
 // 6. SELECCIÓN DE MAPA (NUEVO)
 extern HBITMAP hBmpFondoSeleccionMapa;
 // Cuadros normales
@@ -100,6 +108,12 @@ extern HBITMAP hBmpCuadroMapa3Normal;
 extern HBITMAP hBmpCuadroMapa1Sel;
 extern HBITMAP hBmpCuadroMapa2Sel;
 extern HBITMAP hBmpCuadroMapa3Sel;
+
+extern Arbol arboles[MAX_ARBOLES];
+extern Mina minas[MAX_MINAS];
+extern Vaca manada[MAX_VACAS];
+extern Unidad unidades[MAX_UNIDADES];
+extern Particula particulas[MAX_PARTICULAS];
 
 // --- FUNCIONES ---
 void CargarRecursos();

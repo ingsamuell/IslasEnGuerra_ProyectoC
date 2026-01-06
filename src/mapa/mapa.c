@@ -7,6 +7,7 @@
 #include <math.h>     // Necesario para calcular distancias de ataque
 #include <stdbool.h>
 
+Unidad unidades[MAX_UNIDADES];
 // Función para obtener la imagen correcta de isla según el mapa seleccionado
 HBITMAP obtenerImagenIsla(int indiceIsla, int mapaId) {
     switch(mapaId) {
@@ -129,7 +130,7 @@ void agregarTextoFlotante(int x, int y, char* contenido, COLORREF color) {
     }
 }
 
-void actualizarLogicaSistema() {
+void actualizarLogicaSistema(Jugador *j) {
     // 1. Actualizar Textos Flotantes
     for (int i = 0; i < MAX_TEXTOS; i++) {
         if (listaTextos[i].activo) {
@@ -139,6 +140,19 @@ void actualizarLogicaSistema() {
                 listaTextos[i].activo = 0;
             }
         }
+    }
+    // --- SISTEMA DE PESCA ---
+    if (j->estadoBarco == 1) { // Solo en Bote de Pesca
+        j->timerPesca++;
+        
+        // Cada 10 segundos (60 FPS * 10 = 600 frames)
+        if (j->timerPesca >= 600) {
+            j->timerPesca = 0;
+            j->pescado += 3;
+            crearTextoFlotante(j->x, j->y, "+3 Pescado", 1, RGB(100, 200, 255));
+        }
+    } else {
+        j->timerPesca = 0; // Reset si se baja
     }
     
     // 2. Podrías mover aquí también la lógica de chispas si quieres centralizar
@@ -294,7 +308,12 @@ void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FIL
     jugador->comida = 0;
     jugador->hojas = 0;
     jugador->carne = 0;
-    
+    jugador->pescado = 0;
+    jugador->tieneCana = FALSE;
+    jugador->tieneBotePesca = FALSE;
+    jugador->tieneBarcoGuerra = FALSE;
+    jugador->estadoBarco = 0; // Empieza a pie
+    jugador->timerPesca = 0;
     // Inicialización de contadores de unidades
     jugador->cantMineros = 0;
     jugador->cantLenadores = 0;
@@ -328,37 +347,57 @@ int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
     return (mapa[fila][col] == 1);
 }
 
-void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy)
-{
-    if (dy > 0)
-        jugador->direccion = DIR_ABAJO;
-    else if (dy < 0)
-        jugador->direccion = DIR_ARRIBA;
-    else if (dx < 0)
-        jugador->direccion = DIR_IZQUIERDA;
-    else if (dx > 0)
-        jugador->direccion = DIR_DERECHA;
+void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy) {
+    // 1. Determinar dirección para la animación
+    if (dy > 0) jugador->direccion = DIR_ABAJO;
+    else if (dy < 0) jugador->direccion = DIR_ARRIBA;
+    else if (dx < 0) jugador->direccion = DIR_IZQUIERDA;
+    else if (dx > 0) jugador->direccion = DIR_DERECHA;
 
+    // 2. Animación
     jugador->pasoAnimacion++;
     int estado = (jugador->pasoAnimacion / 4) % 4;
-    if (estado == 0)
-        jugador->frameAnim = 1;
-    else if (estado == 1)
-        jugador->frameAnim = 0;
-    else if (estado == 2)
-        jugador->frameAnim = 2;
-    else if (estado == 3)
-        jugador->frameAnim = 0;
+    jugador->frameAnim = (estado == 1) ? 0 : (estado == 2) ? 2 : 0;
 
-    int futuraX = jugador->x + (dx * jugador->velocidad);
-    int futuraY = jugador->y + (dy * jugador->velocidad);
+    // 3. Calcular posición futura (Usamos la velocidad del jugador)
+    float futuraX = jugador->x + (dx * jugador->velocidad);
+    float futuraY = jugador->y + (dy * jugador->velocidad);
 
-    // Verificamos colisión en los PIES (centro abajo)
-    int colisionX = futuraX + 16;
-    int colisionY = futuraY + 30;
+    // 4. Punto de colisión: Los pies del personaje
+    int colisionX = (int)futuraX + 16;
+    int colisionY = (int)futuraY + 30;
 
-    if (EsSuelo(colisionX, colisionY, mapa))
-    {
+    bool puedeMoverse = false;
+    int sueloDetectado = EsSuelo(colisionX, colisionY, mapa);
+
+    // 5. LÓGICA DE COLISIÓN HÍBRIDA
+    if (jugador->estadoBarco == 0) {
+        // MODO A PIE: Solo si hay suelo (sueloDetectado == 1)
+        if (sueloDetectado == 1) puedeMoverse = true;
+    } 
+    else {
+        // MODO BARCO: Solo si hay agua (sueloDetectado == 0)
+        if (sueloDetectado == 0) {
+            puedeMoverse = true;
+
+            // Restricción de distancia para el Bote de Pesca
+            if (jugador->estadoBarco == 1) {
+                float distCentro = sqrt(pow(futuraX - 1600, 2) + pow(futuraY - 1600, 2));
+                if (distCentro > 1200) {
+                    puedeMoverse = false;
+                    // Solo creamos el texto si intentamos avanzar más
+                    static int timerAviso = 0;
+                    if (++timerAviso > 60) {
+                        crearTextoFlotante(jugador->x, jugador->y, "Muy profundo!", 0, RGB(255, 100, 100));
+                        timerAviso = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    // 6. Aplicar movimiento si es válido
+    if (puedeMoverse) {
         jugador->x = futuraX;
         jugador->y = futuraY;
     }
@@ -809,6 +848,31 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
 
                     }
                 }
+                // --- NUEVOS ITEMS NIVEL 2 ---
+                else if (i == 4) { // CAÑA DE PESCAR
+                    if (j->nivelMochila >= 2 && !j->tieneCana) {
+                         if (j->oro >= 30 && j->madera >= 10) {
+                             j->oro -= 30; j->madera -= 10;
+                             j->tieneCana = TRUE;
+                         }
+                    }
+                }
+                else if (i == 5) { // BOTE DE PESCA
+                    if (j->nivelMochila >= 2 && !j->tieneBotePesca) {
+                        if (j->oro >= 50 && j->madera >= 30) {
+                            j->oro -= 50; j->madera -= 30;
+                            j->tieneBotePesca = TRUE;
+                        }
+                    }
+                }
+                else if (i == 6) { // BARCO DE GUERRA
+                    if (j->nivelMochila >= 2 && !j->tieneBarcoGuerra) {
+                        if (j->oro >= 100 && j->hierro >= 20 && j->madera >= 50) {
+                            j->oro -= 100; j->hierro -= 20; j->madera -= 50;
+                            j->tieneBarcoGuerra = TRUE;
+                        }
+                    }
+                }
 
                 InvalidateRect(hwnd, NULL, FALSE);
                 return; // Salimos de la función inmediatamente al procesar el click
@@ -854,6 +918,50 @@ void dibujarMina(HDC hdc, Camera cam) {
     }
 }
 
+void dibujarInterfazSeleccion(HDC hdc) {
+    if (dibujandoCuadro) {
+        // 1. Crear una pluma verde/azul para el borde
+        HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 255, 0));
+        SelectObject(hdc, hPen);
+        
+        // 2. Usar un pincel transparente para el interior o uno con trama
+        SelectObject(hdc, GetStockObject(NULL_BRUSH));
+
+        // 3. Dibujar el rectángulo
+        Rectangle(hdc, mouseStartX, mouseStartY, mouseActualX, mouseActualY);
+
+        // Limpiar
+        DeleteObject(hPen);
+    }
+} 
+
+void inicializarRecursosEstaticos(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    int contA = 0;
+    int contM = 0;
+
+    for (int f = 0; f < MUNDO_FILAS; f++) {
+        for (int c = 0; c < MUNDO_COLUMNAS; c++) {
+            // Si el mapa dice que aquí hay un árbol (Sprite de árbol)
+            if (mapa[f][c] == 'A' && contA < MAX_ARBOLES) {
+                arboles[contA].x = c * TAMANO_CELDA + 16; // Centro del sprite
+                arboles[contA].y = f * TAMANO_CELDA + 16;
+                arboles[contA].activa = 1;
+                arboles[contA].vida = 5; // 5 hachazos
+                contA++;
+            }
+            // Si el mapa dice que hay una mina
+            if ((mapa[f][c] == 'M' || mapa[f][c] == 'P') && contM < MAX_MINAS) {
+                minas[contM].x = c * TAMANO_CELDA + 16;
+                minas[contM].y = f * TAMANO_CELDA + 16;
+                minas[contM].tipo = (mapa[f][c] == 'P') ? 0 : 1; // 0: Piedra, 1: Hierro
+                minas[contM].activa = 1;
+                minas[contM].vida = 8;
+                contM++;
+            }
+        }
+    }
+}
+
 void inicializarUnidades() {
     for (int i = 0; i < MAX_UNIDADES; i++) {
         unidades[i].activa = 0;
@@ -867,7 +975,7 @@ void spawnearEscuadron(int tipo, int cantidad, int x, int y) {
     char* nombre;
     switch(tipo) {
         case TIPO_MINERO:  nombre = "Mineros"; break;
-        case TIPO_LENADOR: nombre = "Leñadores"; break;
+        case TIPO_LENADOR: nombre = "Lenadores"; break;
         case TIPO_CAZADOR: nombre = "Cazadores"; break;
         case TIPO_SOLDADO: nombre = "Infantería"; break;
     }
@@ -885,173 +993,501 @@ void spawnearEscuadron(int tipo, int cantidad, int x, int y) {
     }
 }
 
-// 3. ACTUALIZAR (IA + MINERÍA)
 void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
     for (int i = 0; i < MAX_UNIDADES; i++) {
         if (!unidades[i].activa) continue;
 
-        // 1. Lógica de Mineros en la Cueva
-        if (unidades[i].estado == ESTADO_EN_CUEVA) {
-            unidades[i].timerTrabajo++;
-            if (unidades[i].timerTrabajo >= 100) { 
-                j->oro += 2;
-                j->hierro += 1;
-                j->piedra += 2;
-                unidades[i].timerTrabajo = 0;
-                
-                // Opcional: Crear texto flotante de recursos aquí
-            }
-            continue; 
-        }
+        // Calcular distancia al objetivo de movimiento
+        float dx = unidades[i].destinoX - unidades[i].x;
+        float dy = unidades[i].destinoY - unidades[i].y;
+        float dist = sqrt(dx * dx + dy * dy);
 
-        // 2. Movimiento suave hacia el destino
-        if (unidades[i].estado == ESTADO_MOVIENDO) {
-            float dx = unidades[i].destinoX - unidades[i].x;
-            float dy = unidades[i].destinoY - unidades[i].y;
-            float dist = sqrt(dx*dx + dy*dy);
+       // En src/mapa/mapa.c -> actualizarUnidades
 
-            if (dist > 5) {
-                unidades[i].x += (dx / dist) * 2.0f; 
-                unidades[i].y += (dy / dist) * 2.0f;
-                
-                if (abs(dx) > abs(dy)) {
-                    unidades[i].direccion = (dx > 0) ? DIR_DERECHA : DIR_IZQUIERDA;
+        switch (unidades[i].estado) {
+
+            case ESTADO_TALANDO: {
+            int a = unidades[i].targetIndex;
+
+            // Validación de existencia
+            if (a == -1 || !arboles[a].activa) { 
+                int nuevo = buscarArbolCercano(unidades[i].x, unidades[i].y, 150.0f);
+                if (nuevo != -1) {
+                    unidades[i].targetIndex = nuevo;
+                    unidades[i].destinoX = arboles[nuevo].x;
+                    unidades[i].destinoY = arboles[nuevo].y;
                 } else {
-                    unidades[i].direccion = (dy > 0) ? DIR_ABAJO : DIR_ARRIBA;
+                    unidades[i].estado = ESTADO_IDLE;
                 }
-                
-                unidades[i].contadorAnim++;
-                if (unidades[i].contadorAnim > 10) {
-                    unidades[i].frameAnim = (unidades[i].frameAnim + 1) % 3;
-                    unidades[i].contadorAnim = 0;
-                }
-            } else {
-                unidades[i].estado = ESTADO_IDLE;
+                break; 
             }
-        }
-        
-        // 3. Lógica de Caza (Sincronizada con 'manada')
-        if (unidades[i].estado == ESTADO_CAZANDO) {
-            bool vacaEncontrada = false;
-            for (int v = 0; v < MAX_VACAS; v++) {
-                // IMPORTANTE: Usar 'manada' y verificar que esté viva (estadoVida == 0)
-                if (manada[v].activa && manada[v].estadoVida == 0) {
-                    vacaEncontrada = true;
-                    float dist = sqrt(pow(unidades[i].x - manada[v].x, 2) + pow(unidades[i].y - manada[v].y, 2));
-                    
-                    if (dist < 35) { 
-                        unidades[i].timerTrabajo += 1; 
 
-                        if (unidades[i].timerTrabajo >= 100) { 
-                            manada[v].estadoVida = 1;   // La vaca pasa a estado muerta
-                            manada[v].tiempoMuerte = 300;
-                            j->comida += 10;            
-                            unidades[i].timerTrabajo = 0; 
-                            
-                            // Añadir texto flotante si lo tienes implementado:
-                            // crearTextoFlotante("+10 Comida", manada[v].x, manada[v].y, RGB(255, 255, 255));
-                        }
-                    } else {
-                        // Persecución
-                        unidades[i].x += (manada[v].x > unidades[i].x) ? 1.4f : -1.4f;
-                        unidades[i].y += (manada[v].y > unidades[i].y) ? 1.4f : -1.4f;
-                        unidades[i].timerTrabajo = 0; 
+            // CORRECCIÓN: Medimos distancia al CENTRO del árbol (+16)
+            float targetX = arboles[a].x + 16;
+            float targetY = arboles[a].y + 16;
+            
+            float dx = targetX - unidades[i].x;
+            float dy = targetY - unidades[i].y;
+            float distObjeto = sqrt(dx*dx + dy*dy);
+
+            // Aumentamos un poco la tolerancia de "llegada" (50.0f)
+            // para asegurar que empiecen a trabajar antes de chocar fisicamente
+            if (distObjeto > 50.0f) { 
+                // Moverse hacia el árbol
+                unidades[i].x += (dx / distObjeto) * 2.0f;
+                unidades[i].y += (dy / distObjeto) * 2.0f;
+                actualizarAnimacionUnidad(&unidades[i], dx, dy);
+            } else {
+                // TRABAJAR
+                unidades[i].timerTrabajo++;
+                if (unidades[i].timerTrabajo >= 250) { 
+                    unidades[i].timerTrabajo = 0;
+                    j->madera += 10;
+                    crearTextoFlotante(unidades[i].x, unidades[i].y, "Madera", 10, RGB(139, 69, 19));
+                    
+                    arboles[a].vida--;
+                    if (arboles[a].vida <= 0) {
+                        arboles[a].activa = 0;
+                        arboles[a].timerRegeneracion = 0;
+                        
+                        // Borrar colisión del mapa
+                        int col = (int)(arboles[a].x / TAMANO_CELDA_BASE);
+                        int fil = (int)(arboles[a].y / TAMANO_CELDA_BASE);
+                        if(fil >= 0 && fil < MUNDO_FILAS && col >= 0 && col < MUNDO_COLUMNAS)
+                             mapa[fil][col] = 1; // Restaurar a Tierra (1)
+
+                        unidades[i].targetIndex = -1;
+                        unidades[i].estado = ESTADO_IDLE;
                     }
-                    break; 
                 }
             }
-            // Si no hay vacas vivas, el aldeano vuelve a IDLE
-            if (!vacaEncontrada) unidades[i].estado = ESTADO_IDLE;
+            break;
+        }
+
+        case ESTADO_MINANDO: {
+            int m = unidades[i].targetIndex;
+            
+            if (m == -1 || !minas[m].activa) { 
+                int nueva = buscarMinaCercana(unidades[i].x, unidades[i].y, 150.0f);
+                if (nueva != -1) {
+                    unidades[i].targetIndex = nueva;
+                } else {
+                    unidades[i].estado = ESTADO_IDLE;
+                }
+                break; 
+            }
+
+            // CORRECCIÓN: Medimos distancia al CENTRO de la mina (+16)
+            float targetX = minas[m].x + 16;
+            float targetY = minas[m].y + 16;
+
+            float dx = targetX - unidades[i].x;
+            float dy = targetY - unidades[i].y;
+            float distMina = sqrt(dx*dx + dy*dy);
+
+            if (distMina > 50.0f) { 
+                unidades[i].x += (dx / distMina) * 2.0f;
+                unidades[i].y += (dy / distMina) * 2.0f;
+                actualizarAnimacionUnidad(&unidades[i], dx, dy);
+            } else {
+                // TRABAJAR
+                unidades[i].timerTrabajo++;
+                if (unidades[i].timerTrabajo >= 400) { 
+                    unidades[i].timerTrabajo = 0;
+                    
+                    if (minas[m].tipo == 0) {
+                        j->piedra += 10;
+                        crearTextoFlotante(unidades[i].x, unidades[i].y, "Piedra", 10, RGB(150, 150, 150));
+                    } else {
+                        j->hierro += 5;
+                        crearTextoFlotante(unidades[i].x, unidades[i].y, "Hierro", 5, RGB(192, 192, 192));
+                    }
+                    
+                    minas[m].vida--;
+                    if (minas[m].vida <= 0) {
+                        minas[m].activa = 0;
+                        
+                        // Borrar colisión del mapa
+                        int col = (int)(minas[m].x / TAMANO_CELDA_BASE);
+                        int fil = (int)(minas[m].y / TAMANO_CELDA_BASE);
+                        if(fil >= 0 && fil < MUNDO_FILAS && col >= 0 && col < MUNDO_COLUMNAS)
+                             mapa[fil][col] = 1; // Restaurar a Tierra
+
+                        unidades[i].targetIndex = -1;
+                        unidades[i].estado = ESTADO_IDLE;
+                    }
+                }
+            }
+            break;
+        }
+            case ESTADO_CAZANDO: {
+                int v = unidades[i].targetIndex;
+                // Si el objetivo no existe o ya murió
+                if (v == -1 || !manada[v].activa || manada[v].estadoVida != 0) {
+                    int proxima = buscarVacaCercana(unidades[i].x, unidades[i].y, 500.0f);
+                    if (proxima != -1) unidades[i].targetIndex = proxima;
+                    else unidades[i].estado = ESTADO_IDLE;
+                    break;
+                }
+
+                float dvx = manada[v].x - unidades[i].x;
+                float dvy = manada[v].y - unidades[i].y;
+                float distVaca = sqrt(dvx * dvx + dvy * dvy);
+
+                if (distVaca > 35.0f) {
+                    unidades[i].x += (dvx / distVaca) * 2.2f;
+                    unidades[i].y += (dvy / distVaca) * 2.2f;
+                    actualizarAnimacionUnidad(&unidades[i], dvx, dvy);
+                } else {
+                    unidades[i].timerTrabajo++;
+                    if (unidades[i].timerTrabajo >= 300) {
+                        manada[v].estadoVida = 1; // Muerta para respawn
+                        j->comida += 15;
+                        crearTextoFlotante(manada[v].x, manada[v].y, "+15 Comida", 1, RGB(255, 200, 0));
+                        unidades[i].timerTrabajo = 0;
+                        unidades[i].targetIndex = -1;
+                        unidades[i].estado = ESTADO_IDLE;
+                    }
+                }
+                break;
+            }
+
+            case ESTADO_MOVIENDO:
+                if (dist > 5.0f) {
+                    unidades[i].x += (dx / dist) * 2.2f;
+                    unidades[i].y += (dy / dist) * 2.2f;
+                    actualizarAnimacionUnidad(&unidades[i], dx, dy);
+                } else {
+                    unidades[i].estado = ESTADO_IDLE;
+                }
+                break;
+
+            case ESTADO_IDLE:
+                // Aquí podrías poner una animación de respiración o descanso
+                break;
+        }
+    }
+
+    // Actualizar textos flotantes
+    for (int t = 0; t < MAX_TEXTOS; t++) {
+        if (textos[t].activo && textos[t].vida > 0) {
+            textos[t].y -= 0.5f; // Sube despacio
+            textos[t].vida--;
+            if (textos[t].vida <= 0) textos[t].activo = 0;
         }
     }
 }
-
+void actualizarAnimacionUnidad(Unidad *u, float dx, float dy) {
+    if (fabs(dx) > fabs(dy)) {
+        u->direccion = (dx > 0) ? DIR_DERECHA : DIR_IZQUIERDA;
+    } else {
+        u->direccion = (dy > 0) ? DIR_ABAJO : DIR_ARRIBA;
+    }
+    u->contadorAnim++;
+    if (u->contadorAnim > 10) {
+        u->frameAnim = (u->frameAnim + 1) % 3;
+        u->contadorAnim = 0;
+    }
+}
 // 4. DIBUJAR (Nombres y Herramientas)
 void dibujarUnidades(HDC hdc, Camera cam) {
-    // El 'int i' debe ir dentro del for
     for (int i = 0; i < MAX_UNIDADES; i++) {
-        if (!unidades[i].activa || unidades[i].estado == ESTADO_EN_CUEVA) continue;
+        if (!unidades[i].activa) continue;
 
-        // DECLARA LAS VARIABLES AQUÍ (Esto quita los errores rojos de tu imagen)
-        int screenX = (int)((unidades[i].x - cam.x) * cam.zoom);
-        int screenY = (int)((unidades[i].y - cam.y) * cam.zoom);
-        int size = (int)(TAMANO_CELDA * cam.zoom);
+        // 1. CALCULAR POSICIÓN EN PANTALLA
+        // Convertimos las coordenadas del mundo a coordenadas de píxeles en ventana
+        int ux = (int)((unidades[i].x - cam.x) * cam.zoom);
+        int uy = (int)((unidades[i].y - cam.y) * cam.zoom);
+        int tam = (int)(TAMANO_CELDA * cam.zoom);
 
-        HBITMAP (*anim)[3]; // Declarar el puntero de animación
-        
-        switch(unidades[i].tipo) {
-            case TIPO_MINERO:  anim = hBmpMineroAnim; break;
-            case TIPO_LENADOR: anim = hBmpLenadorAnim; break;
-            case TIPO_CAZADOR: anim = hBmpCazadorAnim; break;
-            case TIPO_SOLDADO: anim = hBmpSoldadoAnim; break;
-            default: anim = hBmpJugadorAnim; break;
+        // 2. SELECCIONAR EL BITMAP CORRECTO (Animación)
+        HBITMAP hBmpActual = NULL;
+        switch (unidades[i].tipo) {
+            case TIPO_MINERO:  hBmpActual = hBmpMineroAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
+            case TIPO_LENADOR: hBmpActual = hBmpLenadorAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
+            case TIPO_CAZADOR: hBmpActual = hBmpCazadorAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
+            case TIPO_SOLDADO: hBmpActual = hBmpSoldadoAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
+            default:           hBmpActual = hBmpJugadorAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
         }
 
-        DibujarImagen(hdc, anim[unidades[i].direccion][unidades[i].frameAnim], 
-                     screenX, screenY, size, size);
-                     
-                     if (unidades[i].estado == ESTADO_CAZANDO && unidades[i].timerTrabajo > 0) {
-    int anchoBarra = 40;
-    int progreso = (unidades[i].timerTrabajo * anchoBarra) / 100;
-    
-    // Dibujamos un rectangulito verde sobre el aldeano
-    HBRUSH hBrush = CreateSolidBrush(RGB(0, 255, 0));
-    RECT r = { screenX, screenY - 10, screenX + progreso, screenY - 6 };
-    FillRect(hdc, &r, hBrush);
-    DeleteObject(hBrush);
-    
-    if (unidades[i].seleccionado) {
-    // Dibujar elipse verde en los pies
-    HPEN hPen = CreatePen(PS_SOLID, 2, RGB(0, 255, 0));
-    SelectObject(hdc, hPen);
-    SelectObject(hdc, GetStockObject(NULL_BRUSH)); // Sin relleno
-    
-    Ellipse(hdc, screenX, screenY + size - 10, screenX + size, screenY + size + 5);
-    
-    DeleteObject(hPen);
-}
-}
+        // 3. DIBUJAR EL SPRITE DE LA UNIDAD
+        DibujarImagen(hdc, hBmpActual, ux, uy, tam, tam);
+
+        // 4. DIBUJAR CÍRCULO DE SELECCIÓN (Si está seleccionada)
+        if (unidades[i].seleccionado) {
+            HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 255, 0));
+            HGDIOBJ hOld = SelectObject(hdc, hPen);
+            SelectObject(hdc, GetStockObject(NULL_BRUSH));
+            // Dibujamos una elipse a los pies de la unidad
+            Ellipse(hdc, ux, uy + tam - (int)(10 * cam.zoom), ux + tam, uy + tam);
+            SelectObject(hdc, hOld);
+            DeleteObject(hPen);
+        }
+
+        // 5. DIBUJAR BARRA DE PROGRESO DE TRABAJO
+        if (unidades[i].estado == ESTADO_TALANDO || 
+            unidades[i].estado == ESTADO_MINANDO || 
+            unidades[i].estado == ESTADO_CAZANDO) {
+
+            // Determinar el límite según la lógica de actualizarUnidades
+            int limite = 0;
+            if (unidades[i].estado == ESTADO_TALANDO) limite = 250;
+            else if (unidades[i].estado == ESTADO_MINANDO) limite = 400;
+            else if (unidades[i].estado == ESTADO_CAZANDO) limite = 300;
+
+            if (limite > 0) {
+                int barraAncho = (int)(20 * cam.zoom);
+                int barraAlto = (int)(3 * cam.zoom);
+                int bx = ux + (tam / 2) - (barraAncho / 2);
+                int by = uy - (int)(8 * cam.zoom); // Situada arriba de la cabeza
+
+                // Dibujar Fondo de la barra (Gris oscuro)
+                HBRUSH hBrushBg = CreateSolidBrush(RGB(50, 50, 50));
+                RECT rectBg = { bx, by, bx + barraAncho, by + barraAlto };
+                FillRect(hdc, &rectBg, hBrushBg);
+                DeleteObject(hBrushBg);
+
+                // Dibujar Progreso (Verde brillante)
+                float progreso = (float)unidades[i].timerTrabajo / limite;
+                int anchoActual = (int)(barraAncho * progreso);
+                
+                if (anchoActual > 0) {
+                    HBRUSH hBrushFill = CreateSolidBrush(RGB(0, 255, 100));
+                    RECT rectFill = { bx, by, bx + anchoActual, by + barraAlto };
+                    FillRect(hdc, &rectFill, hBrushFill);
+                    DeleteObject(hBrushFill);
+                }
+            }
+        }
     }
 }
 
 // 5. CONTROL (Igual que antes pero actualizado)
+void seleccionarUnidadesGrupo(int x1, int y1, int x2, int y2, Camera cam) {
+    // 1. Normalizar el cuadro (por si arrastran de derecha a izquierda o arriba)
+    int minX = min(x1, x2);
+    int maxX = max(x1, x2);
+    int minY = min(y1, y2);
+    int maxY = max(y1, y2);
 
-void seleccionarUnidades(int mouseX, int mouseY, Camera cam) {
+    // 2. Si el cuadro es minúsculo (un solo clic), podemos tratarlo como selección individual
+    bool esClickSimple = (maxX - minX < 5 && maxY - minY < 5);
+
     for (int i = 0; i < MAX_UNIDADES; i++) {
         if (!unidades[i].activa) continue;
 
-        // Convertir posición del mundo a pantalla (igual que en el dibujo)
-        int xEnPantalla = (int)((unidades[i].x - cam.x) * cam.zoom);
-int yEnPantalla = (int)((unidades[i].y - cam.y) * cam.zoom);
-int ancho = (int)(40 * cam.zoom); // El área de click debe crecer con el zoom
+        // Convertir posición del mundo a pantalla
+        int ux = (int)((unidades[i].x - cam.x) * cam.zoom);
+        int uy = (int)((unidades[i].y - cam.y) * cam.zoom);
+        int size = (int)(32 * cam.zoom);
 
-if (mouseX >= xEnPantalla && mouseX <= xEnPantalla + ancho &&
-    mouseY >= yEnPantalla && mouseY <= yEnPantalla + ancho) {
-    unidades[i].seleccionado = 1;
-}
+        if (esClickSimple) {
+            // Lógica de clic único: ¿El mouse está sobre el sprite?
+            if (x1 >= ux && x1 <= ux + size && y1 >= uy && y1 <= uy + size) {
+                unidades[i].seleccionado = 1;
+            } else {
+                unidades[i].seleccionado = 0; // Deseleccionar si clickeas el suelo
+            }
+        } else {
+            // Lógica de cuadro: ¿La unidad está dentro del rectángulo?
+            if (ux + (size/2) >= minX && ux + (size/2) <= maxX && 
+                uy + (size/2) >= minY && uy + (size/2) <= maxY) {
+                unidades[i].seleccionado = 1;
+            } else {
+                // Si no estamos presionando SHIFT (opcional), deseleccionamos los de fuera
+                unidades[i].seleccionado = 0;
+            }
+        }
     }
 }
-
-// Dar orden de movimiento o acción
-void ordenarUnidad(int mouseX, int mouseY, Camera cam, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
-    float mundoX = (mouseX / cam.zoom) + cam.x;
-    float mundoY = (mouseY / cam.zoom) + cam.y;
-
-    for (int i = 0; i < MAX_UNIDADES; i++) {
+void darOrdenMovimiento(Unidad unidades[], int max, int clickX, int clickY) {
+    int fila = 0;
+    int columna = 0;
+    
+    for (int i = 0; i < max; i++) {
         if (unidades[i].activa && unidades[i].seleccionado) {
-            unidades[i].destinoX = (int)mundoX;
-            unidades[i].destinoY = (int)mundoY;
-            unidades[i].estado = ESTADO_MOVIENDO;
-            
-            // Si el clic es cerca de la cueva y es minero, entrar
-            if (unidades[i].tipo == TIPO_MINERO) {
-                float distCueva = sqrt(pow(mundoX - CUEVA_X, 2) + pow(mundoY - CUEVA_Y, 2));
-                if (distCueva < 50) unidades[i].estado = ESTADO_EN_CUEVA;
+            // Creamos un pequeño desplazamiento (offset) para que no se encimen
+            unidades[i].destinoX = clickX + (columna * 35);
+            unidades[i].destinoY = clickY + (fila * 20);
+
+            columna++;
+            if (columna > 3) { // Máximo 4 unidades por fila en la formación
+                columna = 0;
+                fila++;
             }
         }
     }
 }
 
+// Dar orden de movimiento o acción
+void ordenarUnidad(int mX, int mY, Camera cam) {
+    float mundoX = (mX / cam.zoom) + cam.x;
+    float mundoY = (mY / cam.zoom) + cam.y;
+
+    for (int i = 0; i < MAX_UNIDADES; i++) {
+        if (!unidades[i].activa || !unidades[i].seleccionado) continue;
+
+        unidades[i].timerTrabajo = 0;
+        bool objetivoEncontrado = false;
+
+        // --- 1. BUSCAR ÁRBOLES (LEÑADORES) ---
+        if (unidades[i].tipo == TIPO_LENADOR) {
+            for (int a = 0; a < MAX_ARBOLES; a++) {
+                if (!arboles[a].activa) continue;
+                
+                // CORRECCIÓN: Usamos el CENTRO del árbol (Asumimos 32x32 promedio, centro +16)
+                // Si tienes árboles grandes, esto ayuda a que el clic en el medio funcione.
+                float centroArbolX = arboles[a].x + 16; 
+                float centroArbolY = arboles[a].y + 16; 
+                
+                float d = sqrt(pow(centroArbolX - mundoX, 2) + pow(centroArbolY - mundoY, 2));
+                
+                // Aumentamos el rango de clic a 60 (era 50) para facilitar la selección
+                if (d < 60.0f) { 
+                    unidades[i].estado = ESTADO_TALANDO;
+                    unidades[i].targetIndex = a; 
+                    
+                    // El destino es el borde del árbol, no el centro exacto (para que no se meta dentro)
+                    unidades[i].destinoX = arboles[a].x; 
+                    unidades[i].destinoY = arboles[a].y;
+                    
+                    objetivoEncontrado = true;
+                    break;
+                }
+            }
+        }
+
+        // --- 2. BUSCAR MINAS (MINEROS) ---
+        if (!objetivoEncontrado && unidades[i].tipo == TIPO_MINERO) {
+            for (int m = 0; m < MAX_MINAS; m++) {
+                if (!minas[m].activa) continue;
+                
+                // CORRECCIÓN: Usamos el CENTRO de la mina
+                float centroMinaX = minas[m].x + 16;
+                float centroMinaY = minas[m].y + 16;
+
+                float d = sqrt(pow(centroMinaX - mundoX, 2) + pow(centroMinaY - mundoY, 2));
+                
+                if (d < 60.0f) { // Rango aumentado a 60
+                    unidades[i].estado = ESTADO_MINANDO;
+                    unidades[i].targetIndex = m;
+                    unidades[i].destinoX = minas[m].x;
+                    unidades[i].destinoY = minas[m].y;
+                    objetivoEncontrado = true;
+                    break;
+                }
+            }
+        }
+
+        // --- 3. BUSCAR VACAS (CAZADORES) ---
+        if (!objetivoEncontrado && unidades[i].tipo == TIPO_CAZADOR) {
+            for (int v = 0; v < MAX_VACAS; v++) {
+                if (!manada[v].activa || manada[v].estadoVida != 0) continue;
+                
+                float centroVacaX = manada[v].x + 16;
+                float centroVacaY = manada[v].y + 16;
+
+                float d = sqrt(pow(centroVacaX - mundoX, 2) + pow(centroVacaY - mundoY, 2));
+                
+                if (d < 60.0f) {
+                    unidades[i].estado = ESTADO_CAZANDO;
+                    unidades[i].targetIndex = v;
+                    objetivoEncontrado = true;
+                    break;
+                }
+            }
+        }
+
+        // --- 4. SI NO ES NADA, MOVER ---
+        if (!objetivoEncontrado) {
+            unidades[i].estado = ESTADO_MOVIENDO;
+            unidades[i].destinoX = (int)mundoX;
+            unidades[i].destinoY = (int)mundoY;
+        }
+    }
+}
+int buscarVacaCercana(float x, float y, float rango) {
+    int mejorIndice = -1;
+    float mejorDist = rango;
+
+    for (int v = 0; v < MAX_VACAS; v++) {
+        // Solo buscamos vacas activas y que estén VIVAS (estadoVida == 0)
+        if (manada[v].activa && manada[v].estadoVida == 0) {
+            float dx = manada[v].x - x;
+            float dy = manada[v].y - y;
+            float dist = sqrt(dx * dx + dy * dy);
+            
+            if (dist < mejorDist) {
+                mejorDist = dist;
+                mejorIndice = v;
+            }
+        }
+    }
+    return mejorIndice;
+}
+int buscarArbolCercano(float x, float y, float rango) {
+    for (int i = 0; i < MAX_ARBOLES; i++) {
+        if (!arboles[i].activa) continue;
+        float d = sqrt(pow(arboles[i].x - x, 2) + pow(arboles[i].y - y, 2));
+        if (d < rango) return i;
+    }
+    return -1;
+}
+
+int buscarMinaCercana(float x, float y, float rango) {
+    for (int i = 0; i < MAX_MINAS; i++) {
+        if (!minas[i].activa) continue;
+        float d = sqrt(pow(minas[i].x - x, 2) + pow(minas[i].y - y, 2));
+        if (d < rango) return i;
+    }
+    return -1;
+}
+
+
+// Función auxiliar para generar el efecto visual
+void crearChispaBlanca(float x, float y) {
+    for (int i = 0; i < 10; i++) { // Creamos 10 chispas pequeñas
+        int p = -1;
+        // Buscar una partícula libre en el arreglo global
+        for (int j = 0; j < MAX_PARTICULAS; j++) {
+            if (!particulas[j].activo) { p = j; break; }
+        }
+
+        if (p != -1) {
+            particulas[p].activo = 1;
+            particulas[p].x = x + (rand() % 20 - 10); // Dispersión aleatoria
+            particulas[p].y = y + (rand() % 20 - 10);
+            particulas[p].vx = (float)(rand() % 100 - 50) / 20.0f; // Velocidad aleatoria
+            particulas[p].vy = (float)(rand() % 100 - 50) / 20.0f;
+            particulas[p].vida = 30 + (rand() % 20); // Duración corta
+            particulas[p].color = RGB(255, 255, 255); // Blanco puro
+        }
+    }
+}
+
+void actualizarRegeneracionRecursos() {
+    for (int i = 0; i < MAX_ARBOLES; i++) {
+        if (!arboles[i].activa) {
+            arboles[i].timerRegeneracion++;
+            if (arboles[i].timerRegeneracion >= TIEMPO_RESPAWN_RECURSOS) {
+                arboles[i].activa = 1;
+                arboles[i].vida = 5;
+                arboles[i].timerRegeneracion = 0;
+                crearChispaBlanca(arboles[i].x, arboles[i].y); // ¡EFECTO!
+            }
+        }
+    }
+}
+void actualizarParticulas() {
+    for (int i = 0; i < MAX_PARTICULAS; i++) {
+        if (particulas[i].activo) {
+            particulas[i].x += particulas[i].vx;
+            particulas[i].y += particulas[i].vy;
+            particulas[i].vida--;
+            if (particulas[i].vida <= 0) particulas[i].activo = 0;
+        }
+    }
+}
 void actualizarVacasEstablo() {
     for (int i = 0; i < MAX_VACAS; i++) {
         if (!vacas[i].activa) continue;
@@ -1489,8 +1925,8 @@ void abrirTesoro(Jugador *j)
                     int hierroGanado = 15 + (rand() % 11); // 15-25
                     j->oro += oroGanado;
                     j->hierro += hierroGanado;
-    				crearTextoFlotante(tx, ty, "Oro", 5, RGB(180, 180, 180));
-    				crearTextoFlotante(tx, ty, "Hierro", 3, RGB(255, 215, 0));
+    				crearTextoFlotante(tx, ty, "Hierro", 5, RGB(180, 180, 180));
+    				crearTextoFlotante(tx, ty - 15, "Oro", 3, RGB(255, 255, 0));
 					}
                 }
 
@@ -1710,7 +2146,50 @@ void actualizarYDibujarParticulas(HDC hdc, Camera cam) {
         }
     }
 }
+// Agrégala en mapa.c
+void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    // Si ya estamos en barco, nos bajamos solo si tocamos tierra
+    if (j->estadoBarco > 0) {
+        // Verificar si la casilla actual es tierra para bajarse
+        if (EsSuelo(j->x + 16, j->y + 32, mapa)) {
+            j->estadoBarco = 0; // A PIE
+            crearTextoFlotante(j->x, j->y, "A tierra!", 0, RGB(255, 255, 255));
+        } else {
+            crearTextoFlotante(j->x, j->y, "Acercate a la orilla", 0, RGB(255, 100, 100));
+        }
+        return;
+    }
 
+    // SI ESTAMOS A PIE: Intentar montar
+    // Verificamos si hay agua cerca (escaneamos alrededor)
+    BOOL aguaCerca = FALSE;
+    if (!EsSuelo(j->x + 16 + 20, j->y + 32, mapa)) aguaCerca = TRUE;
+    if (!EsSuelo(j->x + 16 - 20, j->y + 32, mapa)) aguaCerca = TRUE;
+    if (!EsSuelo(j->x + 16, j->y + 32 + 20, mapa)) aguaCerca = TRUE;
+    if (!EsSuelo(j->x + 16, j->y + 32 - 20, mapa)) aguaCerca = TRUE;
+
+    if (aguaCerca) {
+        // Prioridad: Barco Guerra > Bote Pesca (o menu de seleccion, aqui simplificamos)
+        // Logica: Si tienes los dos, usas el Barco Guerra para viajar lejos, 
+        // pero el usuario quiere pescar. Vamos a alternar o usar Bote si tienes caña.
+        
+        // REGLA DEL USUARIO: Para entrar al bote debes tener la caña
+        if (j->tieneBotePesca && j->tieneCana) {
+            j->estadoBarco = 1; // BOTE DE PESCA
+            // Empujamos al jugador un poco al agua para que no se trabe
+            j->x += (j->direccion == DIR_DERECHA) ? 20 : -20;
+            crearTextoFlotante(j->x, j->y, "Bote listo!", 0, RGB(100, 200, 255));
+        }
+        else if (j->tieneBarcoGuerra) {
+            j->estadoBarco = 2; // BARCO GUERRA
+             j->x += (j->direccion == DIR_DERECHA) ? 20 : -20;
+            crearTextoFlotante(j->x, j->y, "A la mar!", 0, RGB(200, 50, 50));
+        }
+        else if (j->tieneBotePesca && !j->tieneCana) {
+            crearTextoFlotante(j->x, j->y, "Necesitas una Cana!", 0, RGB(255, 50, 50));
+        }
+    }
+}
 void crearUnidadEnMapa(int tipo) {
     // Buscamos un slot libre en el array de unidades
     for (int i = 0; i < MAX_UNIDADES; i++) {
@@ -1824,24 +2303,31 @@ void venderItem(Jugador *j, int indice) {
 void dibujarTiendaInteractiva(HDC hdc, Jugador *j)
 {
     int tx = 450, ty = 120; // Posición base de la tienda
-
+    int startX = tx + 20;
+    int startY = ty + 40;
+    
+    // --- VARIABLES DE APOYO (Declaradas al inicio para evitar 'undeclared') ---
+    char costo1[32] = ""; 
+    char costo2[32] = "";
+    HBITMAP icono = NULL;
+    bool comprado = false;
+    bool alcanzable = false;
+    
     // 0. Detectar Mouse (Para efectos de Hover)
     POINT p;
     GetCursorPos(&p);
     ScreenToClient(WindowFromDC(hdc), &p);
     int mx = p.x;
     int my = p.y;
-
-    // 1. DIBUJAR PESTAÑAS CON EFECTO HOVER
-    // Pestaña COMPRAR
+        
+    // 1. DIBUJAR PESTAÑAS
     BOOL hoverC = (mx >= tx && mx <= tx + 150 && my >= ty - 40 && my <= ty);
     COLORREF colorC = (j->modoTienda == 0) ? RGB(80, 80, 90) : (hoverC ? RGB(60, 60, 70) : RGB(35, 35, 40));
     HBRUSH bComprar = CreateSolidBrush(colorC);
-    RECT rC = {tx, ty - 35, tx + 150, ty}; // ty - 35 para que sea una barra gruesa
+    RECT rC = {tx, ty - 35, tx + 150, ty};
     FillRect(hdc, &rC, bComprar);
     DeleteObject(bComprar);
 
-    // Pestaña VENDER
     BOOL hoverV = (mx >= tx + 150 && mx <= tx + 300 && my >= ty - 40 && my <= ty);
     COLORREF colorV = (j->modoTienda == 1) ? RGB(80, 80, 90) : (hoverV ? RGB(60, 60, 70) : RGB(35, 35, 40));
     HBRUSH bVender = CreateSolidBrush(colorV);
@@ -1849,13 +2335,12 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j)
     FillRect(hdc, &rV, bVender);
     DeleteObject(bVender);
 
-    // Textos de las pestañas
     SetBkMode(hdc, TRANSPARENT);
-    SetTextColor(hdc, RGB(255, 215, 0)); // Dorado
+    SetTextColor(hdc, RGB(255, 215, 0));
     TextOut(hdc, tx + 40, ty - 25, "COMPRAR", 7);
     TextOut(hdc, tx + 195, ty - 25, "VENDER", 6);
 
-    // 2. FONDO PRINCIPAL DE LA TIENDA
+    // 2. FONDO PRINCIPAL
     HBRUSH fondo = CreateSolidBrush(RGB(40, 40, 45));
     RECT rMain = {tx, ty, tx + 300, ty + 350};
     FillRect(hdc, &rMain, fondo);
@@ -1865,59 +2350,79 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j)
     FrameRect(hdc, &rMain, borde);
     DeleteObject(borde);
 
-    // 3. CONTENIDO DE LA REJILLA
-    int startX = tx + 20;
-    int startY = ty + 40;
-
+    // 3. CONTENIDO
     if (j->modoTienda == 0) // --- MODO COMPRAR ---
     {
-        for (int i = 0; i < 6; i++) 
+        // El bucle debe abarcar TODA la lógica de dibujo de items
+        for (int i = 0; i < 9; i++) // Cambiado a 9 para cubrir todos tus 'case'
         {
+            // Reiniciar estados para cada item del bucle
+            comprado = false;
+            alcanzable = false;
+            icono = NULL;
+            strcpy(costo1, "");
+            strcpy(costo2, "");
+
             int col = i % 2;
             int row = i / 2;
-            int x = startX + (col * 140);
-            int y = startY + (row * 65);
+            int ix = startX + (col * 140);
+            int iy = startY + (row * 65);
 
             // Efecto Hover en el Item
-            if (mx >= x && mx <= x + 130 && my >= y && my <= y + 60) {
+            if (mx >= ix && mx <= ix + 130 && my >= iy && my <= iy + 60) {
                 HBRUSH hHover = CreateSolidBrush(RGB(60, 60, 70));
-                RECT rH = {x - 5, y - 5, x + 135, y + 60};
+                RECT rH = {ix - 5, iy - 5, ix + 135, iy + 60};
                 FillRect(hdc, &rH, hHover);
                 DeleteObject(hHover);
             }
 
-            HBITMAP icono = NULL;
-            char costo1[32] = "", costo2[32] = "";
-            BOOL alcanzable = FALSE, comprado = FALSE;
-
             switch (i) {
                 case 0: icono = hBmpIconoEspada; sprintf(costo1, "20 Oro"); sprintf(costo2, "3 Hierro");
-                        if (j->tieneEspada) comprado = TRUE; else if (j->oro >= 20 && j->hierro >= 3) alcanzable = TRUE; break;
+                        if (j->tieneEspada) comprado = true; else if (j->oro >= 20 && j->hierro >= 3) alcanzable = true; break;
                 case 1: icono = hBmpIconoPico; sprintf(costo1, "15 Oro"); sprintf(costo2, "5 Piedra");
-                        if (j->tienePico) comprado = TRUE; else if (j->oro >= 15 && j->piedra >= 5) alcanzable = TRUE; break;
+                        if (j->tienePico) comprado = true; else if (j->oro >= 15 && j->piedra >= 5) alcanzable = true; break;
                 case 2: icono = hBmpIconoHacha; sprintf(costo1, "10 Oro"); sprintf(costo2, "10 Mad.");
-                        if (j->tieneHacha) comprado = TRUE; else if (j->oro >= 10 && j->madera >= 10) alcanzable = TRUE; break;
+                        if (j->tieneHacha) comprado = true; else if (j->oro >= 10 && j->madera >= 10) alcanzable = true; break;
                 case 3: icono = hBmpIconoArmaduraInv; sprintf(costo1, "40 Oro"); sprintf(costo2, "10 Hierro");
-                        if (j->tieneArmadura) comprado = TRUE; else if (j->oro >= 40 && j->hierro >= 10) alcanzable = TRUE; break;
+                        if (j->tieneArmadura) comprado = true; else if (j->oro >= 40 && j->hierro >= 10) alcanzable = true; break;
                 case 4: icono = hBmpInvCerrado; sprintf(costo1, "20 Oro"); sprintf(costo2, "30 Hojas");
-                        if (j->nivelMochila >= 2) comprado = TRUE; else if (j->oro >= 20 && j->hojas >= 30) alcanzable = TRUE; break;
+                        if (j->nivelMochila >= 2) comprado = true; else if (j->oro >= 20 && j->hojas >= 30) alcanzable = true; break;
                 case 5: icono = hBmpInvCerrado; 
-                        if (j->nivelMochila >= 3) comprado = TRUE;
+                        if (j->nivelMochila >= 3) comprado = true;
                         else if (j->nivelMochila == 2) { 
                             sprintf(costo1, "50 Oro"); sprintf(costo2, "10 Hierro");
-                            if (j->oro >= 50 && j->hierro >= 10) alcanzable = TRUE;
+                            if (j->oro >= 50 && j->hierro >= 10) alcanzable = true;
                         } else sprintf(costo1, "Req. Nivel 2"); break;
+                case 6: icono = hBmpIconoCana; 
+                        if (j->nivelMochila >= 2) {
+                            sprintf(costo1, "30 Oro"); sprintf(costo2, "10 Mad.");
+                            if (j->tieneCana) comprado = true; 
+                            else if (j->oro >= 30 && j->madera >= 10) alcanzable = true;
+                        } else sprintf(costo1, "Req. Nivel 2"); break;
+                case 7: icono = hBmpBote[1]; 
+                        if (j->nivelMochila >= 2) {
+                            sprintf(costo1, "50 Oro"); sprintf(costo2, "30 Mad.");
+                            if (j->tieneBotePesca) comprado = true; 
+                            else if (j->oro >= 50 && j->madera >= 30) alcanzable = true;
+                        } break;
+                case 8: icono = hBmpBarco[1]; 
+                        if (j->nivelMochila >= 2) {
+                            sprintf(costo1, "100 Oro"); sprintf(costo2, "20 Hierro");
+                            if (j->tieneBarcoGuerra) comprado = true; 
+                            else if (j->oro >= 100 && j->hierro >= 20 && j->madera >= 50) alcanzable = true;
+                        } break;
             }
 
-            if (icono) DibujarImagen(hdc, icono, x, y, 32, 32);
+            if (icono) DibujarImagen(hdc, icono, ix, iy, 32, 32);
+            
             if (comprado) {
                 SetTextColor(hdc, RGB(100, 100, 100));
-                TextOut(hdc, x + 40, y + 8, "COMPRADO", 8);
+                TextOut(hdc, ix + 40, iy + 8, "COMPRADO", 8);
             } else {
-                dibujarPrecio(hdc, x + 40, y + 8, costo1, costo2, alcanzable);
+                dibujarPrecio(hdc, ix + 40, iy + 8, costo1, costo2, alcanzable);
             }
-        }
-    }
+        } // <--- AQUÍ SE CIERRA EL FOR
+    } 
     else // --- MODO VENDER ---
     {
         int precios[] = {1, 2, 5, 1, 3, 8}; 
@@ -1926,27 +2431,26 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j)
         int cantidades[] = {j->madera, j->piedra, j->hierro, j->hojas, j->comida, j->cantHachas};
 
         for (int i = 0; i < 6; i++) {
-            int x = startX + ((i % 2) * 140);
-            int y = startY + ((i / 2) * 65);
+            int vx = startX + ((i % 2) * 140);
+            int vy = startY + ((i / 2) * 65);
 
-            // Efecto Hover en Venta
-            if (mx >= x && mx <= x + 130 && my >= y && my <= y + 60) {
+            if (mx >= vx && mx <= vx + 130 && my >= vy && my <= vy + 60) {
                 HBRUSH hHoverV = CreateSolidBrush(RGB(60, 60, 70));
-                RECT rHoverV = {x - 5, y - 5, x + 135, y + 60};
+                RECT rHoverV = {vx - 5, vy - 5, vx + 135, vy + 60};
                 FillRect(hdc, &rHoverV, hHoverV);
                 DeleteObject(hHoverV);
             }
 
-            if (iconos[i]) DibujarImagen(hdc, iconos[i], x, y, 32, 32);
+            if (iconos[i]) DibujarImagen(hdc, iconos[i], vx, vy, 32, 32);
             
             char txt[32]; 
             sprintf(txt, "%s (x%d)", nombres[i], cantidades[i]);
             SetTextColor(hdc, RGB(255, 255, 255)); 
-            TextOut(hdc, x + 40, y, txt, (int)strlen(txt));
+            TextOut(hdc, vx + 40, vy, txt, (int)strlen(txt));
             
             sprintf(txt, "+%d Oro", precios[i]);
             SetTextColor(hdc, RGB(255, 215, 0)); 
-            TextOut(hdc, x + 40, y + 16, txt, (int)strlen(txt));
+            TextOut(hdc, vx + 40, vy + 16, txt, (int)strlen(txt));
         }
     }
 }
@@ -1959,6 +2463,24 @@ void dibujarJugador(HDC hdc, Jugador jugador, Camera cam)
     int cx = (r.right / 2) - (tam / 2);
     int cy = (r.bottom / 2) - (tam / 2);
 
+if (jugador.nivelMochila >= 2 && jugador.tieneBotePesca) {
+	if (jugador.estadoBarco > 0) {
+        // DIBUJAR BARCO
+        HBITMAP imgBarco = NULL;
+        int dir = (jugador.direccion == DIR_IZQUIERDA) ? 0 : 1; // Simplificado Der/Izq
+        
+        if (jugador.estadoBarco == 1) imgBarco = hBmpBote[dir];       // Bote
+        else if (jugador.estadoBarco == 2) imgBarco = hBmpBarco[dir]; // Barco Guerra
+        
+        if (imgBarco) DibujarImagen(hdc, imgBarco, cx - 16, cy - 16, 64 * cam.zoom, 64 * cam.zoom);
+        
+        // Si está pescando, mostramos texto arriba
+        if (jugador.estadoBarco == 1) {
+            SetTextColor(hdc, RGB(0, 255, 255));
+            TextOut(hdc, cx, cy - 40, "PESCANDO...", 11);
+        }
+    }
+}
     // LÓGICA DE VISIBILIDAD
     if (jugador.armaduraEquipada)
     {
@@ -1983,6 +2505,7 @@ void dibujarJugador(HDC hdc, Jugador jugador, Camera cam)
         SelectObject(hdc, old);
         DeleteObject(luz);
     }
+    
 }
 // --- DIBUJADO PRINCIPAL (MAPA + HUD) ---
 void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda, int mapaId)
@@ -2140,6 +2663,7 @@ if (jugador->inventarioAbierto)
     // Fila 3: Hojas y Comida
     dibujarItemRejilla(hdc, hBmpIconoHoja, jugador->hojas, 99, startX, startY + 100, "Hojas");
     dibujarItemRejilla(hdc, hBmpIconoComida, jugador->comida, 99, startX + 170, startY + 100, "Comida");
+    dibujarItemRejilla(hdc, hBmpIconoPescado, jugador->pescado, 99, startX + 85, startY + 100, "Pescado");
 
     // Fila 4: Bolso/Nivel (Ahora tiene más aire arriba)
     char tBolso[16]; sprintf(tBolso, "Nivel %d", jugador->nivelMochila);

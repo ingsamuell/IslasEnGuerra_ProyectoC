@@ -56,18 +56,24 @@
 #define TIPO_MINERO  3    // Pico
 #define TIPO_SOLDADO 4    // Armadura
 
-// Estados
-#define ESTADO_IDLE 0
-#define ESTADO_MOVIENDO 1
-#define ESTADO_TRABAJANDO 2 // Talando o Atacando
-#define ESTADO_EN_CUEVA 3   // Minando (Invisible)
-#define ESTADO_CAZANDO  4 
+// Estados de la unidad
+#define ESTADO_IDLE      0
+#define ESTADO_MOVIENDO  1
+#define ESTADO_CAZANDO   2
+#define ESTADO_TALANDO   3
+#define ESTADO_MINANDO   4
+#define ESTADO_EN_CUEVA  5
+
 
 // Definición de la Cueva (Ubicación fija por ahora)
 #define CUEVA_X 1800
 #define CUEVA_Y 1250
-
+#define TIEMPO_RESPAWN_RECURSOS 1800  // 30 segundos si el juego corre a 60 FPS
+// Vida inicial de los recursos
+#define VIDA_INICIAL_ARBOL 5
+#define VIDA_INICIAL_MINA 10
 #define MAX_UNIDADES 100   // Aumentamos capacidad
+
 
 typedef struct {
     float x, y;
@@ -84,8 +90,8 @@ typedef struct {
     int frameAnim;
     int direccion;      
     char nombreGrupo[32]; 
-
-    int timerTrabajo;     // <--- AGREGADO: Para contar tiempo minando/cazando
+    int timerTrabajo;     // Para la barra de progreso de caza/mina
+	int targetIndex;      // Para saber a qué vaca está siguiendoo
     int contadorAnim;     // <--- AGREGADO: Para la animación de caminar
 
 } Unidad;
@@ -138,6 +144,14 @@ typedef struct {
     int nivelMochila;     // 1 = Básica, 2 = Herramientas, 3 = Completa
     int modoTienda;       // 0 = COMPRAR, 1 = VENDER
     
+    // --- NUEVO: SISTEMA DE PESCA Y BARCOS ---
+    int pescado;          // Nuevo recurso
+    BOOL tieneCana;       // ¿Compró la caña?
+    BOOL tieneBotePesca;  // ¿Compró el bote?
+    BOOL tieneBarcoGuerra;// ¿Compró el barco?
+    int estadoBarco;      // 0 = A Pie, 1 = Bote Pesca, 2 = Barco Guerra
+    int timerPesca;       // Contador para los 10 segundos
+    
     // Contadores de oficios/unidades
     int cantMineros;
     int cantLenadores;
@@ -168,6 +182,7 @@ typedef struct {
     int vida;           // 5 golpes
     int estadoVida;         // 0 = Viva, 1 = Muerta
     int tiempoMuerte;   // Contador para desaparecer (5 segundos)
+    int timerRegeneracion; // <--- NUEVO: Contador de tiempo para reaparecer
 } Vaca;
 
 // --- ESTRUCTURA DE ÁRBOL ---
@@ -177,6 +192,7 @@ typedef struct {
     int tipo;   // 0 = Árbol Chico, 1 = Árbol Grande
     int activa; // 1 = Existe
     int vida;   // <--- NUEVO: Vida del árbol (5 golpes)
+    int timerRegeneracion; // <--- NUEVO: Contador de tiempo para reaparecer
 } Arbol;
 typedef struct {
     float x, y;
