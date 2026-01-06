@@ -53,9 +53,10 @@ void dibujarEstablo(HDC hdc, Camera cam);
 void inicializarUnidades();
 void spawnearEscuadron(int tipo, int cantidad, int x, int y); // Ahora recibe CANTIDAD
 void dibujarUnidades(HDC hdc, Camera cam);
+void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j); // Necesita al Jugador para darle recursos
 
 // Control
-void ordenarUnidad(int mouseX, int mouseY, Camera cam);
+void ordenarUnidad(int mouseX, int mouseY, Camera cam, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 
 /* --- DIBUJADO PRINCIPAL (Partida) --- */
 void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda, int mapaId);
@@ -80,24 +81,12 @@ void procesarEnterMenu(HWND hwnd, EstadoJuego *estado);
 void procesarClickMochila(int mouseX, int mouseY, Jugador *jugador, HWND hwnd);
 void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, HWND hwnd);
 void procesarClickSeleccionMapa(int x, int y, HWND hwnd, EstadoJuego *estado);
-void dibujarInterfazSeleccion(HDC hdc); // La función del cuadro verde
 
 // Inicialización de islas con parámetro de mapa
 void inicializarIslas(int mapaId);
-// Prototipos de Funciones de Sistema
-int buscarVacaCercana(float x, float y, float rango);
-void actualizarRegeneracionRecursos();
-void crearChispaBlanca(float x, float y);
-void actualizarParticulas();
-void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j);
-void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j);
-void actualizarAnimacionUnidad(Unidad *u, float dx, float dy);
-void dibujarUnidades(HDC hdc, Camera cam);
-void darOrdenMovimiento(Unidad unidades[], int max, int clickX, int clickY);
-void crearTextoFlotante(float x, float y, const char* etiqueta, int cantidad, COLORREF color);
 
-// Al final del archivo, antes del #endif
+// Al final del archivo, antes del #endifw
 void dibujarMina(HDC hdc, Camera cam);
 extern Unidad unidades[MAX_UNIDADES]; // Indica a otros archivos que el arreglo existe
-
+ 
 #endif /* MAPA_H */
