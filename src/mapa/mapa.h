@@ -86,6 +86,9 @@ void dibujarInterfazSeleccion(HDC hdc); // La función del cuadro verde
 void inicializarIslas(int mapaId);
 // Prototipos de Funciones de Sistema
 int buscarVacaCercana(float x, float y, float rango);
+int buscarArbolCercano(float x, float y, float rango);
+void inicializarRecursosEstaticos(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
+int buscarMinaCercana(float x, float y, float rango);
 void actualizarRegeneracionRecursos();
 void crearChispaBlanca(float x, float y);
 void actualizarParticulas();

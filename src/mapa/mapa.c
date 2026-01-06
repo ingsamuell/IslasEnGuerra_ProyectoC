@@ -912,39 +912,83 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
     for (int i = 0; i < MAX_UNIDADES; i++) {
         if (!unidades[i].activa) continue;
 
-        // Calcular distancia al objetivo
+        // Calcular distancia al objetivo de movimiento
         float dx = unidades[i].destinoX - unidades[i].x;
         float dy = unidades[i].destinoY - unidades[i].y;
         float dist = sqrt(dx * dx + dy * dy);
 
         switch (unidades[i].estado) {
-            
-			case ESTADO_TALANDO:
-            case ESTADO_MINANDO:
-                if (dist > 45.0f) { // Se detiene a 45px del centro del recurso
+
+            case ESTADO_TALANDO: {
+                // 1. Buscar el árbol más cercano para interactuar con él
+                int a = buscarArbolCercano(unidades[i].x, unidades[i].y, 80.0f);
+                
+                if (a == -1) { 
+                    unidades[i].estado = ESTADO_IDLE;
+                    break; 
+                }
+
+                // 2. Si está lejos, caminar hacia él
+                if (dist > 40.0f) { 
+                    unidades[i].x += (dx / dist) * 2.0f;
+                    unidades[i].y += (dy / dist) * 2.0f;
+                    actualizarAnimacionUnidad(&unidades[i], dx, dy);
+                } else {
+                    // 3. Trabajar (Talar)
+                    unidades[i].timerTrabajo++;
+                    if (unidades[i].timerTrabajo >= 250) { // Velocidad de tala
+                        unidades[i].timerTrabajo = 0;
+                        j->madera += 10;
+                        crearTextoFlotante(unidades[i].x, unidades[i].y, "+10 Madera", 1, RGB(139, 69, 19));
+                        
+                        // Restar vida al árbol
+                        arboles[a].vida--;
+                        if (arboles[a].vida <= 0) {
+                            arboles[a].activa = 0; // Desaparece
+                            arboles[a].timerRegeneracion = 0; // Inicia reloj de respawn
+                            unidades[i].estado = ESTADO_IDLE;
+                        }
+                    }
+                }
+                break;
+            }
+
+            case ESTADO_MINANDO: {
+                int m = buscarMinaCercana(unidades[i].x, unidades[i].y, 80.0f);
+                
+                if (m == -1) { 
+                    unidades[i].estado = ESTADO_IDLE;
+                    break; 
+                }
+
+                if (dist > 40.0f) {
                     unidades[i].x += (dx / dist) * 2.0f;
                     unidades[i].y += (dy / dist) * 2.0f;
                     actualizarAnimacionUnidad(&unidades[i], dx, dy);
                 } else {
                     unidades[i].timerTrabajo++;
-                    int limite = (unidades[i].estado == ESTADO_TALANDO) ? 250 : 400;
-                    
-                    if (unidades[i].timerTrabajo >= limite) {
+                    if (unidades[i].timerTrabajo >= 400) { // Minar es más lento
                         unidades[i].timerTrabajo = 0;
-                        if (unidades[i].estado == ESTADO_TALANDO) j->madera += 10;
-                        else j->hierro += 5;
-                        crearTextoFlotante(unidades[i].x, unidades[i].y, "+Recurso", 1, RGB(255, 255, 255));
+                        j->hierro += 5;
+                        crearTextoFlotante(unidades[i].x, unidades[i].y, "+5 Hierro", 1, RGB(192, 192, 192));
+                        
+                        minas[m].vida--;
+                        if (minas[m].vida <= 0) {
+                            minas[m].activa = 0;
+                            unidades[i].estado = ESTADO_IDLE;
+                        }
                     }
                 }
                 break;
+            }
 
             case ESTADO_CAZANDO: {
                 int v = unidades[i].targetIndex;
+                // Si el objetivo no existe o ya murió
                 if (v == -1 || !manada[v].activa || manada[v].estadoVida != 0) {
-                    // Si la vaca muere, intentar buscar otra automáticamente
                     int proxima = buscarVacaCercana(unidades[i].x, unidades[i].y, 500.0f);
-                    if (proxima != -1) { unidades[i].targetIndex = proxima; }
-                    else { unidades[i].estado = ESTADO_IDLE; }
+                    if (proxima != -1) unidades[i].targetIndex = proxima;
+                    else unidades[i].estado = ESTADO_IDLE;
                     break;
                 }
 
@@ -953,17 +997,18 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
                 float distVaca = sqrt(dvx * dvx + dvy * dvy);
 
                 if (distVaca > 35.0f) {
-                    unidades[i].x += (dvx / distVaca) * 2.0f;
-                    unidades[i].y += (dvy / distVaca) * 2.0f;
+                    unidades[i].x += (dvx / distVaca) * 2.2f;
+                    unidades[i].y += (dvy / distVaca) * 2.2f;
                     actualizarAnimacionUnidad(&unidades[i], dvx, dvy);
                 } else {
                     unidades[i].timerTrabajo++;
                     if (unidades[i].timerTrabajo >= 300) {
-                        manada[v].estadoVida = 1;
+                        manada[v].estadoVida = 1; // Muerta para respawn
                         j->comida += 15;
                         crearTextoFlotante(manada[v].x, manada[v].y, "+15 Comida", 1, RGB(255, 200, 0));
                         unidades[i].timerTrabajo = 0;
-                        unidades[i].targetIndex = -1; 
+                        unidades[i].targetIndex = -1;
+                        unidades[i].estado = ESTADO_IDLE;
                     }
                 }
                 break;
@@ -978,6 +1023,19 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
                     unidades[i].estado = ESTADO_IDLE;
                 }
                 break;
+
+            case ESTADO_IDLE:
+                // Aquí podrías poner una animación de respiración o descanso
+                break;
+        }
+    }
+
+    // Actualizar textos flotantes
+    for (int t = 0; t < MAX_TEXTOS; t++) {
+        if (textos[t].activo && textos[t].vida > 0) {
+            textos[t].y -= 0.5f; // Sube despacio
+            textos[t].vida--;
+            if (textos[t].vida <= 0) textos[t].activo = 0;
         }
     }
 }
@@ -1204,6 +1262,37 @@ int buscarVacaCercana(float x, float y, float rango) {
         }
     }
     return mejorIndice;
+}
+int buscarArbolCercano(float x, float y, float rango) {
+    int indice = -1;
+    float distMin = rango;
+    for (int i = 0; i < MAX_ARBOLES; i++) {
+        if (!arboles[i].activa) continue;
+        float dx = arboles[i].x - x;
+        float dy = arboles[i].y - y;
+        float d = sqrt(dx * dx + dy * dy);
+        if (d < distMin) {
+            distMin = d;
+            indice = i;
+        }
+    }
+    return indice;
+}
+
+int buscarMinaCercana(float x, float y, float rango) {
+    int indice = -1;
+    float distMin = rango;
+    for (int i = 0; i < MAX_MINAS; i++) {
+        if (!minas[i].activa) continue;
+        float dx = minas[i].x - x;
+        float dy = minas[i].y - y;
+        float d = sqrt(dx * dx + dy * dy);
+        if (d < distMin) {
+            distMin = d;
+            indice = i;
+        }
+    }
+    return indice;
 }
 
 
