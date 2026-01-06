@@ -144,6 +144,14 @@ typedef struct {
     int nivelMochila;     // 1 = Básica, 2 = Herramientas, 3 = Completa
     int modoTienda;       // 0 = COMPRAR, 1 = VENDER
     
+    // --- NUEVO: SISTEMA DE PESCA Y BARCOS ---
+    int pescado;          // Nuevo recurso
+    BOOL tieneCana;       // ¿Compró la caña?
+    BOOL tieneBotePesca;  // ¿Compró el bote?
+    BOOL tieneBarcoGuerra;// ¿Compró el barco?
+    int estadoBarco;      // 0 = A Pie, 1 = Bote Pesca, 2 = Barco Guerra
+    int timerPesca;       // Contador para los 10 segundos
+    
     // Contadores de oficios/unidades
     int cantMineros;
     int cantLenadores;

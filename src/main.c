@@ -252,6 +252,7 @@ case WM_PAINT:
                             abrirTesoro(&miJugador);
                             golpearVaca(&miJugador);
                             picarMina(&miJugador);
+                            intentarMontarBarco(&miJugador, mapaMundo);
                             InvalidateRect(hwnd, NULL, FALSE);
                             break;
                     }
@@ -318,7 +319,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             if (estadoJuego.estadoActual == ESTADO_PARTIDA) {
                 // Actualizar sistemas del juego
                 actualizarVacas(mapaMundo); 
-                actualizarLogicaSistema();
+                actualizarLogicaSistema(&miJugador);
                 actualizarUnidades(mapaMundo, &miJugador);
                 actualizarRegeneracionRecursos(); // <--- Llamar aquí
                 

@@ -32,7 +32,11 @@ extern HBITMAP hBmpVaca[8];
 extern HBITMAP hBmpVacaMuerta; // Nueva variable
 extern HBITMAP hBmpArbolChico;
 extern HBITMAP hBmpArbolGrande;
-
+// Agrega estas declaraciones extern
+extern HBITMAP hBmpIconoPescado;
+extern HBITMAP hBmpIconoCana;
+extern HBITMAP hBmpBote[2];  // 0: Izq, 1: Der
+extern HBITMAP hBmpBarco[2]; // 0: Izq, 1: Der
 // (Opcional, pero útil si lo usas en otros lados)
 extern char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
 

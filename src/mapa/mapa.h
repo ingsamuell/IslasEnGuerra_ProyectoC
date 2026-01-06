@@ -36,7 +36,12 @@ void crearChispas(int x, int y, COLORREF color);
 void actualizarYDibujarParticulas(HDC hdc, Camera cam);
 void agregarTextoFlotante(int x, int y, char* contenido, COLORREF color);
 void actualizarYDibujarTextos(HDC hdc, Camera cam);
-void actualizarLogicaSistema();
+void actualizarLogicaSistema(Jugador *j);
+void crearTextoFlotante(int x, int y, const char* formato, int cantidad, COLORREF color);
+void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
+
+// --- NUEVO: Función auxiliar para colisiones de caja (si la necesitas pública) ---
+int VerificarColisionCaja(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 
 /* --- SISTEMA DE TESOROS --- */
 void inicializarTesoros();
@@ -92,7 +97,6 @@ int buscarMinaCercana(float x, float y, float rango);
 void actualizarRegeneracionRecursos();
 void crearChispaBlanca(float x, float y);
 void actualizarParticulas();
-void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j);
 void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j);
 void actualizarAnimacionUnidad(Unidad *u, float dx, float dy);
 void dibujarUnidades(HDC hdc, Camera cam);

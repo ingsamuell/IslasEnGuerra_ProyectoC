@@ -130,7 +130,7 @@ void agregarTextoFlotante(int x, int y, char* contenido, COLORREF color) {
     }
 }
 
-void actualizarLogicaSistema() {
+void actualizarLogicaSistema(Jugador *j) {
     // 1. Actualizar Textos Flotantes
     for (int i = 0; i < MAX_TEXTOS; i++) {
         if (listaTextos[i].activo) {
@@ -140,6 +140,19 @@ void actualizarLogicaSistema() {
                 listaTextos[i].activo = 0;
             }
         }
+    }
+    // --- SISTEMA DE PESCA ---
+    if (j->estadoBarco == 1) { // Solo en Bote de Pesca
+        j->timerPesca++;
+        
+        // Cada 10 segundos (60 FPS * 10 = 600 frames)
+        if (j->timerPesca >= 600) {
+            j->timerPesca = 0;
+            j->pescado += 3;
+            crearTextoFlotante(j->x, j->y, "+3 Pescado", 1, RGB(100, 200, 255));
+        }
+    } else {
+        j->timerPesca = 0; // Reset si se baja
     }
     
     // 2. Podrías mover aquí también la lógica de chispas si quieres centralizar
@@ -295,7 +308,12 @@ void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FIL
     jugador->comida = 0;
     jugador->hojas = 0;
     jugador->carne = 0;
-    
+    jugador->pescado = 0;
+    jugador->tieneCana = FALSE;
+    jugador->tieneBotePesca = FALSE;
+    jugador->tieneBarcoGuerra = FALSE;
+    jugador->estadoBarco = 0; // Empieza a pie
+    jugador->timerPesca = 0;
     // Inicialización de contadores de unidades
     jugador->cantMineros = 0;
     jugador->cantLenadores = 0;
@@ -329,37 +347,57 @@ int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
     return (mapa[fila][col] == 1);
 }
 
-void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy)
-{
-    if (dy > 0)
-        jugador->direccion = DIR_ABAJO;
-    else if (dy < 0)
-        jugador->direccion = DIR_ARRIBA;
-    else if (dx < 0)
-        jugador->direccion = DIR_IZQUIERDA;
-    else if (dx > 0)
-        jugador->direccion = DIR_DERECHA;
+void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy) {
+    // 1. Determinar dirección para la animación
+    if (dy > 0) jugador->direccion = DIR_ABAJO;
+    else if (dy < 0) jugador->direccion = DIR_ARRIBA;
+    else if (dx < 0) jugador->direccion = DIR_IZQUIERDA;
+    else if (dx > 0) jugador->direccion = DIR_DERECHA;
 
+    // 2. Animación
     jugador->pasoAnimacion++;
     int estado = (jugador->pasoAnimacion / 4) % 4;
-    if (estado == 0)
-        jugador->frameAnim = 1;
-    else if (estado == 1)
-        jugador->frameAnim = 0;
-    else if (estado == 2)
-        jugador->frameAnim = 2;
-    else if (estado == 3)
-        jugador->frameAnim = 0;
+    jugador->frameAnim = (estado == 1) ? 0 : (estado == 2) ? 2 : 0;
 
-    int futuraX = jugador->x + (dx * jugador->velocidad);
-    int futuraY = jugador->y + (dy * jugador->velocidad);
+    // 3. Calcular posición futura (Usamos la velocidad del jugador)
+    float futuraX = jugador->x + (dx * jugador->velocidad);
+    float futuraY = jugador->y + (dy * jugador->velocidad);
 
-    // Verificamos colisión en los PIES (centro abajo)
-    int colisionX = futuraX + 16;
-    int colisionY = futuraY + 30;
+    // 4. Punto de colisión: Los pies del personaje
+    int colisionX = (int)futuraX + 16;
+    int colisionY = (int)futuraY + 30;
 
-    if (EsSuelo(colisionX, colisionY, mapa))
-    {
+    bool puedeMoverse = false;
+    int sueloDetectado = EsSuelo(colisionX, colisionY, mapa);
+
+    // 5. LÓGICA DE COLISIÓN HÍBRIDA
+    if (jugador->estadoBarco == 0) {
+        // MODO A PIE: Solo si hay suelo (sueloDetectado == 1)
+        if (sueloDetectado == 1) puedeMoverse = true;
+    } 
+    else {
+        // MODO BARCO: Solo si hay agua (sueloDetectado == 0)
+        if (sueloDetectado == 0) {
+            puedeMoverse = true;
+
+            // Restricción de distancia para el Bote de Pesca
+            if (jugador->estadoBarco == 1) {
+                float distCentro = sqrt(pow(futuraX - 1600, 2) + pow(futuraY - 1600, 2));
+                if (distCentro > 1200) {
+                    puedeMoverse = false;
+                    // Solo creamos el texto si intentamos avanzar más
+                    static int timerAviso = 0;
+                    if (++timerAviso > 60) {
+                        crearTextoFlotante(jugador->x, jugador->y, "Muy profundo!", 0, RGB(255, 100, 100));
+                        timerAviso = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    // 6. Aplicar movimiento si es válido
+    if (puedeMoverse) {
         jugador->x = futuraX;
         jugador->y = futuraY;
     }
@@ -808,6 +846,31 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
                         j->oro -= 50; j->hierro -= 10;
                         spawnearEscuadron(TIPO_SOLDADO, cantidad, j->x + 50, j->y);
 
+                    }
+                }
+                // --- NUEVOS ITEMS NIVEL 2 ---
+                else if (i == 4) { // CAÑA DE PESCAR
+                    if (j->nivelMochila >= 2 && !j->tieneCana) {
+                         if (j->oro >= 30 && j->madera >= 10) {
+                             j->oro -= 30; j->madera -= 10;
+                             j->tieneCana = TRUE;
+                         }
+                    }
+                }
+                else if (i == 5) { // BOTE DE PESCA
+                    if (j->nivelMochila >= 2 && !j->tieneBotePesca) {
+                        if (j->oro >= 50 && j->madera >= 30) {
+                            j->oro -= 50; j->madera -= 30;
+                            j->tieneBotePesca = TRUE;
+                        }
+                    }
+                }
+                else if (i == 6) { // BARCO DE GUERRA
+                    if (j->nivelMochila >= 2 && !j->tieneBarcoGuerra) {
+                        if (j->oro >= 100 && j->hierro >= 20 && j->madera >= 50) {
+                            j->oro -= 100; j->hierro -= 20; j->madera -= 50;
+                            j->tieneBarcoGuerra = TRUE;
+                        }
                     }
                 }
 
@@ -2083,7 +2146,50 @@ void actualizarYDibujarParticulas(HDC hdc, Camera cam) {
         }
     }
 }
+// Agrégala en mapa.c
+void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    // Si ya estamos en barco, nos bajamos solo si tocamos tierra
+    if (j->estadoBarco > 0) {
+        // Verificar si la casilla actual es tierra para bajarse
+        if (EsSuelo(j->x + 16, j->y + 32, mapa)) {
+            j->estadoBarco = 0; // A PIE
+            crearTextoFlotante(j->x, j->y, "A tierra!", 0, RGB(255, 255, 255));
+        } else {
+            crearTextoFlotante(j->x, j->y, "Acercate a la orilla", 0, RGB(255, 100, 100));
+        }
+        return;
+    }
 
+    // SI ESTAMOS A PIE: Intentar montar
+    // Verificamos si hay agua cerca (escaneamos alrededor)
+    BOOL aguaCerca = FALSE;
+    if (!EsSuelo(j->x + 16 + 20, j->y + 32, mapa)) aguaCerca = TRUE;
+    if (!EsSuelo(j->x + 16 - 20, j->y + 32, mapa)) aguaCerca = TRUE;
+    if (!EsSuelo(j->x + 16, j->y + 32 + 20, mapa)) aguaCerca = TRUE;
+    if (!EsSuelo(j->x + 16, j->y + 32 - 20, mapa)) aguaCerca = TRUE;
+
+    if (aguaCerca) {
+        // Prioridad: Barco Guerra > Bote Pesca (o menu de seleccion, aqui simplificamos)
+        // Logica: Si tienes los dos, usas el Barco Guerra para viajar lejos, 
+        // pero el usuario quiere pescar. Vamos a alternar o usar Bote si tienes caña.
+        
+        // REGLA DEL USUARIO: Para entrar al bote debes tener la caña
+        if (j->tieneBotePesca && j->tieneCana) {
+            j->estadoBarco = 1; // BOTE DE PESCA
+            // Empujamos al jugador un poco al agua para que no se trabe
+            j->x += (j->direccion == DIR_DERECHA) ? 20 : -20;
+            crearTextoFlotante(j->x, j->y, "Bote listo!", 0, RGB(100, 200, 255));
+        }
+        else if (j->tieneBarcoGuerra) {
+            j->estadoBarco = 2; // BARCO GUERRA
+             j->x += (j->direccion == DIR_DERECHA) ? 20 : -20;
+            crearTextoFlotante(j->x, j->y, "A la mar!", 0, RGB(200, 50, 50));
+        }
+        else if (j->tieneBotePesca && !j->tieneCana) {
+            crearTextoFlotante(j->x, j->y, "Necesitas una Cana!", 0, RGB(255, 50, 50));
+        }
+    }
+}
 void crearUnidadEnMapa(int tipo) {
     // Buscamos un slot libre en el array de unidades
     for (int i = 0; i < MAX_UNIDADES; i++) {
@@ -2197,24 +2303,31 @@ void venderItem(Jugador *j, int indice) {
 void dibujarTiendaInteractiva(HDC hdc, Jugador *j)
 {
     int tx = 450, ty = 120; // Posición base de la tienda
-
+    int startX = tx + 20;
+    int startY = ty + 40;
+    
+    // --- VARIABLES DE APOYO (Declaradas al inicio para evitar 'undeclared') ---
+    char costo1[32] = ""; 
+    char costo2[32] = "";
+    HBITMAP icono = NULL;
+    bool comprado = false;
+    bool alcanzable = false;
+    
     // 0. Detectar Mouse (Para efectos de Hover)
     POINT p;
     GetCursorPos(&p);
     ScreenToClient(WindowFromDC(hdc), &p);
     int mx = p.x;
     int my = p.y;
-
-    // 1. DIBUJAR PESTAÑAS CON EFECTO HOVER
-    // Pestaña COMPRAR
+        
+    // 1. DIBUJAR PESTAÑAS
     BOOL hoverC = (mx >= tx && mx <= tx + 150 && my >= ty - 40 && my <= ty);
     COLORREF colorC = (j->modoTienda == 0) ? RGB(80, 80, 90) : (hoverC ? RGB(60, 60, 70) : RGB(35, 35, 40));
     HBRUSH bComprar = CreateSolidBrush(colorC);
-    RECT rC = {tx, ty - 35, tx + 150, ty}; // ty - 35 para que sea una barra gruesa
+    RECT rC = {tx, ty - 35, tx + 150, ty};
     FillRect(hdc, &rC, bComprar);
     DeleteObject(bComprar);
 
-    // Pestaña VENDER
     BOOL hoverV = (mx >= tx + 150 && mx <= tx + 300 && my >= ty - 40 && my <= ty);
     COLORREF colorV = (j->modoTienda == 1) ? RGB(80, 80, 90) : (hoverV ? RGB(60, 60, 70) : RGB(35, 35, 40));
     HBRUSH bVender = CreateSolidBrush(colorV);
@@ -2222,13 +2335,12 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j)
     FillRect(hdc, &rV, bVender);
     DeleteObject(bVender);
 
-    // Textos de las pestañas
     SetBkMode(hdc, TRANSPARENT);
-    SetTextColor(hdc, RGB(255, 215, 0)); // Dorado
+    SetTextColor(hdc, RGB(255, 215, 0));
     TextOut(hdc, tx + 40, ty - 25, "COMPRAR", 7);
     TextOut(hdc, tx + 195, ty - 25, "VENDER", 6);
 
-    // 2. FONDO PRINCIPAL DE LA TIENDA
+    // 2. FONDO PRINCIPAL
     HBRUSH fondo = CreateSolidBrush(RGB(40, 40, 45));
     RECT rMain = {tx, ty, tx + 300, ty + 350};
     FillRect(hdc, &rMain, fondo);
@@ -2238,59 +2350,79 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j)
     FrameRect(hdc, &rMain, borde);
     DeleteObject(borde);
 
-    // 3. CONTENIDO DE LA REJILLA
-    int startX = tx + 20;
-    int startY = ty + 40;
-
+    // 3. CONTENIDO
     if (j->modoTienda == 0) // --- MODO COMPRAR ---
     {
-        for (int i = 0; i < 6; i++) 
+        // El bucle debe abarcar TODA la lógica de dibujo de items
+        for (int i = 0; i < 9; i++) // Cambiado a 9 para cubrir todos tus 'case'
         {
+            // Reiniciar estados para cada item del bucle
+            comprado = false;
+            alcanzable = false;
+            icono = NULL;
+            strcpy(costo1, "");
+            strcpy(costo2, "");
+
             int col = i % 2;
             int row = i / 2;
-            int x = startX + (col * 140);
-            int y = startY + (row * 65);
+            int ix = startX + (col * 140);
+            int iy = startY + (row * 65);
 
             // Efecto Hover en el Item
-            if (mx >= x && mx <= x + 130 && my >= y && my <= y + 60) {
+            if (mx >= ix && mx <= ix + 130 && my >= iy && my <= iy + 60) {
                 HBRUSH hHover = CreateSolidBrush(RGB(60, 60, 70));
-                RECT rH = {x - 5, y - 5, x + 135, y + 60};
+                RECT rH = {ix - 5, iy - 5, ix + 135, iy + 60};
                 FillRect(hdc, &rH, hHover);
                 DeleteObject(hHover);
             }
 
-            HBITMAP icono = NULL;
-            char costo1[32] = "", costo2[32] = "";
-            BOOL alcanzable = FALSE, comprado = FALSE;
-
             switch (i) {
                 case 0: icono = hBmpIconoEspada; sprintf(costo1, "20 Oro"); sprintf(costo2, "3 Hierro");
-                        if (j->tieneEspada) comprado = TRUE; else if (j->oro >= 20 && j->hierro >= 3) alcanzable = TRUE; break;
+                        if (j->tieneEspada) comprado = true; else if (j->oro >= 20 && j->hierro >= 3) alcanzable = true; break;
                 case 1: icono = hBmpIconoPico; sprintf(costo1, "15 Oro"); sprintf(costo2, "5 Piedra");
-                        if (j->tienePico) comprado = TRUE; else if (j->oro >= 15 && j->piedra >= 5) alcanzable = TRUE; break;
+                        if (j->tienePico) comprado = true; else if (j->oro >= 15 && j->piedra >= 5) alcanzable = true; break;
                 case 2: icono = hBmpIconoHacha; sprintf(costo1, "10 Oro"); sprintf(costo2, "10 Mad.");
-                        if (j->tieneHacha) comprado = TRUE; else if (j->oro >= 10 && j->madera >= 10) alcanzable = TRUE; break;
+                        if (j->tieneHacha) comprado = true; else if (j->oro >= 10 && j->madera >= 10) alcanzable = true; break;
                 case 3: icono = hBmpIconoArmaduraInv; sprintf(costo1, "40 Oro"); sprintf(costo2, "10 Hierro");
-                        if (j->tieneArmadura) comprado = TRUE; else if (j->oro >= 40 && j->hierro >= 10) alcanzable = TRUE; break;
+                        if (j->tieneArmadura) comprado = true; else if (j->oro >= 40 && j->hierro >= 10) alcanzable = true; break;
                 case 4: icono = hBmpInvCerrado; sprintf(costo1, "20 Oro"); sprintf(costo2, "30 Hojas");
-                        if (j->nivelMochila >= 2) comprado = TRUE; else if (j->oro >= 20 && j->hojas >= 30) alcanzable = TRUE; break;
+                        if (j->nivelMochila >= 2) comprado = true; else if (j->oro >= 20 && j->hojas >= 30) alcanzable = true; break;
                 case 5: icono = hBmpInvCerrado; 
-                        if (j->nivelMochila >= 3) comprado = TRUE;
+                        if (j->nivelMochila >= 3) comprado = true;
                         else if (j->nivelMochila == 2) { 
                             sprintf(costo1, "50 Oro"); sprintf(costo2, "10 Hierro");
-                            if (j->oro >= 50 && j->hierro >= 10) alcanzable = TRUE;
+                            if (j->oro >= 50 && j->hierro >= 10) alcanzable = true;
                         } else sprintf(costo1, "Req. Nivel 2"); break;
+                case 6: icono = hBmpIconoCana; 
+                        if (j->nivelMochila >= 2) {
+                            sprintf(costo1, "30 Oro"); sprintf(costo2, "10 Mad.");
+                            if (j->tieneCana) comprado = true; 
+                            else if (j->oro >= 30 && j->madera >= 10) alcanzable = true;
+                        } else sprintf(costo1, "Req. Nivel 2"); break;
+                case 7: icono = hBmpBote[1]; 
+                        if (j->nivelMochila >= 2) {
+                            sprintf(costo1, "50 Oro"); sprintf(costo2, "30 Mad.");
+                            if (j->tieneBotePesca) comprado = true; 
+                            else if (j->oro >= 50 && j->madera >= 30) alcanzable = true;
+                        } break;
+                case 8: icono = hBmpBarco[1]; 
+                        if (j->nivelMochila >= 2) {
+                            sprintf(costo1, "100 Oro"); sprintf(costo2, "20 Hierro");
+                            if (j->tieneBarcoGuerra) comprado = true; 
+                            else if (j->oro >= 100 && j->hierro >= 20 && j->madera >= 50) alcanzable = true;
+                        } break;
             }
 
-            if (icono) DibujarImagen(hdc, icono, x, y, 32, 32);
+            if (icono) DibujarImagen(hdc, icono, ix, iy, 32, 32);
+            
             if (comprado) {
                 SetTextColor(hdc, RGB(100, 100, 100));
-                TextOut(hdc, x + 40, y + 8, "COMPRADO", 8);
+                TextOut(hdc, ix + 40, iy + 8, "COMPRADO", 8);
             } else {
-                dibujarPrecio(hdc, x + 40, y + 8, costo1, costo2, alcanzable);
+                dibujarPrecio(hdc, ix + 40, iy + 8, costo1, costo2, alcanzable);
             }
-        }
-    }
+        } // <--- AQUÍ SE CIERRA EL FOR
+    } 
     else // --- MODO VENDER ---
     {
         int precios[] = {1, 2, 5, 1, 3, 8}; 
@@ -2299,27 +2431,26 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j)
         int cantidades[] = {j->madera, j->piedra, j->hierro, j->hojas, j->comida, j->cantHachas};
 
         for (int i = 0; i < 6; i++) {
-            int x = startX + ((i % 2) * 140);
-            int y = startY + ((i / 2) * 65);
+            int vx = startX + ((i % 2) * 140);
+            int vy = startY + ((i / 2) * 65);
 
-            // Efecto Hover en Venta
-            if (mx >= x && mx <= x + 130 && my >= y && my <= y + 60) {
+            if (mx >= vx && mx <= vx + 130 && my >= vy && my <= vy + 60) {
                 HBRUSH hHoverV = CreateSolidBrush(RGB(60, 60, 70));
-                RECT rHoverV = {x - 5, y - 5, x + 135, y + 60};
+                RECT rHoverV = {vx - 5, vy - 5, vx + 135, vy + 60};
                 FillRect(hdc, &rHoverV, hHoverV);
                 DeleteObject(hHoverV);
             }
 
-            if (iconos[i]) DibujarImagen(hdc, iconos[i], x, y, 32, 32);
+            if (iconos[i]) DibujarImagen(hdc, iconos[i], vx, vy, 32, 32);
             
             char txt[32]; 
             sprintf(txt, "%s (x%d)", nombres[i], cantidades[i]);
             SetTextColor(hdc, RGB(255, 255, 255)); 
-            TextOut(hdc, x + 40, y, txt, (int)strlen(txt));
+            TextOut(hdc, vx + 40, vy, txt, (int)strlen(txt));
             
             sprintf(txt, "+%d Oro", precios[i]);
             SetTextColor(hdc, RGB(255, 215, 0)); 
-            TextOut(hdc, x + 40, y + 16, txt, (int)strlen(txt));
+            TextOut(hdc, vx + 40, vy + 16, txt, (int)strlen(txt));
         }
     }
 }
@@ -2332,6 +2463,24 @@ void dibujarJugador(HDC hdc, Jugador jugador, Camera cam)
     int cx = (r.right / 2) - (tam / 2);
     int cy = (r.bottom / 2) - (tam / 2);
 
+if (jugador.nivelMochila >= 2 && jugador.tieneBotePesca) {
+	if (jugador.estadoBarco > 0) {
+        // DIBUJAR BARCO
+        HBITMAP imgBarco = NULL;
+        int dir = (jugador.direccion == DIR_IZQUIERDA) ? 0 : 1; // Simplificado Der/Izq
+        
+        if (jugador.estadoBarco == 1) imgBarco = hBmpBote[dir];       // Bote
+        else if (jugador.estadoBarco == 2) imgBarco = hBmpBarco[dir]; // Barco Guerra
+        
+        if (imgBarco) DibujarImagen(hdc, imgBarco, cx - 16, cy - 16, 64 * cam.zoom, 64 * cam.zoom);
+        
+        // Si está pescando, mostramos texto arriba
+        if (jugador.estadoBarco == 1) {
+            SetTextColor(hdc, RGB(0, 255, 255));
+            TextOut(hdc, cx, cy - 40, "PESCANDO...", 11);
+        }
+    }
+}
     // LÓGICA DE VISIBILIDAD
     if (jugador.armaduraEquipada)
     {
@@ -2356,6 +2505,7 @@ void dibujarJugador(HDC hdc, Jugador jugador, Camera cam)
         SelectObject(hdc, old);
         DeleteObject(luz);
     }
+    
 }
 // --- DIBUJADO PRINCIPAL (MAPA + HUD) ---
 void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda, int mapaId)
@@ -2513,6 +2663,7 @@ if (jugador->inventarioAbierto)
     // Fila 3: Hojas y Comida
     dibujarItemRejilla(hdc, hBmpIconoHoja, jugador->hojas, 99, startX, startY + 100, "Hojas");
     dibujarItemRejilla(hdc, hBmpIconoComida, jugador->comida, 99, startX + 170, startY + 100, "Comida");
+    dibujarItemRejilla(hdc, hBmpIconoPescado, jugador->pescado, 99, startX + 85, startY + 100, "Pescado");
 
     // Fila 4: Bolso/Nivel (Ahora tiene más aire arriba)
     char tBolso[16]; sprintf(tBolso, "Nivel %d", jugador->nivelMochila);

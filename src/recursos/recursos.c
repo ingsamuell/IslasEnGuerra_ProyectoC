@@ -41,6 +41,10 @@ HBITMAP hBmpSoldadoAnim[4][3];
 // Tienda
 HBITMAP hBmpTienda[2] = {NULL, NULL};
 
+HBITMAP hBmpIconoPescado = NULL;
+HBITMAP hBmpIconoCana = NULL;
+HBITMAP hBmpBote[2] = {NULL, NULL};
+HBITMAP hBmpBarco[2] = {NULL, NULL};
 // Mundo
 HBITMAP hBmpIslaCentral = NULL; HBITMAP hBmpIslaNoreste = NULL;
 HBITMAP hBmpCastilloJugador = NULL;
@@ -186,7 +190,14 @@ void CargarRecursos() {
     hBmpIconoHierro = (HBITMAP)LoadImage(NULL, "assets/items/icono_hierro.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
     hBmpIconoHoja = (HBITMAP)LoadImage(NULL, "assets/items/icono_hoja.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
     hBmpIconoComida = (HBITMAP)LoadImage(NULL, "assets/items/icono_comida.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-
+	hBmpIconoPescado = (HBITMAP)LoadImage(NULL, "assets/items/pescado-item-pixilart.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    hBmpIconoCana = (HBITMAP)LoadImage(NULL, "assets/items/caña-de-pescar-item-pixilart.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    
+    hBmpBote[0] = (HBITMAP)LoadImage(NULL, "assets/barco/Bote_izq.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    hBmpBote[1] = (HBITMAP)LoadImage(NULL, "assets/barco/Bote_der.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    
+    hBmpBarco[0] = (HBITMAP)LoadImage(NULL, "assets/barco/Barco_izq.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    hBmpBarco[1] = (HBITMAP)LoadImage(NULL, "assets/barco/Barco_der.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
     // NUEVOS ITEMS DE TU IMAGEN
     hBmpIconoEspada = (HBITMAP)LoadImage(NULL, "assets/items/item_espada.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
     hBmpIconoPico = (HBITMAP)LoadImage(NULL, "assets/items/item_pico.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
@@ -295,6 +306,12 @@ void LiberarRecursos() {
     if (hBmpIconoHacha) DeleteObject(hBmpIconoHacha);
     if (hBmpIconoArmaduraInv) DeleteObject(hBmpIconoArmaduraInv);
     if (hBmpIconoBolso) DeleteObject(hBmpIconoBolso);
+    if(hBmpIconoPescado) DeleteObject(hBmpIconoPescado);
+    if(hBmpIconoCana) DeleteObject(hBmpIconoCana);
+    if(hBmpBote[0]) DeleteObject(hBmpBote[0]);
+    if(hBmpBote[1]) DeleteObject(hBmpBote[1]);
+    if(hBmpBarco[0]) DeleteObject(hBmpBarco[0]);
+    if(hBmpBarco[1]) DeleteObject(hBmpBarco[1]);
     
     // ICONOS DE RECURSOS (Si los cargaste por separado)
     if (hBmpIconoMadera) DeleteObject(hBmpIconoMadera);
