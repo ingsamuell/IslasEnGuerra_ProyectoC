@@ -97,7 +97,6 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j);
 void actualizarAnimacionUnidad(Unidad *u, float dx, float dy);
 void dibujarUnidades(HDC hdc, Camera cam);
 void darOrdenMovimiento(Unidad unidades[], int max, int clickX, int clickY);
-void crearTextoFlotante(float x, float y, const char* etiqueta, int cantidad, COLORREF color);
 
 // Al final del archivo, antes del #endif
 void dibujarMina(HDC hdc, Camera cam);

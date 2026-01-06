@@ -144,20 +144,15 @@ void actualizarLogicaSistema() {
     
     // 2. Podrías mover aquí también la lógica de chispas si quieres centralizar
 }
-void crearTextoFlotante(float x, float y, const char* etiqueta, int cantidad, COLORREF color) {
-    for (int i = 0; i < 20; i++) {
-        if (textos[i].vida <= 0) {
-            textos[i].x = x;
-            textos[i].y = y;
-            textos[i].color = color;
-            textos[i].vida = 60; // Dura 60 frames
-            
-            // Si la cantidad es > 0, ponemos el signo + (ej: +10 Madera)
-            if (cantidad > 0) {
-                sprintf(textos[i].texto, "+%d %s", cantidad, etiqueta);
-            } else {
-                sprintf(textos[i].texto, "%s", etiqueta);
-            }
+void crearTextoFlotante(int x, int y, const char* formato, int cantidad, COLORREF color) {
+    for (int i = 0; i < MAX_TEXTOS_FLOTANTES; i++) {
+        if (!listaTextos[i].activo) {
+            listaTextos[i].x = (float)x;
+            listaTextos[i].y = (float)y;
+            sprintf(listaTextos[i].texto, "+%d %s", cantidad, formato);
+            listaTextos[i].vida = 40; // Duración en frames
+            listaTextos[i].color = color;
+            listaTextos[i].activo = true;
             break;
         }
     }
@@ -1264,35 +1259,21 @@ int buscarVacaCercana(float x, float y, float rango) {
     return mejorIndice;
 }
 int buscarArbolCercano(float x, float y, float rango) {
-    int indice = -1;
-    float distMin = rango;
     for (int i = 0; i < MAX_ARBOLES; i++) {
         if (!arboles[i].activa) continue;
-        float dx = arboles[i].x - x;
-        float dy = arboles[i].y - y;
-        float d = sqrt(dx * dx + dy * dy);
-        if (d < distMin) {
-            distMin = d;
-            indice = i;
-        }
+        float d = sqrt(pow(arboles[i].x - x, 2) + pow(arboles[i].y - y, 2));
+        if (d < rango) return i;
     }
-    return indice;
+    return -1;
 }
 
 int buscarMinaCercana(float x, float y, float rango) {
-    int indice = -1;
-    float distMin = rango;
     for (int i = 0; i < MAX_MINAS; i++) {
         if (!minas[i].activa) continue;
-        float dx = minas[i].x - x;
-        float dy = minas[i].y - y;
-        float d = sqrt(dx * dx + dy * dy);
-        if (d < distMin) {
-            distMin = d;
-            indice = i;
-        }
+        float d = sqrt(pow(minas[i].x - x, 2) + pow(minas[i].y - y, 2));
+        if (d < rango) return i;
     }
-    return indice;
+    return -1;
 }
 
 
