@@ -202,6 +202,24 @@ void dibujarJugador(HDC hdc, Jugador jugador, Camera cam)
     HBITMAP spriteFinal = hBmpJugador; // Default
     int dir = jugador.direccion;
     int anim = jugador.frameAnim;
+    
+	if (jugador.estadoBarco > 0) {
+        HBITMAP imgBarco = NULL;
+        int dir = (jugador.direccion == DIR_IZQUIERDA) ? 0 : 1; 
+        
+        if (jugador.estadoBarco == 1) imgBarco = hBmpBote[dir];       
+        else if (jugador.estadoBarco == 2) imgBarco = hBmpBarco[dir]; 
+        
+        if (imgBarco) {
+            // Dibujamos el barco un poco más grande (64px) y centrado
+            DibujarImagen(hdc, imgBarco, cx - 16, cy - 16, 80 * cam.zoom, 64 * cam.zoom);
+        }
+        
+        if (jugador.estadoBarco == 1) {
+            SetTextColor(hdc, RGB(0, 255, 255));
+            TextOut(hdc, cx, cy - 40, "PESCANDO", 11);
+        }
+    }
 
     if (jugador.armaduraEquipada) {
         if (hBmpArmaduraAnim[dir][anim]) spriteFinal = hBmpArmaduraAnim[dir][anim];

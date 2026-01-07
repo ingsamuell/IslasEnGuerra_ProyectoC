@@ -82,6 +82,9 @@
 #define HERRAMIENTA_ESPADA 1
 #define HERRAMIENTA_PICO   2
 #define HERRAMIENTA_HACHA  3
+// Coordenadas del Muelle (Lado derecho de la Isla Central)
+#define MUELLE_X 2050 
+#define MUELLE_Y 1600
 
 // --- ESTRUCTURA DE UNIDAD (NPCs) ---
 typedef struct {
@@ -143,7 +146,7 @@ typedef struct {
     BOOL tieneArmadura;
     BOOL tieneCana;
     BOOL tieneBotePesca;
-    BOOL tieneBarcoGuerra;
+	int cantBarcosGuerra; // <--- CAMBIO: Ahora es un contador (0 a 4)
     
     // Estados de Equipo
     BOOL armaduraEquipada;
