@@ -190,91 +190,92 @@ void actualizarYDibujarTextos(HDC hdc, Camera cam) {
         }
     }
 }
-// --- NUEVA FUNCIÓN MAGICA: ESCANEAR BMP ---
-void generarColisionDesdeImagen(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], HBITMAP hBmp, int mundoX, int mundoY)
-{
-    if (!hBmp)
-        return;
 
-    // 1. Crear un contexto de memoria para leer el BMP
-    HDC hdcScreen = GetDC(NULL);
-    HDC hdcMem = CreateCompatibleDC(hdcScreen);
-    HBITMAP hOld = (HBITMAP)SelectObject(hdcMem, hBmp);
+// Función Auxiliar: Obtiene el color visual real en una coordenada (X,Y) del mundo
+// Revisa todas las islas activas para ver qué color hay en ese píxel.
+COLORREF ObtenerColorDePunto(int x, int y, int mapaId) {
+    // Recorremos las islas para ver si el punto cae dentro de alguna
+    for (int i = 0; i < MAX_ISLAS; i++) {
+        if (!misIslas[i].activa) continue;
 
-    // 2. Obtener dimensiones reales de la imagen
-    BITMAP bm;
-    GetObject(hBmp, sizeof(BITMAP), &bm);
+        // Verificar colisión con el rectángulo de la imagen de la isla
+        if (x >= misIslas[i].x && x < misIslas[i].x + misIslas[i].ancho &&
+            y >= misIslas[i].y && y < misIslas[i].y + misIslas[i].alto) {
+            
+            // Calcular coordenada local dentro de la imagen
+            int localX = x - misIslas[i].x;
+            int localY = y - misIslas[i].y;
 
-    // 3. Escanear la imagen saltando de celda en celda (cada 16px)
-    // Usamos TAMANO_CELDA_BASE (16) para ir rápido y coincidir con la rejilla
-    for (int y = 0; y < bm.bmHeight; y += TAMANO_CELDA_BASE)
-    {
-        for (int x = 0; x < bm.bmWidth; x += TAMANO_CELDA_BASE)
-        {
+            // Obtener el BMP correcto
+            HBITMAP hBmp = obtenerImagenIsla(i, mapaId);
+            if (!hBmp) continue;
 
-            // Leemos el píxel en el CENTRO de la celda para mayor precisión
-            // (x + 8, y + 8)
-            COLORREF color = GetPixel(hdcMem, x + (TAMANO_CELDA_BASE / 2), y + (TAMANO_CELDA_BASE / 2));
+            // Leer el píxel de la memoria
+            HDC hdcScreen = GetDC(NULL);
+            HDC hdcMem = CreateCompatibleDC(hdcScreen);
+            HBITMAP hOld = (HBITMAP)SelectObject(hdcMem, hBmp);
 
-            // 4. LÓGICA DE DETECCIÓN
-            // Si el color NO es Magenta (255, 0, 255), entonces es Tierra.
-            if (color != RGB(255, 0, 255))
-            {
+            COLORREF color = GetPixel(hdcMem, localX, localY);
 
-                // Calcular posición en la Matriz Global
-                int gridX = (mundoX + x) / TAMANO_CELDA_BASE;
-                int gridY = (mundoY + y) / TAMANO_CELDA_BASE;
+            SelectObject(hdcMem, hOld);
+            DeleteDC(hdcMem);
+            ReleaseDC(NULL, hdcScreen);
 
-                // Validar límites y marcar
-                if (gridY >= 0 && gridY < MUNDO_FILAS && gridX >= 0 && gridX < MUNDO_COLUMNAS)
-                {
-                    mapa[gridY][gridX] = 1; // 1 = TIERRA
-                }
-            }
+            return color; 
+        }
+    }
+    // Si no toca ninguna isla, es el fondo (Agua Profunda)
+    return RGB(0, 100, 180); 
+}
+
+// Genera la matriz de colisión basada en las imágenes visuales
+// Se ejecuta UNA SOLA VEZ al cargar el mapa.
+void generarColisionDeMapaCompleto(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId) {
+    
+    // 1. Limpiamos todo a AGUA (0)
+    for (int y = 0; y < MUNDO_FILAS; y++) {
+        for (int x = 0; x < MUNDO_COLUMNAS; x++) {
+            mapa[y][x] = 0;
         }
     }
 
-    // Limpieza
-    SelectObject(hdcMem, hOld);
-    DeleteDC(hdcMem);
-    ReleaseDC(NULL, hdcScreen);
+    // 2. Escaneamos punto por punto
+    // MUNDO_FILAS ahora es 200. TAMANO_CELDA_BASE es 16.
+    // 200 * 16 = 3200 (Tamaño total del mundo)
+    
+    for (int fila = 0; fila < MUNDO_FILAS; fila++) {
+        for (int col = 0; col < MUNDO_COLUMNAS; col++) {
+            
+            // Calculamos el centro exacto de esta celda en el mundo real
+            int mundoX = (col * TAMANO_CELDA_BASE) + (TAMANO_CELDA_BASE / 2);
+            int mundoY = (fila * TAMANO_CELDA_BASE) + (TAMANO_CELDA_BASE / 2);
+
+            // Leemos el color en ese punto
+            COLORREF c = ObtenerColorDePunto(mundoX, mundoY, mapaId);
+
+            // --- REGLA DE COLISIÓN POR COLOR ---
+            // Si el color NO es Magenta (Transparente) Y NO es Azul Fondo
+            // Entonces es TIERRA.
+            // Magenta suele ser RGB(255, 0, 255). Ajusta si tu transparente es distinto.
+            if (c != RGB(255, 0, 255) && c != RGB(0, 100, 180)) {
+                mapa[fila][col] = 1; // TIERRA
+            }
+        }
+    }
 }
 
-void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
-{
-    // 1. Llenar todo de agua al principio
-    for (int i = 0; i < MUNDO_FILAS; i++)
-        for (int j = 0; j < MUNDO_COLUMNAS; j++)
-            mapa[i][j] = 0;
+void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId) { // Agrega mapaId aquí
+    // Inicializamos las posiciones de las islas (esto configura misIslas[])
+    inicializarIslas(mapaId); 
 
-    // 2. Escanear cada imagen de isla y "estamparla" en el mapa
-    // Esto copia la forma exacta (sin el magenta) a la matriz de colisión
-
-    // Isla Central
-    if (misIslas[0].activa)
-        generarColisionDesdeImagen(mapa, hBmpIslaGrande, misIslas[0].x, misIslas[0].y);
-
-    // Isla Norte
-    if (misIslas[1].activa)
-        generarColisionDesdeImagen(mapa, hBmpIslaSec2, misIslas[1].x, misIslas[1].y);
-
-    // Isla Sur
-    if (misIslas[2].activa)
-        generarColisionDesdeImagen(mapa, hBmpIslaSec4, misIslas[2].x, misIslas[2].y);
-
-    // Isla Oeste
-    if (misIslas[3].activa)
-        generarColisionDesdeImagen(mapa, hBmpIslaSec1, misIslas[3].x, misIslas[3].y);
-
-    // Isla Este
-    if (misIslas[4].activa)
-        generarColisionDesdeImagen(mapa, hBmpIslaSec3, misIslas[4].x, misIslas[4].y);
+    // Generamos la matriz física leyendo las imágenes
+    generarColisionDeMapaCompleto(mapa, mapaId);
 }
 
 void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId)
 {
     inicializarIslas(mapaId);
-    inicializarMapa(mapa);
+    inicializarMapa(mapa, mapaId);
     inicializarArboles(mapa);
     inicializarVacas();
     inicializarMinas(mapa);
@@ -348,60 +349,53 @@ int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
 }
 
 void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy) {
-    // 1. Determinar dirección para la animación
+    
+    // --- ANIMACIÓN ---
     if (dy > 0) jugador->direccion = DIR_ABAJO;
     else if (dy < 0) jugador->direccion = DIR_ARRIBA;
     else if (dx < 0) jugador->direccion = DIR_IZQUIERDA;
     else if (dx > 0) jugador->direccion = DIR_DERECHA;
 
-    // 2. Animación
-    jugador->pasoAnimacion++;
-    int estado = (jugador->pasoAnimacion / 4) % 4;
-    jugador->frameAnim = (estado == 1) ? 0 : (estado == 2) ? 2 : 0;
+    if (dx != 0 || dy != 0) {
+        jugador->pasoAnimacion++;
+        int estado = (jugador->pasoAnimacion / 4) % 4;
+        jugador->frameAnim = (estado == 0) ? 1 : ((estado == 2) ? 2 : 0);
+    } else {
+        jugador->frameAnim = 1;
+    }
 
-    // 3. Calcular posición futura (Usamos la velocidad del jugador)
-    float futuraX = jugador->x + (dx * jugador->velocidad);
-    float futuraY = jugador->y + (dy * jugador->velocidad);
+    // --- FÍSICA EJE X ---
+    int futuroX = jugador->x + (dx * jugador->velocidad);
+    
+    // PROBANDO CON 16 (CENTRO DEL SPRITE)
+    int piesY = jugador->y + 8; 
+    
+    int piesX = futuroX + 16; 
+    
+    int col = piesX / TAMANO_CELDA_BASE; 
+    int fila = piesY / TAMANO_CELDA_BASE;
 
-    // 4. Punto de colisión: Los pies del personaje
-    int colisionX = (int)futuraX + 16;
-    int colisionY = (int)futuraY + 30;
-
-    bool puedeMoverse = false;
-    int sueloDetectado = EsSuelo(colisionX, colisionY, mapa);
-
-    // 5. LÓGICA DE COLISIÓN HÍBRIDA
-    if (jugador->estadoBarco == 0) {
-        // MODO A PIE: Solo si hay suelo (sueloDetectado == 1)
-        if (sueloDetectado == 1) puedeMoverse = true;
-    } 
-    else {
-        // MODO BARCO: Solo si hay agua (sueloDetectado == 0)
-        if (sueloDetectado == 0) {
-            puedeMoverse = true;
-
-            // Restricción de distancia para el Bote de Pesca
-            if (jugador->estadoBarco == 1) {
-                float distCentro = sqrt(pow(futuraX - 1600, 2) + pow(futuraY - 1600, 2));
-                if (distCentro > 1200) {
-                    puedeMoverse = false;
-                    // Solo creamos el texto si intentamos avanzar más
-                    static int timerAviso = 0;
-                    if (++timerAviso > 60) {
-                        crearTextoFlotante(jugador->x, jugador->y, "Muy profundo!", 0, RGB(255, 100, 100));
-                        timerAviso = 0;
-                    }
-                }
-            }
+    if (col >= 0 && col < MUNDO_COLUMNAS && fila >= 0 && fila < MUNDO_FILAS) {
+        if (mapa[fila][col] == 1) { 
+            jugador->x = futuroX; 
         }
     }
 
-    // 6. Aplicar movimiento si es válido
-    if (puedeMoverse) {
-        jugador->x = futuraX;
-        jugador->y = futuraY;
+    // --- FÍSICA EJE Y ---
+    int futuroY = jugador->y + (dy * jugador->velocidad);
+    
+    piesX = jugador->x + 16; 
+    piesY = futuroY + 8; // <--- AQUÍ TAMBIÉN 16
+    
+    col = piesX / TAMANO_CELDA_BASE;
+    fila = piesY / TAMANO_CELDA_BASE;
+
+    if (col >= 0 && col < MUNDO_COLUMNAS && fila >= 0 && fila < MUNDO_FILAS) {
+        if (mapa[fila][col] == 1) { 
+            jugador->y = futuroY; 
+        }
     }
-}
+} 
 
 void actualizarCamara(Camera *camara, Jugador jugador)
 {

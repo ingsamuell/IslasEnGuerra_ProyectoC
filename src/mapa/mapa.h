@@ -6,7 +6,7 @@
 #include "../global.h"
 
 /* --- LÓGICA DEL JUEGO (Setup y Física) --- */
-void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
+void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId);
 void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId);
 void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy);
 
