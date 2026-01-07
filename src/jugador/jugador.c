@@ -97,7 +97,7 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
     if (bmpBolso) DibujarImagen(hdc, bmpBolso, 20, 120, 64, 64);
 
     // D. CAJA DE MANO / ITEM ACTIVO -> Y = 200 (Posición Abajo)
-    int boxX = 20;
+    int boxX = 25;
     int boxY = 200;
 
     // Dibujar el cuadro gris
@@ -116,7 +116,7 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
     else if (jugador->herramientaActiva == HERRAMIENTA_HACHA) iconoMano = hBmpIconoHacha;
     
     // Dibujar el icono centrado
-    if (iconoMano) DibujarImagen(hdc, iconoMano, boxX + 8, boxY + 8, 32, 32);
+    if (iconoMano) DibujarImagen(hdc, iconoMano, boxX + 4, boxY + 4, 40, 40);
 
     // E. INVENTARIO ABIERTO (Rejilla)
     if (jugador->inventarioAbierto)
