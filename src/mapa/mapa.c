@@ -765,66 +765,76 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
         switch (unidades[i].estado) {
 
             case ESTADO_TALANDO: {
-                int a = unidades[i].targetIndex;
-                if (a == -1 || !misArboles[a].activa) { 
-                int nuevo = buscarArbolCercano(unidades[i].x, unidades[i].y, 150.0f);
-                if (nuevo != -1) {
-                    unidades[i].targetIndex = nuevo;
-                    unidades[i].destinoX = misArboles[nuevo].x;
-                    unidades[i].destinoY = misArboles[nuevo].y;
-            } else {
-                unidades[i].estado = ESTADO_IDLE;
-            }
-            break; 
-            }
+    int a = unidades[i].targetIndex;
     
-            float targetX = misArboles[a].x + 16;
-            float targetY = misArboles[a].y + 16;
-            float dx = targetX - unidades[i].x;
-            float dy = targetY - unidades[i].y;
-            float distObjeto = sqrt(dx*dx + dy*dy);
-
-            if (distObjeto > 50.0f) { 
-             // Moverse hacia el árbol
-             unidades[i].x += (dx / distObjeto) * 2.0f;
-             unidades[i].y += (dy / distObjeto) * 2.0f;
-            actualizarAnimacionUnidad(&unidades[i], dx, dy);
+    // Si no hay árbol objetivo o ya no existe, buscar nuevo
+    if (a == -1 || !misArboles[a].activa) { 
+        int nuevo = buscarArbolCercano(unidades[i].x, unidades[i].y, 150.0f);
+        if (nuevo != -1) {
+            unidades[i].targetIndex = nuevo;
+            unidades[i].destinoX = misArboles[nuevo].x;
+            unidades[i].destinoY = misArboles[nuevo].y;
         } else {
-             // Talar el árbol
-            unidades[i].timerTrabajo++;
-            if (unidades[i].timerTrabajo >= 250) { 
-                unidades[i].timerTrabajo = 0;
+            unidades[i].estado = ESTADO_IDLE;
+        }
+        break; 
+    }
+    
+    // Calcular posición del centro del árbol
+    float targetX = misArboles[a].x + 16;
+    float targetY = misArboles[a].y + 16;
+    float dx = targetX - unidades[i].x;
+    float dy = targetY - unidades[i].y;
+    float distObjeto = sqrt(dx*dx + dy*dy);
+
+    // Si está lejos, moverse hacia el árbol
+    if (distObjeto > 50.0f) { 
+        unidades[i].x += (dx / distObjeto) * 2.0f;
+        unidades[i].y += (dy / distObjeto) * 2.0f;
+        actualizarAnimacionUnidad(&unidades[i], dx, dy);
+    } 
+    // Si está cerca, trabajar
+    else {
+        unidades[i].timerTrabajo++;
+        
+        // Cuando se completa el trabajo (250 frames = ~4 segundos)
+        if (unidades[i].timerTrabajo >= 250) { 
+            unidades[i].timerTrabajo = 0;
             
-            // AQUÍ ESTÁ LA CLAVE: REDUCIR LA VIDA DEL ÁRBOL
-            misArboles[a].vida--;  // ¡IMPORTANTE! Reducir vida
+            // --- TALAR EL ÁRBOL (1 GOLPE) ---
+            // Calcular recursos según tipo de árbol
+            int mad = (misArboles[a].tipo == 1) ? 5 : 3;    // Grande: 5, Chico: 3
+            int hoj = (misArboles[a].tipo == 1) ? 10 : 4;   // Grande: 10, Chico: 4
             
-            // Mostrar efecto de golpe
+            // Dar recursos al jugador
+            j->madera += mad;
+            j->hojas += hoj;
+            
+            // Mostrar textos flotantes
+            crearTextoFlotante(misArboles[a].x, misArboles[a].y, "Madera", mad, RGB(150, 75, 0));
+            crearTextoFlotante(misArboles[a].x, misArboles[a].y - 20, "Hojas", hoj, RGB(34, 139, 34));
+            
+            // Efecto visual
             crearChispas(targetX, targetY, RGB(139, 69, 19));
             
-            if (misArboles[a].vida <= 0) {
-                // Dar recompensa
-                j->madera += 10;
-                crearTextoFlotante(unidades[i].x, unidades[i].y, "Madera", 10, RGB(139, 69, 19));
-                
-                // Desactivar árbol
-                misArboles[a].activa = 0;
-                misArboles[a].timerRegeneracion = 0;
-                
-                // Actualizar mapa de colisiones si es necesario
-                int col = (int)(misArboles[a].x / TAMANO_CELDA_BASE);
-                int fil = (int)(misArboles[a].y / TAMANO_CELDA_BASE);
-                if(fil >= 0 && fil < MUNDO_FILAS && col >= 0 && col < MUNDO_COLUMNAS)
-                    mapa[fil][col] = 1; 
-                
-                unidades[i].targetIndex = -1;
-                
-                // Buscar otro árbol inmediatamente
-                int next = buscarArbolCercano(unidades[i].x, unidades[i].y, 200.0f);
-                if(next != -1) {
-                    unidades[i].targetIndex = next;
-                } else {
-                    unidades[i].estado = ESTADO_IDLE;
-                }
+            // Desactivar el árbol (como matar vaca)
+            misArboles[a].activa = 0;
+            misArboles[a].timerRegeneracion = 0;
+            
+            // Actualizar mapa de colisiones (liberar el espacio)
+            int col = (int)(misArboles[a].x / TAMANO_CELDA_BASE);
+            int fil = (int)(misArboles[a].y / TAMANO_CELDA_BASE);
+            if(fil >= 0 && fil < MUNDO_FILAS && col >= 0 && col < MUNDO_COLUMNAS)
+                mapa[fil][col] = 1; 
+            
+            // Buscar nuevo árbol automáticamente
+            unidades[i].targetIndex = -1;
+            int next = buscarArbolCercano(unidades[i].x, unidades[i].y, 200.0f);
+            if(next != -1) {
+                unidades[i].targetIndex = next;
+                // Mantener en estado TALANDO con nuevo objetivo
+            } else {
+                unidades[i].estado = ESTADO_IDLE;
             }
         }
     }
@@ -833,6 +843,8 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
 
             case ESTADO_MINANDO: {
     int m = unidades[i].targetIndex;
+    
+    // Si no hay mina objetivo o ya no existe, buscar nueva
     if (m == -1 || !misMinas[m].activa) { 
         int nueva = buscarMinaCercana(unidades[i].x, unidades[i].y, 150.0f);
         if (nueva != -1) unidades[i].targetIndex = nueva;
@@ -840,63 +852,62 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
         break; 
     }
     
+    // Calcular posición del centro de la mina
     float targetX = misMinas[m].x + 16;
     float targetY = misMinas[m].y + 16;
     float dx = targetX - unidades[i].x;
     float dy = targetY - unidades[i].y;
     float distMina = sqrt(dx*dx + dy*dy);
 
+    // Si está lejos, moverse hacia la mina
     if (distMina > 50.0f) { 
-        // Moverse hacia la mina
         unidades[i].x += (dx / distMina) * 2.0f;
         unidades[i].y += (dy / distMina) * 2.0f;
         actualizarAnimacionUnidad(&unidades[i], dx, dy);
-    } else {
-        // Picar la mina
+    } 
+    // Si está cerca, trabajar
+    else {
         unidades[i].timerTrabajo++;
+        
+        // Cuando se completa el trabajo (400 frames = ~6.5 segundos)
         if (unidades[i].timerTrabajo >= 400) { 
             unidades[i].timerTrabajo = 0;
             
-            // AQUÍ ESTÁ LA CLAVE: REDUCIR LA VIDA DE LA MINA
-            misMinas[m].vida--;  // ¡IMPORTANTE! Reducir vida
-            
-            // Mostrar efecto de golpe
-            crearChispas(targetX, targetY, RGB(200, 200, 200));
-            
-            // Dar recompensa según tipo
+            // --- MINAR (1 GOLPE) ---
+            // Dar recursos según tipo de mina
             if (misMinas[m].tipo == 0) {  // Piedra
-                j->piedra += 10;
-                crearTextoFlotante(unidades[i].x, unidades[i].y, "Piedra", 10, RGB(150, 150, 150));
+                j->piedra += 5;
+                crearTextoFlotante(unidades[i].x, unidades[i].y, "Piedra", 5, RGB(150, 150, 150));
             } else {  // Hierro
-                j->hierro += 5;
-                crearTextoFlotante(unidades[i].x, unidades[i].y, "Hierro", 5, RGB(192, 192, 192));
+                j->hierro += 3;
+                crearTextoFlotante(unidades[i].x, unidades[i].y, "Hierro", 3, RGB(192, 192, 192));
             }
             
-            if (misMinas[m].vida <= 0) {
-                // Desactivar mina
-                misMinas[m].activa = 0;
-                
-                // Actualizar mapa de colisiones
-                int col = (int)(misMinas[m].x / TAMANO_CELDA_BASE);
-                int fil = (int)(misMinas[m].y / TAMANO_CELDA_BASE);
-                if(fil >= 0 && fil < MUNDO_FILAS && col >= 0 && col < MUNDO_COLUMNAS)
-                    mapa[fil][col] = 1; 
-                
-                unidades[i].targetIndex = -1;
-                
-                // Buscar otra mina inmediatamente
-                int next = buscarMinaCercana(unidades[i].x, unidades[i].y, 200.0f);
-                if(next != -1) {
-                    unidades[i].targetIndex = next;
-                } else {
-                    unidades[i].estado = ESTADO_IDLE;
-                }
+            // Efecto visual
+            crearChispas(targetX, targetY, RGB(200, 200, 200));
+            
+            // Desactivar la mina
+            misMinas[m].activa = 0;
+            
+            // Actualizar mapa de colisiones
+            int col = (int)(misMinas[m].x / TAMANO_CELDA_BASE);
+            int fil = (int)(misMinas[m].y / TAMANO_CELDA_BASE);
+            if(fil >= 0 && fil < MUNDO_FILAS && col >= 0 && col < MUNDO_COLUMNAS)
+                mapa[fil][col] = 1; 
+            
+            // Buscar nueva mina automáticamente
+            unidades[i].targetIndex = -1;
+            int next = buscarMinaCercana(unidades[i].x, unidades[i].y, 200.0f);
+            if(next != -1) {
+                unidades[i].targetIndex = next;
+                // Mantener en estado MINANDO con nuevo objetivo
+            } else {
+                unidades[i].estado = ESTADO_IDLE;
             }
         }
     }
     break;
 }
-
             // --- CORRECCIÓN IMPORTANTE: LÓGICA DEL CAZADOR ---
             case ESTADO_CAZANDO: {
                 int v = unidades[i].targetIndex;
@@ -1133,7 +1144,6 @@ void darOrdenMovimiento(Unidad unidades[], int max, int clickX, int clickY) {
 }
 
 // Dar orden de movimiento o acción
-// En mapa.c, función ordenarUnidad() - VERSIÓN CORREGIDA
 void ordenarUnidad(int mX, int mY, Camera cam) {
     float mundoX = (mX / cam.zoom) + cam.x;
     float mundoY = (mY / cam.zoom) + cam.y;
