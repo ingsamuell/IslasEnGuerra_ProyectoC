@@ -31,6 +31,7 @@ HBITMAP hBmpIslaSec1 = NULL;
 HBITMAP hBmpIslaSec2 = NULL;
 HBITMAP hBmpIslaSec3 = NULL;
 HBITMAP hBmpIslaSec4 = NULL;
+HBITMAP hBmpMuelle = NULL;
 
 // JUGADOR BASE
 HBITMAP hBmpJugador = NULL;
@@ -266,10 +267,11 @@ void CargarRecursos()
     hBmpIconoPuno = CargarImagen("assets/ui/icono_puno.bmp");
 
     // Barcos
-    hBmpBote[0] = CargarImagen("assets/barco/Bote_izq.bmp");
-    hBmpBote[1] = CargarImagen("assets/barco/Bote_der.bmp");
+    hBmpBote[0] = CargarImagen("assets/barco/Bote_izqui.bmp");
+    hBmpBote[1] = CargarImagen("assets/barco/Bote_dere.bmp");
     hBmpBarco[0] = CargarImagen("assets/barco/Barco_izq.bmp");
     hBmpBarco[1] = CargarImagen("assets/barco/Barco_der.bmp");
+    hBmpMuelle = CargarImagen("assets/barco/Puente_barco.bmp");
 
     // 7. HUD
     hBmpCorazon100 = CargarImagen("assets/ui/corazon_100.bmp");
@@ -426,6 +428,7 @@ void LiberarRecursos() {
     if (hBmpBote[1]) DeleteObject(hBmpBote[1]);
     if (hBmpBarco[0]) DeleteObject(hBmpBarco[0]);
     if (hBmpBarco[1]) DeleteObject(hBmpBarco[1]);
+    if (hBmpMuelle) DeleteObject(hBmpMuelle);
 }
 
 void DibujarImagen(HDC hdcDestino, HBITMAP hBitmap, int x, int y, int ancho, int alto)

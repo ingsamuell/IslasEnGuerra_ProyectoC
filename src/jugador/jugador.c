@@ -97,7 +97,7 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
     if (bmpBolso) DibujarImagen(hdc, bmpBolso, 20, 120, 64, 64);
 
     // D. CAJA DE MANO / ITEM ACTIVO -> Y = 200 (Posición Abajo)
-    int boxX = 25;
+    int boxX = 20;
     int boxY = 200;
 
     // Dibujar el cuadro gris
@@ -116,7 +116,7 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
     else if (jugador->herramientaActiva == HERRAMIENTA_HACHA) iconoMano = hBmpIconoHacha;
     
     // Dibujar el icono centrado
-    if (iconoMano) DibujarImagen(hdc, iconoMano, boxX + 4, boxY + 4, 40, 40);
+    if (iconoMano) DibujarImagen(hdc, iconoMano, boxX + 8, boxY + 8, 32, 32);
 
     // E. INVENTARIO ABIERTO (Rejilla)
     if (jugador->inventarioAbierto)
@@ -202,6 +202,24 @@ void dibujarJugador(HDC hdc, Jugador jugador, Camera cam)
     HBITMAP spriteFinal = hBmpJugador; // Default
     int dir = jugador.direccion;
     int anim = jugador.frameAnim;
+    
+	if (jugador.estadoBarco > 0) {
+        HBITMAP imgBarco = NULL;
+        int dir = (jugador.direccion == DIR_IZQUIERDA) ? 0 : 1; 
+        
+        if (jugador.estadoBarco == 1) imgBarco = hBmpBote[dir];       
+        else if (jugador.estadoBarco == 2) imgBarco = hBmpBarco[dir]; 
+        
+        if (imgBarco) {
+            // Dibujamos el barco un poco más grande (64px) y centrado
+            DibujarImagen(hdc, imgBarco, cx - 16, cy - 16, 80 * cam.zoom, 64 * cam.zoom);
+        }
+        
+        if (jugador.estadoBarco == 1) {
+            SetTextColor(hdc, RGB(0, 255, 255));
+            TextOut(hdc, cx, cy - 40, "PESCANDO", 11);
+        }
+    }
 
     if (jugador.armaduraEquipada) {
         if (hBmpArmaduraAnim[dir][anim]) spriteFinal = hBmpArmaduraAnim[dir][anim];

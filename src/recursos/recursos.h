@@ -118,6 +118,7 @@ extern HBITMAP hBmpMina;
 extern HBITMAP hBmpEstablo;
 extern HBITMAP hBmpHierroPicar;
 extern HBITMAP hBmpPiedraPicar;
+extern HBITMAP hBmpMuelle;
 
 // (Opcional: Matriz visual del mapa si la necesitas)
 extern char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];

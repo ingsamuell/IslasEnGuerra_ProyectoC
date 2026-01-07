@@ -153,7 +153,7 @@ int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
 
 void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy) {
     
-    // Animación
+    // 1. Animación (Sin cambios)
     if (dy > 0) jugador->direccion = DIR_ABAJO;
     else if (dy < 0) jugador->direccion = DIR_ARRIBA;
     else if (dx < 0) jugador->direccion = DIR_IZQUIERDA;
@@ -169,8 +169,6 @@ void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int 
 
     // --- FÍSICA X ---
     int futuroX = jugador->x + (dx * jugador->velocidad);
-    
-    // Punto de colisión: Pies (+8 para perspectiva Top-Down correcta)
     int piesY = jugador->y + 8; 
     int piesX = futuroX + 16; 
     
@@ -178,11 +176,17 @@ void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int 
     int fila = piesY / TAMANO_CELDA_BASE;
 
     if (col >= 0 && col < MUNDO_COLUMNAS && fila >= 0 && fila < MUNDO_FILAS) {
-        // Lógica Inversa: Si estamos en barco (estado > 0), necesitamos AGUA (0)
-        // Si estamos a pie (estado == 0), necesitamos TIERRA (1)
         int terreno = mapa[fila][col];
-        if ((jugador->estadoBarco == 0 && terreno == 1) || 
-            (jugador->estadoBarco > 0 && terreno == 0)) {
+        bool puedeMoverseX = (jugador->estadoBarco == 0 && terreno == 1) || 
+                             (jugador->estadoBarco > 0 && terreno == 0);
+
+        // RESTRICCIÓN BOTE DE PESCA EN X
+        if (puedeMoverseX && jugador->estadoBarco == 1) {
+            float distCentro = sqrt(pow(futuroX - 1600, 2) + pow(jugador->y - 1600, 2));
+            if (distCentro > 900) puedeMoverseX = false;
+        }
+
+        if (puedeMoverseX) {
             jugador->x = futuroX; 
         }
     }
@@ -197,8 +201,16 @@ void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int 
 
     if (col >= 0 && col < MUNDO_COLUMNAS && fila >= 0 && fila < MUNDO_FILAS) {
         int terreno = mapa[fila][col];
-        if ((jugador->estadoBarco == 0 && terreno == 1) || 
-            (jugador->estadoBarco > 0 && terreno == 0)) {
+        bool puedeMoverseY = (jugador->estadoBarco == 0 && terreno == 1) || 
+                             (jugador->estadoBarco > 0 && terreno == 0);
+
+        // RESTRICCIÓN BOTE DE PESCA EN Y
+        if (puedeMoverseY && jugador->estadoBarco == 1) {
+            float distCentro = sqrt(pow(jugador->x - 1600, 2) + pow(futuroY - 1600, 2));
+            if (distCentro > 900) puedeMoverseY = false;
+        }
+
+        if (puedeMoverseY) {
             jugador->y = futuroY; 
         }
     }
@@ -663,20 +675,49 @@ void actualizarRegeneracionRecursos() {
     }
 }
 void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
-    // Si estamos en barco, bajar
+    // 1. SI YA ESTAMOS EN BARCO -> BAJARSE
     if (j->estadoBarco > 0) {
-        if (EsSuelo(j->x + 16, j->y + 32, mapa)) {
-            j->estadoBarco = 0;
+        // Solo bajar si tocamos Muelle o Tierra
+        float distMuelle = sqrt(pow(j->x - MUELLE_X, 2) + pow(j->y - MUELLE_Y, 2));
+        
+        if (EsSuelo(j->x + 16, j->y + 32, mapa) || distMuelle < 150) {
+            j->estadoBarco = 0; // A PIE
             crearTextoFlotante(j->x, j->y, "A tierra!", 0, RGB(255, 255, 255));
+             // Pequeño empujón hacia el muelle para que no quede en el agua
+            if (distMuelle < 150) { j->x = MUELLE_X + 20; j->y = MUELLE_Y + 20; }
+        } else {
+            crearTextoFlotante(j->x, j->y, "Solo en muelle o costa!", 0, RGB(255, 100, 100));
         }
         return;
     }
-    // Si estamos a pie, subir
-    if (j->tieneBotePesca && j->tieneCana) { // Requiere ambos
-        j->estadoBarco = 1;
-        j->x += 20; // Empujón al agua
-        crearTextoFlotante(j->x, j->y, "A pescar!", 0, RGB(100, 200, 255));
-    }
+
+    // 2. SI ESTAMOS A PIE -> MONTARSE
+    // Solo permitir si estamos cerca del MUELLE
+    float dist = sqrt(pow(j->x - MUELLE_X, 2) + pow(j->y - MUELLE_Y, 2));
+    
+    if (dist < 150) { // Radio de interacción del muelle
+        
+        // PRIORIDAD: ¿Qué barco sacamos?
+        // Si el jugador quiere pescar (tiene caña y bote)
+        if (j->tieneBotePesca && j->tieneCana) {
+            j->estadoBarco = 1; // MODO PESCA
+            j->x += 60; // Salir un poco al agua
+            crearTextoFlotante(j->x, j->y, "A pescar!", 0, RGB(100, 255, 255));
+        }
+        // Si quiere guerra
+        else if (j->cantBarcosGuerra > 0) {
+            j->estadoBarco = 2; // MODO GUERRA
+             j->x += 60;
+            crearTextoFlotante(j->x, j->y, "A la batalla!", 0, RGB(255, 50, 50));
+        }
+        // ERRORES
+        else if (j->tieneBotePesca && !j->tieneCana) {
+            crearTextoFlotante(j->x, j->y, "Falta la cana!", 0, RGB(255, 50, 50));
+        }
+        else {
+            crearTextoFlotante(j->x, j->y, "No tienes barcos!", 0, RGB(200, 200, 200));
+        }
+    } 
 }
 
 // --- 6. UNIDADES RTS (MINEROS, LEÑADORES, ETC) ---
@@ -1179,7 +1220,43 @@ void ordenarUnidad(int mX, int mY, Camera cam) {
     }
 }
 
+void dibujarMuelleYFlota(HDC hdc, Camera cam, Jugador *j) {
+    // 1. DIBUJAR MUELLE
+    int mx = (int)((MUELLE_X - cam.x) * cam.zoom);
+    int my = (int)((MUELLE_Y - cam.y) * cam.zoom);
+    int tamMuelle = 80 * cam.zoom;
+    
+    if (hBmpMuelle) {
+        DibujarImagen(hdc, hBmpMuelle, mx, my, tamMuelle, tamMuelle);
+    } else {
+        // Fallback si no tienes la imagen aún: Un cuadro marrón
+        HBRUSH madera = CreateSolidBrush(RGB(100, 50, 0));
+        RECT r = {mx, my, mx + tamMuelle, my + (tamMuelle/2)};
+        FillRect(hdc, &r, madera);
+        DeleteObject(madera);
+    }
 
+    // 2. DIBUJAR BOTE DE PESCA (Estacionado)
+    if (j->tieneBotePesca && j->estadoBarco != 1) { // Si lo tienes y NO lo estás usando
+        int bx = mx + (30 * cam.zoom);
+        int by = my - (50 * cam.zoom); // Arriba del muelle
+        int tamBote = 80 * cam.zoom;
+        if (hBmpBote[0]) DibujarImagen(hdc, hBmpBote[0], bx, by, tamBote, tamBote);
+    }
+
+    // 3. DIBUJAR FLOTA DE GUERRA (Estacionados)
+    // Se dibujan en fila hacia abajo del muelle
+    for (int i = 0; i < j->cantBarcosGuerra; i++) {
+        // Si estás usando el barco de guerra, dibujamos uno menos en el muelle
+        if (j->estadoBarco == 2 && i == 0) continue; 
+
+        int gx = mx + (40 * cam.zoom);
+        int gy = my + (80 * cam.zoom) + (i * 50 * cam.zoom); // Uno debajo del otro
+        int tamGuerra = 100 * cam.zoom;
+        
+        if (hBmpBarco[0]) DibujarImagen(hdc, hBmpBarco[0], gx, gy, tamGuerra, tamGuerra);
+    }
+}
 
 
 // --- 7. LÓGICA DE TIENDA (RTS y OBJETOS) ---
@@ -1289,14 +1366,31 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
                 else if (i == 6 && j->nivelMochila >= 2 && !j->tieneCana) { // Caña
                      if (j->oro >= 30 && j->madera >= 10) { j->oro -= 30; j->madera -= 10; j->tieneCana = TRUE; }
                 }
-                else if (i == 7 && j->nivelMochila >= 2 && !j->tieneBotePesca) { // Bote
-                    if (j->oro >= 50 && j->madera >= 30) { j->oro -= 50; j->madera -= 30; j->tieneBotePesca = TRUE; }
-                }
-                else if (i == 8 && j->nivelMochila >= 2 && !j->tieneBarcoGuerra) { // Galeon
-                    if (j->oro >= 100 && j->hierro >= 20 && j->madera >= 50) { 
-                        j->oro -= 100; j->hierro -= 20; j->madera -= 50; j->tieneBarcoGuerra = TRUE; 
-                    }
-                }
+               else if (i == 7) { 
+    			if (j->nivelMochila >= 2 && !j->tieneBotePesca) {
+        		if (j->oro >= 50 && j->madera >= 30) {
+            	j->oro -= 50; j->madera -= 30;
+            	j->tieneBotePesca = TRUE;
+            	crearTextoFlotante(j->x, j->y, "Enviado al Muelle!", 0, RGB(0, 255, 255));
+        		}
+    			}
+				}
+
+				// CASO 6: BARCO DE GUERRA (Hasta 4 unidades)
+				else if (i == 8) { 
+    			if (j->nivelMochila >= 2 && j->cantBarcosGuerra < 4) { // Límite de 4
+        		if (j->oro >= 100 && j->hierro >= 20 && j->madera >= 50) {
+            	j->oro -= 100; j->hierro -= 20; j->madera -= 50;
+            	j->cantBarcosGuerra++; // Sumamos uno más a la flota
+            
+            	char texto[32];
+            	sprintf(texto, "Flota: %d/4", j->cantBarcosGuerra);
+            	crearTextoFlotante(j->x, j->y, texto, 0, RGB(255, 50, 50));
+        		}
+    			} else if (j->cantBarcosGuerra >= 4) {
+        		crearTextoFlotante(j->x, j->y, "Flota Maxima!", 0, RGB(255, 0, 0));
+    			}
+				}
 
                 InvalidateRect(hwnd, NULL, FALSE);
                 return;
@@ -1443,7 +1537,7 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j) {
                     break;
                 case 8: // BARCO
                     icono = hBmpBarco[1]; strcpy(nombre, "Galeon");
-                    if (j->tieneBarcoGuerra) yaTiene = TRUE;
+                    if (j->cantBarcosGuerra) yaTiene = TRUE;
                     else if (j->nivelMochila >= 2) {
                         sprintf(precio1, "100 Oro"); sprintf(precio2, "50 Mad.");
                         if(j->oro >= 100 && j->madera >= 50) posible = TRUE;
@@ -1617,7 +1711,6 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
     if (puntoEnRect(x, y, startX, startY, btnAncho, btnAlto))
     {
         // Sonido de confirmación (Opcional)
-        PlaySound("SystemStart", NULL, SND_ASYNC);
         
         // Cambiar estado a Selección de Mapa
         estado->estadoActual = ESTADO_SELECCION_MAPA;
@@ -1901,6 +1994,7 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
     // 3. OBJETOS ESTÁTICOS (Parte del escenario)
     dibujarTiendasEnIslas(hdc, cam, ancho, alto, frameTienda);
     dibujarArboles(hdc, cam, ancho, alto, mapaId);
+    dibujarMuelleYFlota(hdc, cam, &miJugador);
     
     // NOTA: Las vacas, minas y el jugador se dibujan en main.c 
     // para asegurar que queden ENCIMA del mapa.
