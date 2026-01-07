@@ -39,7 +39,7 @@
 #define MUNDO_ANCHO 3200  // 200 filas * 16 pixeles
 #define MUNDO_ALTO 3200   // 200 cols * 16 pixeles
 
-#define ESTABLO_X 1350    // Coordenada X del establo
+#define ESTABLO_X 1310    // Coordenada X del establo
 #define ESTABLO_Y 1420    // Coordenada Y del establo
 #define RADIO_ESTABLO 100 // Tamaño del área del establo
 #define MAX_VACAS 8
@@ -205,6 +205,7 @@ typedef struct {
     int tipo;   // 0 para Piedra, 1 para Hierro
     int vida;   // 5 golpes para recolectar
     int activa;
+    int timerRegeneracion; 
 } Mina;
 
 typedef struct {

@@ -83,41 +83,56 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         }
 
         case WM_LBUTTONUP:
-        {
-            if (dibujandoCuadro && estadoJuego.estadoActual == ESTADO_PARTIDA) {
-                dibujandoCuadro = false;
-                int mouseEndX = LOWORD(lParam);
-                int mouseEndY = HIWORD(lParam);
+{
+    if (dibujandoCuadro && estadoJuego.estadoActual == ESTADO_PARTIDA) {
+        dibujandoCuadro = false;
+        int mouseEndX = LOWORD(lParam);
+        int mouseEndY = HIWORD(lParam);
 
-                // Normalizar el rectángulo de selección
-                int xMin = min(mouseStartX, mouseEndX);
-                int xMax = max(mouseStartX, mouseEndX);
-                int yMin = min(mouseStartY, mouseEndY);
-                int yMax = max(mouseStartY, mouseEndY);
+        // Normalizar el rectángulo de selección
+        int xMin = min(mouseStartX, mouseEndX);
+        int xMax = max(mouseStartX, mouseEndX);
+        int yMin = min(mouseStartY, mouseEndY);
+        int yMax = max(mouseStartY, mouseEndY);
 
-                // Si el cuadro es muy pequeño, tratarlo como un click simple
-                bool esClickSimple = (xMax - xMin < 5 && yMax - yMin < 5);
+        // Si el cuadro es muy pequeño, tratarlo como un click simple
+        bool esClickSimple = (xMax - xMin < 5 && yMax - yMin < 5);
 
-                for(int i=0; i<MAX_UNIDADES; i++) {
-                    if(!unidades[i].activa) continue;
+        for(int i = 0; i < MAX_UNIDADES; i++) {
+            if(!unidades[i].activa) continue;
 
-                    // Posición de unidad en pantalla
-                    int ux = (int)((unidades[i].x - miCamara.x) * miCamara.zoom);
-                    int uy = (int)((unidades[i].y - miCamara.y) * miCamara.zoom);
-                    int size = (int)(32 * miCamara.zoom);
+            // Deseleccionar todas primero si es un click simple para no acumular selección
+            if(esClickSimple) unidades[i].seleccionado = 0;
 
-                    if(esClickSimple) {
-                        if(mouseEndX >= ux && mouseEndX <= ux + size && mouseEndY >= uy && mouseEndY <= uy + size)
-                            unidades[i].seleccionado = 1;
-                    } else {
-                        if(ux >= xMin && ux <= xMax && uy >= yMin && uy <= yMax)
-                            unidades[i].seleccionado = 1;
-                    }
+            // Convierte la posición del mundo de la unidad a posición de pantalla
+            int ux = (int)((unidades[i].x - miCamara.x) * miCamara.zoom);
+            int uy = (int)((unidades[i].y - miCamara.y) * miCamara.zoom);
+            int size = (int)(32 * miCamara.zoom);
+
+            if(esClickSimple) {
+                // CORRECCIÓN: Condición completa para click simple (X e Y)
+                if(mouseEndX >= ux && mouseEndX <= ux + size && 
+                   mouseEndY >= uy && mouseEndY <= uy + size) 
+                {
+                    unidades[i].seleccionado = 1;
                 }
-                InvalidateRect(hwnd, NULL, FALSE);
+            } 
+            else {
+                // LÓGICA ADICIONAL: Selección por cuadro (arrastrar mouse)
+                // Verifica si el cuadrado de la unidad se solapa con el cuadro dibujado
+                if(ux + size >= xMin && ux <= xMax && 
+                   uy + size >= yMin && uy <= yMax) 
+                {
+                    unidades[i].seleccionado = 1;
+                } else {
+                    unidades[i].seleccionado = 0;
+                }
             }
-            return 0;
         }
+        InvalidateRect(hwnd, NULL, FALSE);
+    }
+    return 0;
+}
 
         case WM_RBUTTONDOWN:
         {
