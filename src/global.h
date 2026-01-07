@@ -5,9 +5,11 @@
 #include <stdbool.h> // Para el tipo bool en C
 
 // --- DEFINICIONES GLOBALES ---
-#define MUNDO_FILAS 200
-#define MUNDO_COLUMNAS 200
-#define TAMANO_CELDA_BASE 16     // Tamaño base de celda
+#define MUNDO_FILAS 200      // Aumentado para mayor precisión (antes 100)
+#define MUNDO_COLUMNAS 200   // Aumentado para mayor precisión (antes 100)
+#define TAMANO_CELDA_BASE 16 // Reducido a 16px (antes 32) para detectar mejor las curvas
+
+// Esto define el tamaño de los sprites en pantalla (visual), no la física.
 #define PANTALLA_FILAS 60        // 600 / 10 = 60
 #define PANTALLA_COLUMNAS 80     // 800 / 10 = 80
 #define TAMANO_CELDA 32   
@@ -34,16 +36,17 @@
 #define DIR_DERECHA   3
 
 // --- LIMITES ---
-#define MUNDO_ANCHO 2000  // Ajusta este valor al tamaño real de tu mapa
-#define MUNDO_ALTO 2000   // Ajusta este valor al tamaño real de tu mapa
-// En global.h o mapa.c
-#define ESTABLO_X 1350 // Coordenada X del establo
-#define ESTABLO_Y 1420   // Coordenada Y del establo
+#define MUNDO_ANCHO 3200  // 200 filas * 16 pixeles
+#define MUNDO_ALTO 3200   // 200 cols * 16 pixeles
+
+#define ESTABLO_X 1350    // Coordenada X del establo
+#define ESTABLO_Y 1420    // Coordenada Y del establo
 #define RADIO_ESTABLO 100 // Tamaño del área del establo
 #define MAX_VACAS 8
 #define VIDA_VACA 100
-#define MAX_ARBOLES 30// Un buen número para cubrir 5 islas
-// --- TESOROS ---
+#define MAX_ARBOLES 30    // Un buen número para cubrir 5 islas
+
+// --- TESOROS Y RECURSOS ---
 #define MAX_TESOROS 2
 #define MAX_MINAS 20
 #define MAX_PARTICULAS 50
@@ -64,17 +67,23 @@
 #define ESTADO_MINANDO   4
 #define ESTADO_EN_CUEVA  5
 
-
-// Definición de la Cueva (Ubicación fija por ahora)
+// Definición de la Cueva
 #define CUEVA_X 1800
 #define CUEVA_Y 1250
 #define TIEMPO_RESPAWN_RECURSOS 1800  // 30 segundos si el juego corre a 60 FPS
+
 // Vida inicial de los recursos
 #define VIDA_INICIAL_ARBOL 5
 #define VIDA_INICIAL_MINA 10
 #define MAX_UNIDADES 100   // Aumentamos capacidad
 
+// --- DEFINICIONES DE HERRAMIENTAS ---
+#define HERRAMIENTA_NADA   0
+#define HERRAMIENTA_ESPADA 1
+#define HERRAMIENTA_PICO   2
+#define HERRAMIENTA_HACHA  3
 
+// --- ESTRUCTURA DE UNIDAD (NPCs) ---
 typedef struct {
     float x, y;
     int tipo;           
@@ -91,9 +100,8 @@ typedef struct {
     int direccion;      
     char nombreGrupo[32]; 
     int timerTrabajo;     // Para la barra de progreso de caza/mina
-	int targetIndex;      // Para saber a qué vaca está siguiendoo
-    int contadorAnim;     // <--- AGREGADO: Para la animación de caminar
-
+    int targetIndex;      // Para saber a qué vaca está siguiendo
+    int contadorAnim;     // Para la animación de caminar
 } Unidad;
 
 // --- ESTRUCTURA DE ISLA ---
@@ -108,66 +116,56 @@ typedef struct {
 
 // --- ESTRUCTURA DEL JUGADOR ---
 typedef struct {
-    // 1. Posición
-    int x;
-    int y;
-    int velocidad;
-
-    // 2. Estadísticas de Combate
-    int vidaActual;
-    int vidaMax;
-    int armaduraActual;
-    int armaduraMax;
-
-    // 3. Progreso
-    int experiencia;               // Se incrementa al cazar
-    int experienciaSiguienteNivel;
+    float x, y;
+    float velocidad;
+    
+    // Estadísticas
+    int vidaActual, vidaMax;
+    int armaduraActual, armaduraMax;
     int nivel;
+    int experiencia, experienciaSiguienteNivel;
+    
+    // Inventario y Estados
+    int nivelMochila;
+    int inventarioAbierto; // <--- SOLO UNA VEZ
+    int tiendaAbierta;     // <--- ESTA ES LA NUEVA
+    int modoTienda;        // 0=Comprar, 1=Vender
+    
+    // Recursos
+    int madera, piedra, oro, hierro;
+    int comida, hojas, carne, pescado;
+    
+    // Herramientas y Equipo
+    BOOL tieneEspada;
+    BOOL tienePico;
+    BOOL tieneHacha;
+    BOOL tieneArmadura;
+    BOOL tieneCana;
+    BOOL tieneBotePesca;
+    BOOL tieneBarcoGuerra;
+    
+    // Estados de Equipo
+    BOOL armaduraEquipada;
+    int herramientaActiva; // Usar constantes HERRAMIENTA_NADA, etc.
+    int estadoBarco;       // 0=Pie, 1=Bote, 2=Barco
+    int timerPesca;
 
-    // 4. Inventario y Estado
-    int inventarioAbierto;
-    
-    // Materiales
-    int madera;
-    int piedra;
-    int oro;
-    int hierro;
-    int comida;
-    int hojas;
-    int carne;            // Cantidad de carne disponible
-
-    // Equipamiento y Tienda
-    int tieneArmadura;    // 1 si el objeto existe en el inventario
-    int armaduraEquipada; // 1 si la lleva puesta
-    int tieneEspada;      // 1 si la compró
-    int tienePico;        // 1 si lo compró
-    int nivelMochila;     // 1 = Básica, 2 = Herramientas, 3 = Completa
-    int modoTienda;       // 0 = COMPRAR, 1 = VENDER
-    
-    // --- NUEVO: SISTEMA DE PESCA Y BARCOS ---
-    int pescado;          // Nuevo recurso
-    BOOL tieneCana;       // ¿Compró la caña?
-    BOOL tieneBotePesca;  // ¿Compró el bote?
-    BOOL tieneBarcoGuerra;// ¿Compró el barco?
-    int estadoBarco;      // 0 = A Pie, 1 = Bote Pesca, 2 = Barco Guerra
-    int timerPesca;       // Contador para los 10 segundos
-    
-    // Contadores de oficios/unidades
+    // Contadores de Unidades (RTS)
     int cantMineros;
     int cantLenadores;
     int cantCazadores;
     int cantSoldados;
-    int cantHachas;
-    
-    // Flags para saber si ya compró al menos uno
-    BOOL tieneHacha;
+    int cantHachas;    // (Si usas esto como contador de items)
+
     // Animación
-    int direccion;      // 0, 1, 2, 3
-    int frameAnim;      // 0=Base, 1=PieIzq, 2=PieDer
-    int pasoAnimacion;  // Contador para velocidad de animación
-    int frameDestello;  // Para el efecto visual blanco
+    int direccion;
+    int frameAnim;
+    int pasoAnimacion;
+    int frameDestello;
 
 } Jugador;
+
+// --- OTRAS ESTRUCTURAS ---
 
 typedef struct {
     float x;
@@ -179,21 +177,21 @@ typedef struct {
     int activa;
     int frameAnim;       // 0 a 3 (el offset se suma al dibujar)
     int contadorAnim;
-    int vida;           // 5 golpes
-    int estadoVida;         // 0 = Viva, 1 = Muerta
-    int tiempoMuerte;   // Contador para desaparecer (5 segundos)
-    int timerRegeneracion; // <--- NUEVO: Contador de tiempo para reaparecer
+    int vida;            // 5 golpes
+    int estadoVida;      // 0 = Viva, 1 = Muerta
+    int tiempoMuerte;    // Contador para desaparecer (5 segundos)
+    int timerRegeneracion; // Contador de tiempo para reaparecer
 } Vaca;
 
-// --- ESTRUCTURA DE ÁRBOL ---
 typedef struct {
     int x;
     int y;
     int tipo;   // 0 = Árbol Chico, 1 = Árbol Grande
     int activa; // 1 = Existe
-    int vida;   // <--- NUEVO: Vida del árbol (5 golpes)
-    int timerRegeneracion; // <--- NUEVO: Contador de tiempo para reaparecer
+    int vida;   // Vida del árbol
+    int timerRegeneracion; // Contador de tiempo para reaparecer
 } Arbol;
+
 typedef struct {
     float x, y;
     char texto[32];
@@ -208,6 +206,7 @@ typedef struct {
     int vida;   // 5 golpes para recolectar
     int activa;
 } Mina;
+
 typedef struct {
     float x, y;
     float vx, vy; // Velocidad

@@ -1,9 +1,11 @@
-/* src/main.c - VERSIÓN CORREGIDA FINAL CON SELECCIÓN DE MAPA */
+/* src/main.c - VERSIÓN CORREGIDA FINAL (SISTEMA COMPLETO) */
 #include <windows.h>
 #include <stdio.h>
+#include <math.h>               // Necesario para sqrt y pow
 #include "global.h"             
 #include "mapa/mapa.h"          
-#include "recursos/recursos.h"  
+#include "recursos/recursos.h" 
+#include "jugador/jugador.h"
 
 /* ========== VARIABLES GLOBALES ========== */
 char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
@@ -13,7 +15,7 @@ EstadoJuego estadoJuego;
 int mouseActualX, mouseActualY; // Posición actual mientras arrastras
 bool dibujandoCuadro = false;
 int mouseStartX, mouseStartY;   // Punto donde hiciste clic
-TextoFlotante textos[20];
+TextoFlotante textos[MAX_TEXTOS]; 
 Arbol arboles[MAX_ARBOLES];
 Mina minas[MAX_MINAS];
 Particula particulas[MAX_PARTICULAS];
@@ -37,34 +39,32 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             int mouseY = HIWORD(lParam);
 
             if (estadoJuego.estadoActual == ESTADO_PARTIDA) {
-                // Iniciar cuadro de selección
-                mouseStartX = mouseX;
-                mouseStartY = mouseY;
-                mouseActualX = mouseX;
-                mouseActualY = mouseY;
-                dibujandoCuadro = true;
-
-                // Si no presionas SHIFT, deseleccionamos todo lo anterior
-                if (!(wParam & MK_SHIFT)) {
-                    for(int i=0; i<MAX_UNIDADES; i++) unidades[i].seleccionado = 0;
-                }
-
-                // Lógica de UI (Mochila/Botones)
-                bool clicEnUI = false;
-                int btnX = 20; int btnY = 120; int tamanoBolso = 64;
-                if (mouseX >= btnX && mouseX <= btnX + tamanoBolso &&
-                    mouseY >= btnY && mouseY <= btnY + tamanoBolso) {
-                    miJugador.inventarioAbierto = !miJugador.inventarioAbierto;
-                    clicEnUI = true;
-                }
-
-                if (miJugador.inventarioAbierto && !clicEnUI) {
+                
+                // PRIORIDAD 1: LA TIENDA (Si está abierta, el clic es para comprar)
+                if (miJugador.tiendaAbierta) {
                     procesarClickMochilaTienda(mouseX, mouseY, FALSE, &miJugador, hwnd);
-                    procesarClickMochila(mouseX, mouseY, &miJugador, hwnd);
+                    return 0; // Consumimos el clic, no hace nada más
                 }
-            } else if (estadoJuego.estadoActual == ESTADO_MENU) {
+
+                // PRIORIDAD 2: JUEGO (Selección de Unidades RTS)
+                // Solo si la tienda NO está abierta
+                if (!miJugador.tiendaAbierta) {
+                    mouseStartX = mouseX;
+                    mouseStartY = mouseY;
+                    mouseActualX = mouseX;
+                    mouseActualY = mouseY;
+                    dibujandoCuadro = true;
+
+                    // Si no presionas SHIFT, deseleccionamos todo lo anterior
+                    if (!(wParam & MK_SHIFT)) {
+                        for(int i=0; i<MAX_UNIDADES; i++) unidades[i].seleccionado = 0;
+                    }
+                }
+            } 
+            else if (estadoJuego.estadoActual == ESTADO_MENU) {
                 procesarClickMenu(mouseX, mouseY, hwnd, &estadoJuego);
-            } else if (estadoJuego.estadoActual == ESTADO_SELECCION_MAPA) {
+            } 
+            else if (estadoJuego.estadoActual == ESTADO_SELECCION_MAPA) {
                 procesarClickSeleccionMapa(mouseX, mouseY, hwnd, &estadoJuego);
             }
             
@@ -124,22 +124,27 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             if (estadoJuego.estadoActual == ESTADO_PARTIDA) {
                 int mX = LOWORD(lParam);
                 int mY = HIWORD(lParam);
-                // --- CORRECCIÓN: Calcular coordenadas de mundo aquí ---
-        float mundoX = (mX / miCamara.zoom) + miCamara.x;
-        float mundoY = (mY / miCamara.zoom) + miCamara.y;
                 
-                // 1. Procesar venta si la tienda está abierta
-                procesarClickMochilaTienda(mX, mY, 1, &miJugador, hwnd);
-
-                // 2. Dar orden a unidades seleccionadas (Movimiento o Caza)
-				ordenarUnidad(mX, mY, miCamara);
-                crearChispas(mundoX, mundoY, RGB(0, 255, 0)); // Una chispa verde donde hiciste clic
+                // 1. Si la tienda está abierta: VENDER (Click derecho)
+                if (miJugador.tiendaAbierta) {
+                    // Nota: 1 significa que es click derecho (vender)
+                    procesarClickMochilaTienda(mX, mY, 1, &miJugador, hwnd);
+                }
+                else {
+                    // 2. Si no hay tienda: Dar orden a unidades (Movimiento/Caza)
+                    // Calcular coordenadas de mundo
+                    float mundoX = (mX / miCamara.zoom) + miCamara.x;
+                    float mundoY = (mY / miCamara.zoom) + miCamara.y;
+                    
+                    ordenarUnidad(mX, mY, miCamara);
+                    crearChispas(mundoX, mundoY, RGB(0, 255, 0)); // Feedback visual verde
+                }
                 InvalidateRect(hwnd, NULL, FALSE);
             }
             return 0;
         }
 
-case WM_PAINT:
+        case WM_PAINT:
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
@@ -157,7 +162,7 @@ case WM_PAINT:
                 dibujarSeleccionMapa(hdcMem, hwnd, &estadoJuego);
             } 
             else if (estadoJuego.estadoActual == ESTADO_PARTIDA) {
-                // Dibujar el mundo
+                // 1. MUNDO
                 dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto, estadoJuego.frameTienda, estadoJuego.mapaSeleccionado);
                 dibujarTesoros(hdcMem, miCamara, ancho, alto); 
                 dibujarMinas(hdcMem, miCamara, ancho, alto); 
@@ -165,10 +170,13 @@ case WM_PAINT:
                 dibujarEstablo(hdcMem, miCamara);
                 dibujarVacas(hdcMem, miCamara, ancho, alto);
                 dibujarUnidades(hdcMem, miCamara);
+                
+                // 2. JUGADOR
                 dibujarJugador(hdcMem, miJugador, miCamara);
+                
                 actualizarYDibujarTextos(hdcMem, miCamara);
 
-                // Dibujar el cuadro verde de selección (HUD dinámico)
+                // 3. SELECCIÓN (RTS)
                 if (dibujandoCuadro) {
                     HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 255, 0));
                     SelectObject(hdcMem, hPen);
@@ -177,7 +185,13 @@ case WM_PAINT:
                     DeleteObject(hPen);
                 }
 
+                // 4. INTERFAZ (HUD)
                 dibujarHUD(hdcMem, &miJugador, ancho, alto);
+
+                // 5. TIENDA (Solo si está abierta con 'T')
+                if (miJugador.tiendaAbierta) {
+                    dibujarTiendaInteractiva(hdcMem, &miJugador);
+                }
             }
 
             BitBlt(hdc, 0, 0, ancho, alto, hdcMem, 0, 0, SRCCOPY);
@@ -200,20 +214,17 @@ case WM_PAINT:
                 case ESTADO_SELECCION_MAPA:
                     if (wParam == VK_RETURN)
                     {
-                        // Confirmar selección de mapa y empezar juego
+                        // --- INICIAR PARTIDA ---
                         estadoJuego.mapaSeleccionado = estadoJuego.opcionSeleccionada;
                         
-                        // Inicializar juego con el mapa seleccionado
+                        // Inicializar mapa y colisiones
                         inicializarJuego(&miJugador, &estadoJuego, mapaMundo, estadoJuego.mapaSeleccionado);
                         
-                        // Inicializar estadísticas del jugador
+                        // Inicializar valores por defecto
                         miJugador.nivelMochila = 1;
-                        miJugador.cantMineros = 0;
-                        miJugador.cantLenadores = 0;
-                        miJugador.cantCazadores = 0;
-                        miJugador.tienePico = FALSE;
-                        miJugador.tieneHacha = FALSE;
-                        miJugador.tieneEspada = FALSE;
+                        miJugador.herramientaActiva = HERRAMIENTA_NADA;
+                        miJugador.armaduraEquipada = FALSE;
+                        miJugador.tiendaAbierta = 0; // Asegurar tienda cerrada al inicio
                         
                         miCamara.zoom = 3;
                         actualizarCamara(&miCamara, miJugador);
@@ -221,7 +232,6 @@ case WM_PAINT:
                     }
                     else if (wParam == VK_ESCAPE)
                     {
-                        // Volver al menú
                         estadoJuego.estadoActual = ESTADO_MENU;
                         estadoJuego.opcionSeleccionada = 0;
                         InvalidateRect(hwnd, NULL, FALSE);
@@ -231,22 +241,93 @@ case WM_PAINT:
                 case ESTADO_PARTIDA:
                     switch (wParam) {
                         case VK_ESCAPE: 
-                            // Volver a selección de mapa
                             estadoJuego.estadoActual = ESTADO_SELECCION_MAPA;
                             InvalidateRect(hwnd, NULL, FALSE);
                             return 0;
 
+                        // --- MOVIMIENTO ---
                         case 'W': moverJugador(&miJugador, mapaMundo, 0, -1); break;
                         case 'S': moverJugador(&miJugador, mapaMundo, 0, 1); break;
                         case 'A': moverJugador(&miJugador, mapaMundo, -1, 0); break;
                         case 'D': moverJugador(&miJugador, mapaMundo, 1, 0); break;
-                        case 'I': miJugador.inventarioAbierto = !miJugador.inventarioAbierto; break;
 
+                        // --- INTERFAZ: MOCHILA (Bloq Mayús) ---
+                        case VK_CAPITAL: 
+                            alternarInventario(&miJugador);
+                            // Si abres mochila, cerramos tienda para no encimar
+                            if (miJugador.inventarioAbierto) miJugador.tiendaAbierta = 0;
+                            InvalidateRect(hwnd, NULL, FALSE);
+                            break;
+
+                        // --- INTERFAZ: TIENDA (T) ---
+                        case 'T':
+                        case 't':
+                            if (miJugador.tiendaAbierta) {
+                                miJugador.tiendaAbierta = 0; // Cerrar
+                            } else {
+                                // Verificar distancia a la tienda (Coord: 1450, 1900)
+                                float dist = sqrt(pow(miJugador.x - 1450, 2) + pow(miJugador.y - 1900, 2));
+                                if (dist < 150) {
+                                    miJugador.tiendaAbierta = 1;
+                                    miJugador.inventarioAbierto = 0; // Cerrar mochila
+                                    miJugador.modoTienda = 0; // Reset a Comprar
+                                } else {
+                                    crearTextoFlotante(miJugador.x, miJugador.y, "Acercate a la tienda!", 0, RGB(255, 100, 100));
+                                }
+                            }
+                            InvalidateRect(hwnd, NULL, FALSE);
+                            break;
+
+                        // --- EQUIPAMIENTO: ARMADURA (TAB) ---
+                        case VK_TAB:
+                            if (miJugador.tieneArmadura) {
+                                if (miJugador.armaduraEquipada) {
+                                    miJugador.armaduraEquipada = FALSE; // Quitar
+                                } else {
+                                    miJugador.armaduraEquipada = TRUE;  // Poner
+                                    miJugador.herramientaActiva = HERRAMIENTA_NADA; 
+                                }
+                                InvalidateRect(hwnd, NULL, FALSE);
+                            }
+                            break;
+
+                        // --- HERRAMIENTAS: 1, 2, 3 ---
+                        case '1': // Espada
+                            if (miJugador.nivelMochila >= 2 && miJugador.tieneEspada) {
+                                if (miJugador.herramientaActiva == HERRAMIENTA_ESPADA) miJugador.herramientaActiva = HERRAMIENTA_NADA;
+                                else { miJugador.herramientaActiva = HERRAMIENTA_ESPADA; miJugador.armaduraEquipada = FALSE; }
+                                InvalidateRect(hwnd, NULL, FALSE);
+                            }
+                            break;
+                        case '2': // Pico
+                            if (miJugador.nivelMochila >= 2 && miJugador.tienePico) {
+                                if (miJugador.herramientaActiva == HERRAMIENTA_PICO) miJugador.herramientaActiva = HERRAMIENTA_NADA;
+                                else { miJugador.herramientaActiva = HERRAMIENTA_PICO; miJugador.armaduraEquipada = FALSE; }
+                                InvalidateRect(hwnd, NULL, FALSE);
+                            }
+                            break;
+                        case '3': // Hacha
+                            if (miJugador.nivelMochila >= 2 && miJugador.tieneHacha) {
+                                if (miJugador.herramientaActiva == HERRAMIENTA_HACHA) miJugador.herramientaActiva = HERRAMIENTA_NADA;
+                                else { miJugador.herramientaActiva = HERRAMIENTA_HACHA; miJugador.armaduraEquipada = FALSE; }
+                                InvalidateRect(hwnd, NULL, FALSE);
+                            }
+                            break;
+
+                        // --- CURACIÓN (R) ---
+                        case 'R':
+                        case 'r':
+                            intentarCurar(&miJugador);
+                            InvalidateRect(hwnd, NULL, FALSE);
+                            break;
+
+                        // --- ZOOM ---
                         case VK_ADD: case 0xBB: 
                             miCamara.zoom += 1; if (miCamara.zoom > 5) miCamara.zoom = 5; break;
                         case VK_SUBTRACT: case 0xBD: 
                             miCamara.zoom -= 1; if (miCamara.zoom < 1) miCamara.zoom = 1; break;
                             
+                        // --- ACCIÓN (Espacio) ---
                         case VK_SPACE: 
                             talarArbol(&miJugador);
                             abrirTesoro(&miJugador);
@@ -262,7 +343,6 @@ case WM_PAINT:
             }
             return 0;
         }
-
  
         default: return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
@@ -290,18 +370,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     CargarRecursos(); 
 
-    // Verificación de archivos de vacas (DEBUG)
+    // Verificación de archivos (DEBUG)
     int vacasFaltan = 0;
     for(int i=0; i<8; i++) if(!hBmpVaca[i]) vacasFaltan++;
-    if(vacasFaltan > 0) MessageBox(NULL, "Faltan imágenes de vacas en assets/animales/", "Error Recursos", MB_OK);
+    if(vacasFaltan > 0) MessageBox(NULL, "Faltan imágenes de vacas en assets/", "Aviso", MB_OK);
 
-    // Estado inicial del juego
+    // Estado inicial
     estadoJuego.estadoActual = ESTADO_MENU;
-    estadoJuego.opcionSeleccionada = 0;  // Por defecto selecciona el primer mapa
+    estadoJuego.opcionSeleccionada = -1;
     estadoJuego.mapaSeleccionado = MAPA_ISLAS_OCEANO;
     estadoJuego.frameTienda = 0;
-
-    // NOTA: No inicializamos el juego aquí todavía, solo cuando se selecciona un mapa
     
     miCamara.zoom = 3;  
 
@@ -321,7 +399,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 actualizarVacas(mapaMundo); 
                 actualizarLogicaSistema(&miJugador);
                 actualizarUnidades(mapaMundo, &miJugador);
-                actualizarRegeneracionRecursos(); // <--- Llamar aquí
+                actualizarRegeneracionRecursos();
                 
                 // Animación tienda
                 static int timerGato = 0;
