@@ -804,44 +804,73 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
     int startY = ty + 40;
 
     if (j->modoTienda == 0) { // --- MODO COMPRAR ---
+        // Cantidad de unidades a spawnear (Click izquierdo: 5, Click derecho: 15)
         int cantidad = (esClickDerecho) ? 15 : 5;
         
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 9; i++) { 
             int col = i % 2; 
             int row = i / 2;
             int ix = startX + (col * 140); 
             int iy = startY + (row * 65);
 
-            // Detección estricta dentro del cuadro del ítem
             if (mx >= ix && mx <= ix + 130 && my >= iy && my <= iy + 60) {
                 
-                if (i == 0) { // Espada (Cazador)
+                // 0. CAZADOR
+                if (i == 0) { 
                     if (j->oro >= 20 && j->hierro >= 3) {
                         j->oro -= 20; j->hierro -= 3;
+                        j->cantCazadores++;
+                        j->tieneEspada = TRUE;
                         spawnearEscuadron(TIPO_CAZADOR, cantidad, j->x + 50, j->y);
+                        crearTextoFlotante(j->x, j->y, "Cazadores listos!", 0, RGB(0, 255, 0));
                     }
                 }
-                else if (i == 1) { // Pico (Minero)
+                // 1. MINERO
+                else if (i == 1) { 
                     if (j->oro >= 15 && j->piedra >= 5) {
                         j->oro -= 15; j->piedra -= 5;
+                        j->cantMineros++;
+                        j->tienePico = TRUE;
                         spawnearEscuadron(TIPO_MINERO, cantidad, j->x + 50, j->y);
-
+                        crearTextoFlotante(j->x, j->y, "Mineros listos!", 0, RGB(0, 255, 0));
                     }
                 }
-                else if (i == 2) { // Hacha (Leñador)
+                // 2. LEÑADOR
+                else if (i == 2) { 
                     if (j->oro >= 20 && j->madera >= 10) {
                         j->oro -= 20; j->madera -= 10;
+                        j->cantLenadores++;
+                        j->tieneHacha = TRUE;
                         spawnearEscuadron(TIPO_LENADOR, cantidad, j->x + 50, j->y);
-
+                        crearTextoFlotante(j->x, j->y, "Lenadores listos!", 0, RGB(0, 255, 0));
                     }
                 }
-                else if (i == 3) { // Armadura (Soldado)
-                    if (j->oro >= 50 && j->hierro >= 10) {
-                        j->oro -= 50; j->hierro -= 10;
+                // 3. SOLDADO (AQUÍ ESTÁ LA LÓGICA DE INFANTERÍA PESADA)
+                else if (i == 3) { 
+                    // Costo: 40 Oro, 10 Hierro
+                    if (j->oro >= 40 && j->hierro >= 10) { 
+                        j->oro -= 40; 
+                        j->hierro -= 10;
+                        j->cantSoldados++;      // Incrementa el contador global de soldados
+                        j->tieneArmadura = TRUE; // Desbloquea el sprite de armadura si aplica
+                        
+                        // Spawnea el escuadrón cerca del jugador
                         spawnearEscuadron(TIPO_SOLDADO, cantidad, j->x + 50, j->y);
-
+                        
+                        // Feedback visual
+                        crearTextoFlotante(j->x, j->y, "Infanteria lista!", 0, RGB(255, 50, 50));
+                    } else {
+                        crearTextoFlotante(j->x, j->y, "Faltan recursos!", 0, RGB(255, 0, 0));
                     }
                 }
+                
+                // --- VERIFICACIÓN DE NIVEL DE MOCHILA ---
+                if (j->nivelMochila == 1 && j->tieneEspada && j->tienePico && j->tieneHacha) {
+                    j->nivelMochila = 2;
+                    crearTextoFlotante(j->x, j->y - 50, "MOCHILA NIVEL 2!", 0, RGB(255, 215, 0));
+                    MessageBox(hwnd, "Has desbloqueado la Mochila Nivel 2!\nNuevos items disponibles: Cana y Bote.", "Nivel Up!", MB_OK | MB_ICONASTERISK);
+                }
+                                
                 // --- NUEVOS ITEMS NIVEL 2 ---
                 else if (i == 4) { // CAÑA DE PESCAR
                     if (j->nivelMochila >= 2 && !j->tieneCana) {
@@ -869,11 +898,10 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
                 }
 
                 InvalidateRect(hwnd, NULL, FALSE);
-                return; // Salimos de la función inmediatamente al procesar el click
+                return; 
             }
         }
     }
-   
 
     else { // --- MODO VENDER ---
         int precios[] = {1, 2, 5, 1, 3, 10}; 
@@ -2586,138 +2614,192 @@ void dibujarItemRejilla(HDC hdc, HBITMAP icono, int cantidad, int maximo, int x,
 
 void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
 {
-    // 1. VIDA
-    for (int i = 0; i < 5; i++)
-    {
+    // --- 1. BARRA DE VIDA Y ARMADURA (Siempre visible igual) ---
+    // Vida
+    for (int i = 0; i < 5; i++) {
         int vida = jugador->vidaActual - (i * 20);
         HBITMAP cor = hBmpCorazon0;
-        if (vida >= 20)
-            cor = hBmpCorazon100;
-        else if (vida >= 15)
-            cor = hBmpCorazon75;
-        else if (vida >= 10)
-            cor = hBmpCorazon50;
-        else if (vida >= 5)
-            cor = hBmpCorazon25;
+        if (vida >= 20) cor = hBmpCorazon100;
+        else if (vida >= 15) cor = hBmpCorazon75;
+        else if (vida >= 10) cor = hBmpCorazon50;
+        else if (vida >= 5) cor = hBmpCorazon25;
         DibujarImagen(hdc, cor, 20 + (i * 32), 20, 32, 32);
     }
 
-    // 2. ARMADURA (Texto corregido a Actual / Max)
-    HBITMAP bmpEscudo = hBmpEscudo0;
-    if (jugador->armaduraActual > 0)
-        bmpEscudo = hBmpEscudo100; // Icono lleno si tiene algo
-    if (bmpEscudo)
-        DibujarImagen(hdc, bmpEscudo, 20, 60, 48, 48);
-
+    // Armadura
+    HBITMAP bmpEscudo = (jugador->armaduraActual > 0) ? hBmpEscudo100 : hBmpEscudo0;
+    if (bmpEscudo) DibujarImagen(hdc, bmpEscudo, 20, 60, 48, 48);
+    
     char tEscudo[16];
-    // Muestra "5 / 10" o "0 / 100"
     sprintf(tEscudo, "%d / %d", jugador->armaduraActual, jugador->armaduraMax);
-
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, RGB(255, 255, 255));
     TextOut(hdc, 75, 75, tEscudo, strlen(tEscudo));
 
-    // 3. ICONO DE MOCHILA
-
+    // Icono del Bolso (Botón para abrir/cerrar)
     HBITMAP bmpBolso = (jugador->inventarioAbierto) ? hBmpInvAbierto : hBmpInvCerrado;
-    if (bmpBolso)
-        DibujarImagen(hdc, bmpBolso, 20, 120, 64, 64);
+    if (bmpBolso) DibujarImagen(hdc, bmpBolso, 20, 120, 64, 64);
 
-// --- 4. PANEL DE INVENTARIO Y POBLACIÓN REORGANIZADO ---
-if (jugador->inventarioAbierto)
-{
-    int px = 90, py = 120;
-    int anchoFondo = 360; 
-    int alturaFondo = 420; // Aumentamos un poco el fondo total para el nuevo espacio
 
-    // Dibujar Fondo y Borde
-    HBRUSH fondo = CreateSolidBrush(RGB(30, 30, 35));
-    RECT r = {px, py, px + anchoFondo, py + alturaFondo};
-    FillRect(hdc, &r, fondo);
-    DeleteObject(fondo);
-    HBRUSH borde = CreateSolidBrush(RGB(255, 255, 255));
-    FrameRect(hdc, &r, borde);
-    DeleteObject(borde);
-
-    int startX = px + 20;
-    int startY = py + 40;
-
-    // --- SECCIÓN 1: RECURSOS Y EQUIPO ---
-    SetTextColor(hdc, RGB(255, 215, 0));
-    TextOut(hdc, px + 20, py + 10, "RECURSOS Y EQUIPO", 17);
-
-    // Fila 1: Madera y Piedra
-    dibujarItemRejilla(hdc, hBmpIconoMadera, jugador->madera, 99, startX, startY, "Madera");
-    dibujarItemRejilla(hdc, hBmpIconoPiedra, jugador->piedra, 99, startX + 170, startY, "Piedra");
-
-    // Fila 2: Oro e Hierro
-    dibujarItemRejilla(hdc, hBmpIconoOro, jugador->oro, 999, startX, startY + 50, "Oro");
-    dibujarItemRejilla(hdc, hBmpIconoHierro, jugador->hierro, 99, startX + 170, startY + 50, "Hierro");
-
-    // Fila 3: Hojas y Comida
-    dibujarItemRejilla(hdc, hBmpIconoHoja, jugador->hojas, 99, startX, startY + 100, "Hojas");
-    dibujarItemRejilla(hdc, hBmpIconoComida, jugador->comida, 99, startX + 170, startY + 100, "Comida");
-    dibujarItemRejilla(hdc, hBmpIconoPescado, jugador->pescado, 99, startX + 85, startY + 100, "Pescado");
-
-    // Fila 4: Bolso/Nivel (Ahora tiene más aire arriba)
-    char tBolso[16]; sprintf(tBolso, "Nivel %d", jugador->nivelMochila);
-    dibujarItemRejilla(hdc, hBmpInvCerrado, 1, 0, startX, startY + 150, tBolso);
-
-    // --- LÍNEA DIVISORIA (MÁS ABAJO) ---
-    HPEN penDiv = CreatePen(PS_SOLID, 1, RGB(100, 100, 100));
-    HPEN oldPen = (HPEN)SelectObject(hdc, penDiv);
-    MoveToEx(hdc, px + 10, py + 245, NULL); // Bajamos de 215 a 245
-    LineTo(hdc, px + anchoFondo - 10, py + 245);
-    SelectObject(hdc, oldPen);
-    DeleteObject(penDiv);
-
-    // --- SECCIÓN 2: POBLACIÓN ---
-    SetTextColor(hdc, RGB(0, 255, 255));
-    TextOut(hdc, px + 20, py + 255, "POBLACION / UNIDADES", 20); // Bajamos de 225 a 255
-
-    int popY = py + 285; // Bajamos el inicio de los iconos de población
-
-    // Población Fila 1: Leñadores y Mineros
-    dibujarItemRejilla(hdc, hBmpLenadorAnim[DIR_ABAJO][0], jugador->cantLenadores, 0, startX, popY, "Lenadores");
-    dibujarItemRejilla(hdc, hBmpMineroAnim[DIR_ABAJO][0], jugador->cantMineros, 0, startX + 170, popY, "Mineros");
-
-    // Población Fila 2: Cazadores y Soldados
-    dibujarItemRejilla(hdc, hBmpCazadorAnim[DIR_ABAJO][0], jugador->cantCazadores, 0, startX, popY + 50, "Cazadores");
-    dibujarItemRejilla(hdc, hBmpSoldadoAnim[DIR_ABAJO][0], jugador->cantSoldados, 0, startX + 170, popY + 50, "Soldados");
-}
-
-    // 5. BARRA DE EXPERIENCIA (Sin cambios importantes)
-    if (hBmpBarraXPVacia && hBmpBarraXPLlena)
+    // --- 2. CONTENIDO DEL INVENTARIO (SEGÚN NIVEL) ---
+    if (jugador->inventarioAbierto)
     {
-        BITMAP bm;
-        GetObject(hBmpBarraXPVacia, sizeof(BITMAP), &bm);
+        int px = 90, py = 120;
+        
+        // ==========================================
+        // DISEÑO NIVEL 1: BÁSICO (Compacto)
+        // ==========================================
+        if (jugador->nivelMochila == 1) 
+        {
+            int anchoFondo = 340; 
+            int alturaFondo = 300; 
+
+            // Fondo Gris Oscuro
+            HBRUSH fondo = CreateSolidBrush(RGB(30, 30, 35));
+            RECT r = {px, py, px + anchoFondo, py + alturaFondo};
+            FillRect(hdc, &r, fondo);
+            DeleteObject(fondo);
+            
+            // Borde Simple
+            HBRUSH borde = CreateSolidBrush(RGB(200, 200, 200));
+            FrameRect(hdc, &r, borde);
+            DeleteObject(borde);
+
+            int startX = px + 20;
+            int startY = py + 40;
+
+            SetTextColor(hdc, RGB(255, 215, 0));
+            TextOut(hdc, px + 20, py + 10, "MOCHILA BASICA (Nvl 1)", 22);
+
+            // Recursos Básicos
+            dibujarItemRejilla(hdc, hBmpIconoMadera, jugador->madera, 99, startX, startY, "Madera");
+            dibujarItemRejilla(hdc, hBmpIconoPiedra, jugador->piedra, 99, startX + 150, startY, "Piedra");
+            
+            dibujarItemRejilla(hdc, hBmpIconoOro, jugador->oro, 999, startX, startY + 50, "Oro");
+            dibujarItemRejilla(hdc, hBmpIconoComida, jugador->comida, 99, startX + 150, startY + 50, "Comida");
+
+            // Trabajadores (Para reclutar)
+            SetTextColor(hdc, RGB(0, 255, 255));
+            TextOut(hdc, px + 20, py + 160, "TRABAJADORES", 12);
+
+            dibujarItemRejilla(hdc, hBmpLenadorAnim[DIR_ABAJO][0], jugador->cantLenadores, 0, startX, startY + 140, "Lenador");
+            dibujarItemRejilla(hdc, hBmpMineroAnim[DIR_ABAJO][0], jugador->cantMineros, 0, startX + 150, startY + 140, "Minero");
+            dibujarItemRejilla(hdc, hBmpCazadorAnim[DIR_ABAJO][0], jugador->cantCazadores, 0, startX, startY + 190, "Cazador");
+        }
+        
+        // ==========================================
+        // DISEÑO NIVEL 2+: AVANZADO (Nueva y Limpia)
+        // ==========================================
+        else 
+        {
+            // Hacemos la mochila MÁS GRANDE y con otro color para que se sienta "Nueva"
+            int anchoFondo = 500; // Más ancha
+            int alturaFondo = 450; // Más alta
+
+            // Fondo Azulado Oscuro (Premium)
+            HBRUSH fondo = CreateSolidBrush(RGB(20, 30, 50)); 
+            RECT r = {px, py, px + anchoFondo, py + alturaFondo};
+            FillRect(hdc, &r, fondo);
+            DeleteObject(fondo);
+
+            // Borde Dorado (Doble borde)
+            HBRUSH borde = CreateSolidBrush(RGB(255, 215, 0));
+            FrameRect(hdc, &r, borde);
+            RECT r2 = {px+2, py+2, px + anchoFondo-2, py + alturaFondo-2};
+            FrameRect(hdc, &r2, borde);
+            DeleteObject(borde);
+
+            SetBkMode(hdc, TRANSPARENT);
+            SetTextColor(hdc, RGB(255, 215, 0));
+            HFONT hFontTitulo = CreateFont(24, 0, 0, 0, FW_BOLD, 0,0,0,0,0,0,0,0, "Arial");
+            HFONT hOldFont = (HFONT)SelectObject(hdc, hFontTitulo);
+            TextOut(hdc, px + 20, py + 15, "MOCHILA DE EXPEDICION (Nvl 2)", 29);
+            SelectObject(hdc, hOldFont);
+            DeleteObject(hFontTitulo);
+
+            int col1 = px + 30;
+            int col2 = px + 190;
+            int col3 = px + 350; // Nueva columna extra
+            int filaBase = py + 60;
+
+            // --- SECCIÓN 1: RECURSOS (Arriba) ---
+            dibujarItemRejilla(hdc, hBmpIconoMadera, jugador->madera, 99, col1, filaBase, "Madera");
+            dibujarItemRejilla(hdc, hBmpIconoPiedra, jugador->piedra, 99, col2, filaBase, "Piedra");
+            dibujarItemRejilla(hdc, hBmpIconoHierro, jugador->hierro, 99, col3, filaBase, "Hierro");
+            
+            dibujarItemRejilla(hdc, hBmpIconoOro, jugador->oro, 999, col1, filaBase + 50, "Oro");
+            dibujarItemRejilla(hdc, hBmpIconoComida, jugador->comida, 99, col2, filaBase + 50, "Comida");
+            dibujarItemRejilla(hdc, hBmpIconoHoja, jugador->hojas, 99, col3, filaBase + 50, "Hojas");
+
+            // Línea divisoria
+            HPEN hPen = CreatePen(PS_SOLID, 1, RGB(100, 100, 150));
+            SelectObject(hdc, hPen);
+            MoveToEx(hdc, px + 20, filaBase + 100, NULL);
+            LineTo(hdc, px + anchoFondo - 20, filaBase + 100);
+            DeleteObject(hPen);
+
+            // --- SECCIÓN 2: EJÉRCITO Y TRABAJO (Centro) ---
+            int filaUnidades = filaBase + 120;
+            SetTextColor(hdc, RGB(0, 255, 255));
+            TextOut(hdc, px + 20, filaUnidades - 15, "COMANDANCIA", 11);
+
+            // Aquí ponemos a TODOS (Leñador, Minero, Cazador, Soldado) ordenados
+            dibujarItemRejilla(hdc, hBmpLenadorAnim[DIR_ABAJO][0], jugador->cantLenadores, 0, col1, filaUnidades, "Lenador");
+            dibujarItemRejilla(hdc, hBmpMineroAnim[DIR_ABAJO][0], jugador->cantMineros, 0, col2, filaUnidades, "Minero");
+            dibujarItemRejilla(hdc, hBmpCazadorAnim[DIR_ABAJO][0], jugador->cantCazadores, 0, col3, filaUnidades, "Cazador");
+            
+            // EL SOLDADO (Ahora tiene su lugar destacado)
+            dibujarItemRejilla(hdc, hBmpSoldadoAnim[DIR_ABAJO][0], jugador->cantSoldados, 0, col1, filaUnidades + 50, "Soldado");
+
+            // --- SECCIÓN 3: ITEMS ESPECIALES / MARÍTIMOS (Abajo - Espacio Nuevo) ---
+            int filaItems = filaUnidades + 110;
+            SetTextColor(hdc, RGB(100, 255, 100));
+            TextOut(hdc, px + 20, filaItems - 15, "OBJETOS DE MAR", 14);
+
+            // Espacios para los items nuevos del Nivel 2
+            if (jugador->tieneCana) 
+                dibujarItemRejilla(hdc, hBmpIconoCana, 1, 0, col1, filaItems, "Cana");
+            else
+                dibujarItemRejilla(hdc, hBmpInvCerrado, 0, 0, col1, filaItems, "---"); // Slot vacío visual
+
+            if (jugador->pescado > 0)
+                dibujarItemRejilla(hdc, hBmpIconoPescado, jugador->pescado, 99, col2, filaItems, "Pescado");
+            
+            if (jugador->tieneBotePesca)
+                dibujarItemRejilla(hdc, hBmpBote[1], 1, 0, col3, filaItems, "Bote");
+            else if (jugador->tieneBarcoGuerra)
+                dibujarItemRejilla(hdc, hBmpBarco[1], 1, 0, col3, filaItems, "Galeon");
+        }
+    }
+
+    // --- 3. BARRA DE EXPERIENCIA (Abajo) ---
+    if (hBmpBarraXPVacia && hBmpBarraXPLlena) {
+        BITMAP bm; GetObject(hBmpBarraXPVacia, sizeof(BITMAP), &bm);
         int xpX = (ancho - bm.bmWidth) / 2;
         int xpY = alto - bm.bmHeight - 20;
         DibujarImagen(hdc, hBmpBarraXPVacia, xpX, xpY, bm.bmWidth, bm.bmHeight);
 
         float pct = (float)jugador->experiencia / jugador->experienciaSiguienteNivel;
-        if (pct > 1)
-            pct = 1;
+        if (pct > 1) pct = 1;
         int fillW = (int)(bm.bmWidth * pct);
 
-        if (fillW > 0)
-        {
+        if (fillW > 0) {
             HDC hdcMem = CreateCompatibleDC(hdc);
             HBITMAP hOld = (HBITMAP)SelectObject(hdcMem, hBmpBarraXPLlena);
             TransparentBlt(hdc, xpX, xpY, fillW, bm.bmHeight, hdcMem, 0, 0, fillW, bm.bmHeight, RGB(255, 0, 255));
-            SelectObject(hdcMem, hOld);
-            DeleteDC(hdcMem);
+            SelectObject(hdcMem, hOld); DeleteDC(hdcMem);
         }
-        char tNivel[32];
-        sprintf(tNivel, "NVL %d", jugador->nivel);
+        char tNivel[32]; sprintf(tNivel, "NVL %d", jugador->nivel);
         SetTextColor(hdc, RGB(0, 255, 255));
         TextOut(hdc, xpX - 60, xpY + 5, tNivel, strlen(tNivel));
     }
 
-    // 6. TIENDA (Lógica existente)
+    // --- 4. TIENDA INTERACTIVA ---
     BOOL cercaDeTienda = FALSE;
-    if (sqrt(pow(jugador->x - 1450, 2) + pow(jugador->y - 1900, 2)) < 80)
-        cercaDeTienda = TRUE;
-    if (jugador->inventarioAbierto && cercaDeTienda)
+    if (sqrt(pow(jugador->x - 1450, 2) + pow(jugador->y - 1900, 2)) < 80) cercaDeTienda = TRUE;
+    
+    // Solo dibujamos la tienda si la mochila está abierta Y estamos cerca
+    if (jugador->inventarioAbierto && cercaDeTienda) {
         dibujarTiendaInteractiva(hdc, jugador);
+    }
 }
