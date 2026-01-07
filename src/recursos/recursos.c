@@ -258,7 +258,7 @@ void CargarRecursos()
     hBmpIconoHoja = CargarImagen("assets/items/icono_hoja.bmp");
     hBmpIconoComida = CargarImagen("assets/items/icono_comida.bmp");
     hBmpIconoPescado = CargarImagen("assets/items/pescado-item-pixilart.bmp");
-    hBmpIconoCana = CargarImagen("assets/items/caña-de-pescar-item-pixilart.bmp");
+    hBmpIconoCana = CargarImagen("assets/items/cana-de-pescar-item-pixilart.bmp");
     hBmpIconoEspada = CargarImagen("assets/items/item_espada.bmp");
     hBmpIconoPico = CargarImagen("assets/items/item_pico.bmp");
     hBmpIconoHacha = CargarImagen("assets/items/Hacha.bmp");
