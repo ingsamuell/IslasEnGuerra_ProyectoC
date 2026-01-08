@@ -189,6 +189,30 @@ void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId)
 {
     inicializarIslas(mapaId);
     generarColisionDeMapaCompleto(mapa, mapaId);
+    // --- GENERACIÓN DE TIBURONES ---
+    int tiburonesCreados = 0;
+    int intentos = 0;
+    while (tiburonesCreados < MAX_TIBURONES && intentos < 2000) {
+        int tx = rand() % (MUNDO_COLUMNAS * TAMANO_CELDA_BASE);
+        int ty = rand() % (MUNDO_FILAS * TAMANO_CELDA_BASE);
+
+        // Calcular distancia al centro del mapa (aprox 1600,1600)
+        float distCentro = sqrt(pow(tx - 1600, 2) + pow(ty - 1600, 2));
+
+        // CONDICIONES:
+        // 1. Que sea agua (EsSuelo == 0)
+        // 2. Que esté LEJOS de la isla (distancia > 1100) para que estén en "mar profundo"
+        if (!EsSuelo(tx, ty, mapa) && distCentro > 1100) {
+            misTiburones[tiburonesCreados].x = (float)tx;
+            misTiburones[tiburonesCreados].y = (float)ty;
+            misTiburones[tiburonesCreados].direccion = rand() % 2; // 0 o 1 random
+            misTiburones[tiburonesCreados].frameAnim = rand() % 4; // Empezar en frame random
+            misTiburones[tiburonesCreados].timerAnim = rand() % 10;
+            misTiburones[tiburonesCreados].activa = 1;
+            tiburonesCreados++;
+        }
+        intentos++;
+    }
 }
 
 int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
@@ -242,8 +266,10 @@ void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int 
         if (puedeMoverseX && jugador->estadoBarco == 1)
         {
             float distCentro = sqrt(pow(futuroX - 1600, 2) + pow(jugador->y - 1600, 2));
-            if (distCentro > 900)
+            if (distCentro > 900){
                 puedeMoverseX = false;
+                crearTextoFlotante(jugador->x, jugador->y, "Hay tiburones! Vuelve!", 0, RGB(255, 50, 50));
+                }
         }
 
         if (puedeMoverseX)
@@ -270,8 +296,10 @@ void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int 
         if (puedeMoverseY && jugador->estadoBarco == 1)
         {
             float distCentro = sqrt(pow(jugador->x - 1600, 2) + pow(futuroY - 1600, 2));
-            if (distCentro > 900)
+            if (distCentro > 900){
                 puedeMoverseY = false;
+                crearTextoFlotante(jugador->x, jugador->y, "Hay tiburones! Vuelve!", 0, RGB(255, 50, 50));
+            }
         }
 
         if (puedeMoverseY)
@@ -513,6 +541,50 @@ void dibujarEstablo(HDC hdc, Camera cam)
         DibujarImagen(hdc, hBmpEstablo, sx, sy, 200 * cam.zoom, 200 * cam.zoom);
 }
 
+
+
+void actualizarTiburones(Jugador *j) {
+    // 1. Reducir el timer de inmunidad del jugador si fue golpeado recientemente
+    if (j->timerInmunidadBarco > 0) j->timerInmunidadBarco--;
+
+    for (int i = 0; i < MAX_TIBURONES; i++) {
+        if (!misTiburones[i].activa) continue;
+
+        // --- A) ANIMACIÓN ---
+        misTiburones[i].timerAnim++;
+        if (misTiburones[i].timerAnim >= 8) { // Velocidad de la animación (ajústalo si va muy rápido/lento)
+            misTiburones[i].timerAnim = 0;
+            misTiburones[i].frameAnim++;
+            if (misTiburones[i].frameAnim >= 4) {
+                misTiburones[i].frameAnim = 0; // Volver al inicio
+                // Opcional: Cambiar de dirección al terminar un ciclo para que "naden" de lado a lado
+                // misTiburones[i].direccion = !misTiburones[i].direccion; 
+            }
+        }
+
+        // --- B) COLISIÓN CON BARCO DE GUERRA (Daño) ---
+        if (j->estadoBarco == 2 && j->timerInmunidadBarco == 0) { // Solo si es barco guerra y no es inmune
+            float dist = sqrt(pow(j->x - misTiburones[i].x, 2) + pow(j->y - misTiburones[i].y, 2));
+            
+            // Si está muy cerca (colisión)
+            if (dist < 40.0f) { 
+                // DAÑO AL JUGADOR
+                j->vidaActual -= 10; // Pierde 10 de vida
+                if (j->vidaActual < 0) j->vidaActual = 0;
+
+                // Efectos visuales
+                crearTextoFlotante(j->x, j->y, "-10 VIDA!", 0, RGB(255, 0, 0));
+                crearChispas(j->x + 16, j->y + 16, RGB(200, 0, 0)); // Chispas rojas (sangre/daño)
+
+                // Activar inmunidad por 1 segundo (aprox 60 frames) para no morir instantáneamente
+                j->timerInmunidadBarco = 60; 
+
+                // Opcional: El tiburón podría "sumergirse" (desactivarse) temporalmente tras atacar
+                // misTiburones[i].activa = 0; 
+            }
+        }
+    }
+}
 // --- ÁRBOLES ---
 void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
 {
@@ -870,6 +942,7 @@ void actualizarLogicaSistema(Jugador *j) {
             else crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
         }
     } else j->timerPesca = 0;
+    actualizarTiburones(j); // <--- AGREGAR AQUÍ
 }
 
 void actualizarRegeneracionRecursos()
@@ -1574,7 +1647,7 @@ void dibujarMuelleYFlota(HDC hdc, Camera cam, Jugador *j)
 
         int gx = mx + (40 * cam.zoom);
         int gy = my + (80 * cam.zoom) + (i * 50 * cam.zoom); // Uno debajo del otro
-        int tamGuerra = 100 * cam.zoom;
+        int tamGuerra = 120 * cam.zoom;
 
         if (hBmpBarco[0])
             DibujarImagen(hdc, hBmpBarco[0], gx, gy, tamGuerra, tamGuerra);
@@ -1606,7 +1679,6 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
         return;
     }
 
-    int startX = tx + 20;
     int startY = ty + 50;
     char msg[32]; 
 
@@ -1999,7 +2071,7 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
 
 void dibujarTiendasEnIslas(HDC hdc, Camera cam, int ancho, int alto, int frameTienda)
 {
-    int tx = (1450 - cam.x) * cam.zoom;
+    int tx = (1500 - cam.x) * cam.zoom;
     int ty = (1900 - cam.y) * cam.zoom;
     int tam = 50 * cam.zoom;
     int f = (frameTienda / 20) % 2;
@@ -2390,9 +2462,8 @@ void procesarEnterMenu(HWND hwnd, EstadoJuego *estado)
         char *msg = "CONTROLES:\n\n"
                     "W, A, S, D: Mover personaje\n"
                     "ESPACIO: Accion (Talar, Minar, Abrir)\n"
-                    "BLOQ MAYUS: Abrir Mochila\n"
+                    "I: Abrir Mochila\n"
                     "T: Abrir Tienda (Cerca del edificio)\n"
-                    "TAB: Equipar/Quitar Armadura\n"
                     "1, 2, 3: Equipar Herramientas\n"
                     "R: Curar vida (Usa Hojas)\n\n"
                     "OBJETIVO: Recolecta recursos y mejora tu mochila!";
@@ -2435,6 +2506,36 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
         HBITMAP img = obtenerImagenIsla(i, mapaId);
         if (img)
             DibujarImagen(hdc, img, sx, sy, misIslas[i].ancho * cam.zoom, misIslas[i].alto * cam.zoom);
+    }
+    // 2. DIBUJAR TIBURONES (NUEVO BLOQUE)
+    for (int i = 0; i < MAX_TIBURONES; i++) {
+        if (!misTiburones[i].activa) continue;
+
+        // Verificar si está dentro de la cámara antes de dibujar
+        if (misTiburones[i].x > cam.x - 100 && misTiburones[i].x < cam.x + (ancho/cam.zoom) + 100 &&
+    misTiburones[i].y > cam.y - 100 && misTiburones[i].y < cam.y + (alto/cam.zoom) + 100) {
+            
+            int screenX = (int)((misTiburones[i].x - cam.x) * cam.zoom);
+            int screenY = (int)((misTiburones[i].y - cam.y) * cam.zoom);
+            int tam = 48 * cam.zoom; // Tamaño del tiburón (ajústalo a tus sprites)
+
+            HBITMAP hBmpTibu = hBmpTiburonAnim[misTiburones[i].direccion][misTiburones[i].frameAnim];
+            
+            if (hBmpTibu) {
+                 // Usamos TransparentBlt si tus BMP tienen fondo rosa (RGB 255,0,255)
+                 // Si ya son transparentes (PNG convertidos correctamente), usa DibujarImagen normal.
+                 // Asumiendo fondo rosa para este ejemplo:
+                 HDC hdcMem = CreateCompatibleDC(hdc);
+                 HBITMAP hOld = (HBITMAP)SelectObject(hdcMem, hBmpTibu);
+                 BITMAP bm; GetObject(hBmpTibu, sizeof(BITMAP), &bm);
+                 
+                 TransparentBlt(hdc, screenX, screenY, tam, tam, 
+                                hdcMem, 0, 0, bm.bmWidth, bm.bmHeight, 
+                                RGB(255, 0, 255)); // Color rosa transparente
+
+                 SelectObject(hdcMem, hOld); DeleteDC(hdcMem);
+            }
+        }
     }
 
     // 3. OBJETOS ESTÁTICOS (Parte del escenario)

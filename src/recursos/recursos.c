@@ -89,6 +89,7 @@ HBITMAP hBmpArbolChico = NULL;
 HBITMAP hBmpArbolGrande = NULL;
 HBITMAP hBmpVaca[8] = {NULL};
 HBITMAP hBmpVacaMuerta = NULL;
+HBITMAP hBmpTiburonAnim[2][4] = { {NULL} };
 
 // Items (Iconos)
 HBITMAP hBmpIconoMadera = NULL;
@@ -190,6 +191,16 @@ void CargarRecursos()
     hBmpVaca[7] = CargarImagen("assets/mundo/vaca-7.bmp");
     hBmpVacaMuerta = CargarImagen("assets/mundo/vaca_muerta.bmp");
     hBmpEstablo = CargarImagen("assets/animales/ranchito_vacas.bmp");
+    
+    //Tiburones
+    hBmpTiburonAnim[0][0] = CargarImagen("assets/animales/Tiburon-0-2.bmp"); // Saliendo
+	hBmpTiburonAnim[0][1] = CargarImagen("assets/animales/Tiburon-1-2.bmp"); // Aire alto
+	hBmpTiburonAnim[0][2] = CargarImagen("assets/animales/Tiburon-2-2.bmp"); // Aire bajo
+	hBmpTiburonAnim[0][3] = CargarImagen("assets/animales/Tiburon-3-2.bmp"); // Entrando
+	hBmpTiburonAnim[1][0] = CargarImagen("assets/animales/Tiburon-0-1.bmp");
+	hBmpTiburonAnim[1][1] = CargarImagen("assets/animales/Tiburon-1-1.bmp");
+	hBmpTiburonAnim[1][2] = CargarImagen("assets/animales/Tiburon-2-1.bmp");
+	hBmpTiburonAnim[1][3] = CargarImagen("assets/animales/Tiburon-3-1.bmp");
 
     // Mapas
     hBmpIslaGrande = CargarImagen("assets/mundo/Isla_grande.bmp");
@@ -419,6 +430,11 @@ void LiberarRecursos() {
     }
     if (hBmpVacaMuerta) DeleteObject(hBmpVacaMuerta);
 
+	for (int d = 0; d < 2; d++) {
+    for (int f = 0; f < 4; f++) {
+         if (hBmpTiburonAnim[d][f]) DeleteObject(hBmpTiburonAnim[d][f]);
+    }
+}
     // Tienda (Animación)
     if (hBmpTienda[0]) DeleteObject(hBmpTienda[0]);
     if (hBmpTienda[1]) DeleteObject(hBmpTienda[1]);

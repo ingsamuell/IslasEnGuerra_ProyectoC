@@ -44,7 +44,8 @@
 #define RADIO_ESTABLO 100 // Tamaño del área del establo
 #define MAX_VACAS 8
 #define VIDA_VACA 100
-#define MAX_ARBOLES 30    // Un buen número para cubrir 5 islas
+#define MAX_ARBOLES 40    // Un buen número para cubrir 5 islas
+#define MAX_TIBURONES 30
 
 // --- TESOROS Y RECURSOS ---
 #define MAX_TESOROS 2
@@ -148,6 +149,7 @@ typedef struct {
     BOOL tieneCana;
     BOOL tieneBotePesca;
 	int cantBarcosGuerra; // <--- CAMBIO: Ahora es un contador (0 a 4)
+	int timerInmunidadBarco;
     
     // Estados de Equipo
     BOOL armaduraEquipada;
@@ -187,6 +189,14 @@ typedef struct {
     int tiempoMuerte;    // Contador para desaparecer (5 segundos)
     int timerRegeneracion; // Contador de tiempo para reaparecer
 } Vaca;
+
+typedef struct {
+    float x, y;
+    int direccion; // 0 = Izquierda, 1 = Derecha
+    int frameAnim; // 0 a 3 (las 4 etapas del salto)
+    int timerAnim; // Para controlar la velocidad de la animación
+    int activa;    // Por si queremos que aparezcan/desaparezcan
+} Tiburon;
 
 typedef struct {
     int x;

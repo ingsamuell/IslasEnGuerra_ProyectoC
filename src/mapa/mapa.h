@@ -23,7 +23,7 @@ void golpearVaca(Jugador *j);
 void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto, int mapaId);
 void talarArbol(Jugador *j); 
-
+void actualizarTiburones(Jugador *j);
 // Inicializa las minas en el mapa
 void inicializarMinas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 

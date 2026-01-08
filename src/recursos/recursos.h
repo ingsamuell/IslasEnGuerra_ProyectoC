@@ -77,6 +77,8 @@ extern HBITMAP hBmpIconoSoldadoInv;
 extern HBITMAP hBmpIconoPescado;
 extern HBITMAP hBmpIconoCana;
 extern HBITMAP hBmpIconoPuno; 
+extern Tiburon misTiburones[MAX_TIBURONES];
+extern HBITMAP hBmpTiburonAnim[2][4];
 
 // --- 5. MUNDO (MAPAS Y OBJETOS) ---
 

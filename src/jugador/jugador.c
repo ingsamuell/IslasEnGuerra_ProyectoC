@@ -193,55 +193,61 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
 
 // --- ARREGLADO: LLAVES EN LOS IF PARA EVITAR WARNINGS ---
 
-void dibujarJugador(HDC hdc, Jugador *j, Camera cam) // Nota el *j
+void dibujarJugador(HDC hdc, Jugador *jugador, Camera cam)
 {
     int tam = 32 * cam.zoom;
     RECT r; GetClipBox(hdc, &r);
     int cx = (r.right / 2) - (tam / 2);
     int cy = (r.bottom / 2) - (tam / 2);
 
-    HBITMAP spriteFinal = hBmpJugador; // Default
-    int dir = j->direccion;            // Usamos j->
-    int anim = j->frameAnim;           // Usamos j->
-    
-    // DIBUJAR BARCO (Si está montado)
-    if (j->estadoBarco > 0) {
+    // =========================================================
+    // CASO 1: ESTÁ EN BARCO (Dibujar SOLO barco y SALIR)
+    // =========================================================
+    if (jugador->estadoBarco > 0) {
         HBITMAP imgBarco = NULL;
-        int dBarco = (j->direccion == DIR_IZQUIERDA) ? 0 : 1; 
+        int dir = (jugador->direccion == DIR_IZQUIERDA) ? 0 : 1; 
         
-        if (j->estadoBarco == 1) imgBarco = hBmpBote[dBarco];       
-        else if (j->estadoBarco == 2) imgBarco = hBmpBarco[dBarco]; 
+        // Determinar imagen según tipo de barco
+        if (jugador->estadoBarco == 1) imgBarco = hBmpBote[dir];       
+        else if (jugador->estadoBarco == 2) imgBarco = hBmpBarco[dir]; 
         
         if (imgBarco) {
+            // Dibujamos el barco centrado
             DibujarImagen(hdc, imgBarco, cx - 16, cy - 16, 80 * cam.zoom, 64 * cam.zoom);
         }
+        
+        if (jugador->estadoBarco == 1) {
+            SetTextColor(hdc, RGB(0, 255, 255));
+            TextOut(hdc, cx, cy - 40, "PESCANDO", 8);
+        }
+
+        return; // Detiene la función aquí si está en barco
     }
 
-    // SELECCIÓN DE SPRITE DEL JUGADOR
-    if (j->armaduraEquipada) {
+    // =========================================================
+    // CASO 2: A PIE (Dibujar Personaje normal)
+    // =========================================================
+    HBITMAP spriteFinal = hBmpJugador; // Default
+    int dir = jugador->direccion;
+    int anim = jugador->frameAnim;
+
+    if (jugador->armaduraEquipada) {
         if (hBmpArmaduraAnim[dir][anim]) spriteFinal = hBmpArmaduraAnim[dir][anim];
     } else {
-        switch (j->herramientaActiva) {
+        switch (jugador->herramientaActiva) {
             case HERRAMIENTA_ESPADA:
-                if (hBmpEspadaAnim[dir][anim]) spriteFinal = hBmpEspadaAnim[dir][anim];
+                if (hBmpEspadaAnim[dir][anim]) { spriteFinal = hBmpEspadaAnim[dir][anim]; }
                 break;
             case HERRAMIENTA_PICO:
-                if (hBmpPicoAnim[dir][anim]) spriteFinal = hBmpPicoAnim[dir][anim];
+                if (hBmpPicoAnim[dir][anim]) { spriteFinal = hBmpPicoAnim[dir][anim]; }
                 break;
             case HERRAMIENTA_HACHA:
-                if (hBmpHachaAnim[dir][anim]) spriteFinal = hBmpHachaAnim[dir][anim];
+                if (hBmpHachaAnim[dir][anim]) { spriteFinal = hBmpHachaAnim[dir][anim]; }
                 break;
             default:
-                if (hBmpJugadorAnim[dir][anim]) spriteFinal = hBmpJugadorAnim[dir][anim];
+                if (hBmpJugadorAnim[dir][anim]) { spriteFinal = hBmpJugadorAnim[dir][anim]; }
                 break;
         }
     }
-    
-    // Si tienes caña y no hay sprite, usa el base (default)
-    if (j->herramientaActiva == HERRAMIENTA_CANA && spriteFinal == NULL) {
-         if (hBmpJugadorAnim[dir][anim]) spriteFinal = hBmpJugadorAnim[dir][anim];
-    }
-
     DibujarImagen(hdc, spriteFinal, cx, cy, tam, tam);
 }
-
