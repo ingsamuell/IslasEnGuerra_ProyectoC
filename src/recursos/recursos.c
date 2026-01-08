@@ -280,8 +280,8 @@ void CargarRecursos()
     // Barcos
     hBmpBote[0] = CargarImagen("assets/barco/Bote_izqui.bmp");
     hBmpBote[1] = CargarImagen("assets/barco/Bote_dere.bmp");
-    hBmpBarco[0] = CargarImagen("assets/barco/Barco_izq.bmp");
-    hBmpBarco[1] = CargarImagen("assets/barco/Barco_der.bmp");
+    hBmpBarco[0] = CargarImagen("assets/barco/Barco_izqui.bmp");
+    hBmpBarco[1] = CargarImagen("assets/barco/Barco_dere.bmp");
     hBmpMuelle = CargarImagen("assets/barco/Puente_barco.bmp");
 
     // 7. HUD
