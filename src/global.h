@@ -88,6 +88,15 @@
 #define MUELLE_X 2050 
 #define MUELLE_Y 1600
 
+// Tipos de agua
+#define AGUA_SEGURA 1
+#define AGUA_PELIGROSA 0
+
+// Radios de seguridad (en celdas de 16px)
+#define RADIO_SEG_ISLA_GRANDE 18    // 400px (25 * 16)
+#define RADIO_SEG_ISLA_MEDIANA 6   // 240px (15 * 16)
+#define RADIO_SEG_ISLA_PEQUENA 6   // 160px (10 * 16)
+
 // --- ESTRUCTURA DE UNIDAD (NPCs) ---
 typedef struct {
     float x, y;

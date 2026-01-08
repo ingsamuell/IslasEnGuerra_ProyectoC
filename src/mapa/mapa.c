@@ -1,4 +1,4 @@
-/* src/mapa/mapa.c - VERSIÓN LIMPIA Y PROFESIONAL */
+/* src/mapa/mapa.c - VERSIÓN CON SISTEMA DE DOS TONOS DE AGUA */
 #include "mapa.h"
 #include "../global.h"
 #include "../recursos/recursos.h"
@@ -17,11 +17,20 @@ Isla misIslas[MAX_ISLAS];
 TextoFlotante listaTextos[MAX_TEXTOS] = {0};
 Arbol misArboles[MAX_ARBOLES];
 Tesoro misTesoros[MAX_TESOROS];
+extern Tiburon misTiburones[MAX_TIBURONES];
+
+// NUEVA VARIABLE: Matriz de agua segura
+char zonaAguaSegura[MUNDO_FILAS][MUNDO_COLUMNAS];
 
 // Referencias externas necesarias
 extern Jugador miJugador;
+extern char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
 
 #define MARGEN_ESTABLO 100
+
+// --- PROTOTIPOS DE FUNCIONES INTERNAS ---
+void conectarIslasConAguaSegura();
+void conectarDosPuntos(int x1, int y1, int x2, int y2, int anchoCorredor);
 
 // --- 1. SISTEMA DE ISLAS Y RECURSOS GRÁFICOS ---
 
@@ -119,6 +128,131 @@ void inicializarIslas(int mapaId)
     misIslas[4].alto = 400;
 }
 
+// --- SISTEMA DE AGUA SEGURA ---
+
+void conectarDosPuntos(int x1, int y1, int x2, int y2, int anchoCorredor) {
+    // Convertir a celdas
+    int celdaX1 = x1 / TAMANO_CELDA_BASE;
+    int celdaY1 = y1 / TAMANO_CELDA_BASE;
+    int celdaX2 = x2 / TAMANO_CELDA_BASE;
+    int celdaY2 = y2 / TAMANO_CELDA_BASE;
+    
+    // Bresenham line algorithm para crear corredor
+    int dx = abs(celdaX2 - celdaX1);
+    int dy = abs(celdaY2 - celdaY1);
+    int sx = (celdaX1 < celdaX2) ? 1 : -1;
+    int sy = (celdaY1 < celdaY2) ? 1 : -1;
+    int err = dx - dy;
+    
+    while(1) {
+        // Marcar área alrededor del punto central (ancho del corredor)
+        for(int y = celdaY1 - anchoCorredor/2; y <= celdaY1 + anchoCorredor/2; y++) {
+            for(int x = celdaX1 - anchoCorredor/2; x <= celdaX1 + anchoCorredor/2; x++) {
+                if(x >= 0 && x < MUNDO_COLUMNAS && y >= 0 && y < MUNDO_FILAS) {
+                    // Solo marcar si no es tierra (verificar con mapa actual)
+                    if(zonaAguaSegura[y][x] == AGUA_PELIGROSA) {
+                        zonaAguaSegura[y][x] = AGUA_SEGURA;
+                    }
+                }
+            }
+        }
+        
+        if(celdaX1 == celdaX2 && celdaY1 == celdaY2) break;
+        
+        int e2 = 2 * err;
+        if(e2 > -dy) {
+            err -= dy;
+            celdaX1 += sx;
+        }
+        if(e2 < dx) {
+            err += dx;
+            celdaY1 += sy;
+        }
+    }
+}
+
+void conectarIslasConAguaSegura() {
+    // Conexión entre Isla Central y Norte
+    conectarDosPuntos(1100 + 500, 1100 + 500,   // Centro de Isla Central
+                      1250 + 350, 200 + 350,     // Centro de Isla Norte
+                      20);                       // Ancho del corredor en celdas
+    
+    // Conexión entre Isla Central y Sur
+    conectarDosPuntos(1100 + 500, 1100 + 500,   // Centro de Isla Central
+                      1350 + 250, 2300 + 250,   // Centro de Isla Sur
+                      15);
+    
+    // Conexión entre Isla Central y Oeste
+    conectarDosPuntos(1100 + 500, 1100 + 500,   // Centro de Isla Central
+                      580 + 160, 1475 + 125,    // Centro de Isla Oeste
+                      12);
+    
+    // Conexión entre Isla Central y Este
+    conectarDosPuntos(1100 + 500, 1100 + 500,   // Centro de Isla Central
+                      2300 + 200, 1400 + 200,   // Centro de Isla Este
+                      15);
+}
+
+void calcularZonasAguaSegura(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    // 1. Inicializar TODA el agua como PELIGROSA
+    for(int y = 0; y < MUNDO_FILAS; y++) {
+        for(int x = 0; x < MUNDO_COLUMNAS; x++) {
+            zonaAguaSegura[y][x] = AGUA_PELIGROSA;
+        }
+    }
+    
+    // 2. Definir qué islas son del jugador (TODAS las 5)
+    int islasJugador[] = {0, 1, 2, 3, 4}; // 0=Central, 1=Norte, 2=Sur, 3=Oeste, 4=Este
+    
+    for(int i = 0; i < 5; i++) {
+        int idx = islasJugador[i];
+        if(misIslas[idx].activa) {
+            // Determinar radio según tamaño de isla
+            int radioCelda;
+            if(idx == 0) { // Isla Central (grande)
+                radioCelda = RADIO_SEG_ISLA_GRANDE;
+            } else if(idx == 1 || idx == 2) { // Norte y Sur (medianas)
+                radioCelda = RADIO_SEG_ISLA_MEDIANA;
+            } else { // Oeste y Este (pequeñas)
+                radioCelda = RADIO_SEG_ISLA_PEQUENA;
+            }
+            
+            // Calcular límites de la isla en celdas
+            int celdaIslaX = misIslas[idx].x / TAMANO_CELDA_BASE;
+            int celdaIslaY = misIslas[idx].y / TAMANO_CELDA_BASE;
+            int celdaAncho = misIslas[idx].ancho / TAMANO_CELDA_BASE;
+            int celdaAlto = misIslas[idx].alto / TAMANO_CELDA_BASE;
+            
+            // 3. Marcar agua segura alrededor de la isla
+            for(int y = celdaIslaY - radioCelda; y <= celdaIslaY + celdaAlto + radioCelda; y++) {
+                for(int x = celdaIslaX - radioCelda; x <= celdaIslaX + celdaAncho + radioCelda; x++) {
+                    if(x >= 0 && x < MUNDO_COLUMNAS && y >= 0 && y < MUNDO_FILAS) {
+                        // Verificar que sea AGUA (no tierra)
+                        if(!EsSuelo(x * TAMANO_CELDA_BASE + TAMANO_CELDA_BASE/2,
+                                   y * TAMANO_CELDA_BASE + TAMANO_CELDA_BASE/2, mapa)) {
+                            zonaAguaSegura[y][x] = AGUA_SEGURA;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // 4. Conectar islas cercanas con "puentes" de agua segura
+    conectarIslasConAguaSegura();
+}
+
+int esAguaSeguraParaBote(int x, int y) {
+    int col = x / TAMANO_CELDA_BASE;
+    int fila = y / TAMANO_CELDA_BASE;
+    
+    if(fila < 0 || fila >= MUNDO_FILAS || col < 0 || col >= MUNDO_COLUMNAS) {
+        return 0; // Fuera de límites = peligroso
+    }
+    
+    return (zonaAguaSegura[fila][col] == AGUA_SEGURA);
+}
+
 // --- 2. SISTEMA DE FÍSICA Y COLISIONES (ESCÁNER) ---
 
 // Función Auxiliar: Obtiene el color visual real en una coordenada (X,Y)
@@ -151,7 +285,15 @@ COLORREF ObtenerColorDePunto(int x, int y, int mapaId)
             return color;
         }
     }
-    return RGB(0, 100, 180); // Agua Profunda
+    // Determinar color de agua basado en zona segura
+    int col = x / TAMANO_CELDA_BASE;
+    int fila = y / TAMANO_CELDA_BASE;
+    if(fila >= 0 && fila < MUNDO_FILAS && col >= 0 && col < MUNDO_COLUMNAS) {
+        if(zonaAguaSegura[fila][col] == AGUA_SEGURA) {
+            return RGB(135, 206, 250);  // Azul claro
+        }
+    }
+    return RGB(0, 100, 180); // Azul oscuro
 }
 
 // Genera la matriz de colisión (Se ejecuta UNA VEZ al cargar)
@@ -177,7 +319,7 @@ void generarColisionDeMapaCompleto(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int m
             COLORREF c = ObtenerColorDePunto(mundoX, mundoY, mapaId);
 
             // Si NO es Magenta (Transparente) y NO es Azul -> TIERRA
-            if (c != RGB(255, 0, 255) && c != RGB(0, 100, 180))
+            if (c != RGB(255, 0, 255) && c != RGB(0, 100, 180) && c != RGB(135, 206, 250))
             {
                 mapa[fila][col] = 1;
             }
@@ -189,24 +331,25 @@ void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId)
 {
     inicializarIslas(mapaId);
     generarColisionDeMapaCompleto(mapa, mapaId);
-    // --- GENERACIÓN DE TIBURONES ---
+    
+    // NUEVO: Calcular zonas de agua segura
+    calcularZonasAguaSegura(mapa);
+    
+    // --- GENERACIÓN DE TIBURONES (SOLO EN AGUA PELIGROSA) ---
     int tiburonesCreados = 0;
     int intentos = 0;
     while (tiburonesCreados < MAX_TIBURONES && intentos < 2000) {
         int tx = rand() % (MUNDO_COLUMNAS * TAMANO_CELDA_BASE);
         int ty = rand() % (MUNDO_FILAS * TAMANO_CELDA_BASE);
 
-        // Calcular distancia al centro del mapa (aprox 1600,1600)
-        float distCentro = sqrt(pow(tx - 1600, 2) + pow(ty - 1600, 2));
-
-        // CONDICIONES:
+        // CONDICIONES NUEVAS:
         // 1. Que sea agua (EsSuelo == 0)
-        // 2. Que esté LEJOS de la isla (distancia > 1100) para que estén en "mar profundo"
-        if (!EsSuelo(tx, ty, mapa) && distCentro > 1100) {
+        // 2. Que NO sea agua segura
+        if (!EsSuelo(tx, ty, mapa) && !esAguaSeguraParaBote(tx, ty)) {
             misTiburones[tiburonesCreados].x = (float)tx;
             misTiburones[tiburonesCreados].y = (float)ty;
-            misTiburones[tiburonesCreados].direccion = rand() % 2; // 0 o 1 random
-            misTiburones[tiburonesCreados].frameAnim = rand() % 4; // Empezar en frame random
+            misTiburones[tiburonesCreados].direccion = rand() % 2;
+            misTiburones[tiburonesCreados].frameAnim = rand() % 4;
             misTiburones[tiburonesCreados].timerAnim = rand() % 10;
             misTiburones[tiburonesCreados].activa = 1;
             tiburonesCreados++;
@@ -226,7 +369,6 @@ int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
 
 void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy)
 {
-
     // 1. Animación (Sin cambios)
     if (dy > 0)
         jugador->direccion = DIR_ABAJO;
@@ -262,14 +404,16 @@ void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int 
         bool puedeMoverseX = (jugador->estadoBarco == 0 && terreno == 1) ||
                              (jugador->estadoBarco > 0 && terreno == 0);
 
-        // RESTRICCIÓN BOTE DE PESCA EN X
+        // RESTRICCIÓN BOTE DE PESCA EN X (NUEVO SISTEMA DE AGUA SEGURA)
         if (puedeMoverseX && jugador->estadoBarco == 1)
         {
-            float distCentro = sqrt(pow(futuroX - 1600, 2) + pow(jugador->y - 1600, 2));
-            if (distCentro > 900){
+            // Verificar si el destino es agua segura
+            if (!esAguaSeguraParaBote(futuroX, jugador->y))
+            {
                 puedeMoverseX = false;
-                crearTextoFlotante(jugador->x, jugador->y, "Hay tiburones! Vuelve!", 0, RGB(255, 50, 50));
-                }
+                crearTextoFlotante(jugador->x, jugador->y, 
+                                  "Agua peligrosa! Hay tiburones", 0, RGB(255, 50, 50));
+            }
         }
 
         if (puedeMoverseX)
@@ -292,13 +436,15 @@ void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int 
         bool puedeMoverseY = (jugador->estadoBarco == 0 && terreno == 1) ||
                              (jugador->estadoBarco > 0 && terreno == 0);
 
-        // RESTRICCIÓN BOTE DE PESCA EN Y
+        // RESTRICCIÓN BOTE DE PESCA EN Y (NUEVO SISTEMA DE AGUA SEGURA)
         if (puedeMoverseY && jugador->estadoBarco == 1)
         {
-            float distCentro = sqrt(pow(jugador->x - 1600, 2) + pow(futuroY - 1600, 2));
-            if (distCentro > 900){
+            // Verificar si el destino es agua segura
+            if (!esAguaSeguraParaBote(jugador->x, futuroY))
+            {
                 puedeMoverseY = false;
-                crearTextoFlotante(jugador->x, jugador->y, "Hay tiburones! Vuelve!", 0, RGB(255, 50, 50));
+                crearTextoFlotante(jugador->x, jugador->y, 
+                                  "Agua peligrosa! Hay tiburones.", 0, RGB(255, 50, 50));
             }
         }
 
@@ -541,8 +687,6 @@ void dibujarEstablo(HDC hdc, Camera cam)
         DibujarImagen(hdc, hBmpEstablo, sx, sy, 200 * cam.zoom, 200 * cam.zoom);
 }
 
-
-
 void actualizarTiburones(Jugador *j) {
     // 1. Reducir el timer de inmunidad del jugador si fue golpeado recientemente
     if (j->timerInmunidadBarco > 0) j->timerInmunidadBarco--;
@@ -552,39 +696,34 @@ void actualizarTiburones(Jugador *j) {
 
         // --- A) ANIMACIÓN ---
         misTiburones[i].timerAnim++;
-        if (misTiburones[i].timerAnim >= 8) { // Velocidad de la animación (ajústalo si va muy rápido/lento)
+        if (misTiburones[i].timerAnim >= 8) {
             misTiburones[i].timerAnim = 0;
             misTiburones[i].frameAnim++;
             if (misTiburones[i].frameAnim >= 4) {
-                misTiburones[i].frameAnim = 0; // Volver al inicio
-                // Opcional: Cambiar de dirección al terminar un ciclo para que "naden" de lado a lado
-                // misTiburones[i].direccion = !misTiburones[i].direccion; 
+                misTiburones[i].frameAnim = 0;
             }
         }
 
         // --- B) COLISIÓN CON BARCO DE GUERRA (Daño) ---
-        if (j->estadoBarco == 2 && j->timerInmunidadBarco == 0) { // Solo si es barco guerra y no es inmune
+        if (j->estadoBarco == 2 && j->timerInmunidadBarco == 0) {
             float dist = sqrt(pow(j->x - misTiburones[i].x, 2) + pow(j->y - misTiburones[i].y, 2));
             
-            // Si está muy cerca (colisión)
             if (dist < 40.0f) { 
                 // DAÑO AL JUGADOR
-                j->vidaActual -= 10; // Pierde 10 de vida
+                j->vidaActual -= 10;
                 if (j->vidaActual < 0) j->vidaActual = 0;
 
                 // Efectos visuales
                 crearTextoFlotante(j->x, j->y, "-10 VIDA!", 0, RGB(255, 0, 0));
-                crearChispas(j->x + 16, j->y + 16, RGB(200, 0, 0)); // Chispas rojas (sangre/daño)
+                crearChispas(j->x + 16, j->y + 16, RGB(200, 0, 0));
 
-                // Activar inmunidad por 1 segundo (aprox 60 frames) para no morir instantáneamente
-                j->timerInmunidadBarco = 60; 
-
-                // Opcional: El tiburón podría "sumergirse" (desactivarse) temporalmente tras atacar
-                // misTiburones[i].activa = 0; 
+                // Activar inmunidad por 1 segundo
+                j->timerInmunidadBarco = 60;
             }
         }
     }
 }
+
 // --- ÁRBOLES ---
 void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
 {
@@ -877,7 +1016,6 @@ void abrirTesoro(Jugador *j) {
                 int oro = 30 + (rand() % 11);
                 int antOro = j->oro;
                 
-                // CAMBIO IMPORTANTE: Usamos j->nivelMochila, no '3'
                 agregarRecurso(&j->oro, oro, j->nivelMochila); 
                 int ganOro = j->oro - antOro;
 
@@ -895,7 +1033,6 @@ void abrirTesoro(Jugador *j) {
                     if (ganHierro > 0) crearTextoFlotante(misTesoros[i].x, misTesoros[i].y - 25, "Hierro", ganHierro, RGB(192, 192, 192));
                 }
 
-                // Marcar como vaciado solo si obtuvimos el oro (opcional, aquí lo vaciamos siempre para no bloquear)
                 misTesoros[i].estado = 2; 
                 return;
             }
@@ -924,8 +1061,6 @@ void dibujarTesoros(HDC hdc, Camera cam, int ancho, int alto)
 
 // --- 5. LÓGICA DE JUEGO GENERAL ---
 
-// En src/mapa/mapa.c
-
 void actualizarLogicaSistema(Jugador *j) {
     // Pesca
     if (j->estadoBarco == 1) { 
@@ -942,12 +1077,12 @@ void actualizarLogicaSistema(Jugador *j) {
             else crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
         }
     } else j->timerPesca = 0;
-    actualizarTiburones(j); // <--- AGREGAR AQUÍ
+    actualizarTiburones(j);
 }
 
 void actualizarRegeneracionRecursos()
 {
-    // 1. ÁRBOLES (Ya funcionaba, lo dejamos igual)
+    // 1. ÁRBOLES
     for (int i = 0; i < MAX_ARBOLES; i++)
     {
         if (!misArboles[i].activa)
@@ -963,7 +1098,7 @@ void actualizarRegeneracionRecursos()
         }
     }
 
-    // 2. MINAS (NUEVO)
+    // 2. MINAS
     for (int i = 0; i < MAX_MINAS; i++)
     {
         if (!misMinas[i].activa)
@@ -972,14 +1107,14 @@ void actualizarRegeneracionRecursos()
             if (misMinas[i].timerRegeneracion >= TIEMPO_RESPAWN_RECURSOS)
             {
                 misMinas[i].activa = 1;
-                misMinas[i].vida = 8; // Restaurar vida completa (8 golpes)
+                misMinas[i].vida = 8;
                 misMinas[i].timerRegeneracion = 0;
-                crearChispaBlanca(misMinas[i].x, misMinas[i].y); // Efecto visual
+                crearChispaBlanca(misMinas[i].x, misMinas[i].y);
             }
         }
     }
 
-    // 3. VACAS (NUEVO)
+    // 3. VACAS
     for (int i = 0; i < MAX_VACAS; i++)
     {
         if (!manada[i].activa)
@@ -988,9 +1123,9 @@ void actualizarRegeneracionRecursos()
             if (manada[i].timerRegeneracion >= TIEMPO_RESPAWN_RECURSOS)
             {
                 manada[i].activa = 1;
-                manada[i].estadoVida = 0;     // Vuelve a estar VIVA
-                manada[i].vida = 5;           // Vida completa
-                manada[i].tiempoMuerte = 300; // Resetear timer de animación muerte
+                manada[i].estadoVida = 0;
+                manada[i].vida = 5;
+                manada[i].tiempoMuerte = 300;
                 manada[i].timerRegeneracion = 0;
                 manada[i].x = manada[i].xInicial;
                 crearChispaBlanca(manada[i].x, manada[i].y);
@@ -998,6 +1133,7 @@ void actualizarRegeneracionRecursos()
         }
     }
 }
+
 void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
 {
     // 1. SI YA ESTAMOS EN BARCO -> BAJARSE
@@ -1029,8 +1165,7 @@ void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
     float dist = sqrt(pow(j->x - MUELLE_X, 2) + pow(j->y - MUELLE_Y, 2));
 
     if (dist < 150)
-    { // Radio de interacción del muelle
-
+    {
         // PRIORIDAD: ¿Qué barco sacamos?
         // Si el jugador quiere pescar (tiene caña y bote)
         if (j->tieneBotePesca && j->tieneCana)
@@ -1069,7 +1204,6 @@ void inicializarUnidades()
     }
 }
 
-// 2. CREAR ESCUADRÓN (Flexible: 5, 10 o 15)
 void spawnearEscuadron(int tipo, int cantidad, int x, int y)
 {
     int creados = 0;
@@ -1094,7 +1228,7 @@ void spawnearEscuadron(int tipo, int cantidad, int x, int y)
     {
         if (!unidades[i].activa)
         {
-            unidades[i].x = x + (creados * 10); // Espaciado pequeño
+            unidades[i].x = x + (creados * 10);
             unidades[i].y = y + (creados * 5);
             unidades[i].tipo = tipo;
             unidades[i].activa = 1;
@@ -1104,8 +1238,6 @@ void spawnearEscuadron(int tipo, int cantidad, int x, int y)
         }
     }
 }
-
-// En src/mapa/mapa.c
 
 void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
     for (int i = 0; i < MAX_UNIDADES; i++) {
@@ -1273,7 +1405,7 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
                         agregarRecurso(&j->comida, 15, j->nivelMochila);
                         int gan = j->comida - ant;
 
-                        if (gan > 0) crearTextoFlotante(manada[v].x, manada[v].y, "+15 Comida", 0, RGB(255, 200, 0)); // cantidad 0 porque ya va en texto
+                        if (gan > 0) crearTextoFlotante(manada[v].x, manada[v].y, "+15 Comida", 0, RGB(255, 200, 0));
                         else crearTextoFlotante(unidades[i].x, unidades[i].y - 30, "Mochila Llena!", 0, RGB(255, 50, 50));
                         
                         crearChispas(manada[v].x + 16, manada[v].y + 16, RGB(255, 0, 0));
@@ -1337,7 +1469,7 @@ void actualizarAnimacionUnidad(Unidad *u, float dx, float dy)
         u->contadorAnim = 0;
     }
 }
-// 4. DIBUJAR (Nombres y Herramientas)
+
 void dibujarUnidades(HDC hdc, Camera cam)
 {
     for (int i = 0; i < MAX_UNIDADES; i++)
@@ -1346,7 +1478,6 @@ void dibujarUnidades(HDC hdc, Camera cam)
             continue;
 
         // 1. CALCULAR POSICIÓN EN PANTALLA
-        // Convertimos las coordenadas del mundo a coordenadas de píxeles en ventana
         int ux = (int)((unidades[i].x - cam.x) * cam.zoom);
         int uy = (int)((unidades[i].y - cam.y) * cam.zoom);
         int tam = (int)(TAMANO_CELDA * cam.zoom);
@@ -1407,7 +1538,7 @@ void dibujarUnidades(HDC hdc, Camera cam)
                 int barraAncho = (int)(20 * cam.zoom);
                 int barraAlto = (int)(3 * cam.zoom);
                 int bx = ux + (tam / 2) - (barraAncho / 2);
-                int by = uy - (int)(8 * cam.zoom); // Situada arriba de la cabeza
+                int by = uy - (int)(8 * cam.zoom);
 
                 // Dibujar Fondo de la barra (Gris oscuro)
                 HBRUSH hBrushBg = CreateSolidBrush(RGB(50, 50, 50));
@@ -1431,16 +1562,15 @@ void dibujarUnidades(HDC hdc, Camera cam)
     }
 }
 
-// 5. CONTROL (Igual que antes pero actualizado)
 void seleccionarUnidadesGrupo(int x1, int y1, int x2, int y2, Camera cam)
 {
-    // 1. Normalizar el cuadro (por si arrastran de derecha a izquierda o arriba)
+    // 1. Normalizar el cuadro
     int minX = min(x1, x2);
     int maxX = max(x1, x2);
     int minY = min(y1, y2);
     int maxY = max(y1, y2);
 
-    // 2. Si el cuadro es minúsculo (un solo clic), podemos tratarlo como selección individual
+    // 2. Si el cuadro es minúsculo (un solo clic)
     bool esClickSimple = (maxX - minX < 5 && maxY - minY < 5);
 
     for (int i = 0; i < MAX_UNIDADES; i++)
@@ -1455,19 +1585,19 @@ void seleccionarUnidadesGrupo(int x1, int y1, int x2, int y2, Camera cam)
 
         if (esClickSimple)
         {
-            // Lógica de clic único: ¿El mouse está sobre el sprite?
+            // Lógica de clic único
             if (x1 >= ux && x1 <= ux + size && y1 >= uy && y1 <= uy + size)
             {
                 unidades[i].seleccionado = 1;
             }
             else
             {
-                unidades[i].seleccionado = 0; // Deseleccionar si clickeas el suelo
+                unidades[i].seleccionado = 0;
             }
         }
         else
         {
-            // Lógica de cuadro: ¿La unidad está dentro del rectángulo?
+            // Lógica de cuadro
             if (ux + (size / 2) >= minX && ux + (size / 2) <= maxX &&
                 uy + (size / 2) >= minY && uy + (size / 2) <= maxY)
             {
@@ -1475,12 +1605,12 @@ void seleccionarUnidadesGrupo(int x1, int y1, int x2, int y2, Camera cam)
             }
             else
             {
-                // Si no estamos presionando SHIFT (opcional), deseleccionamos los de fuera
                 unidades[i].seleccionado = 0;
             }
         }
     }
 }
+
 void darOrdenMovimiento(Unidad unidades[], int max, int clickX, int clickY)
 {
     int fila = 0;
@@ -1496,7 +1626,7 @@ void darOrdenMovimiento(Unidad unidades[], int max, int clickX, int clickY)
 
             columna++;
             if (columna > 3)
-            { // Máximo 4 unidades por fila en la formación
+            {
                 columna = 0;
                 fila++;
             }
@@ -1504,7 +1634,6 @@ void darOrdenMovimiento(Unidad unidades[], int max, int clickX, int clickY)
     }
 }
 
-// Dar orden de movimiento o acción
 void ordenarUnidad(int mX, int mY, Camera cam)
 {
     float mundoX = (mX / cam.zoom) + cam.x;
@@ -1524,24 +1653,19 @@ void ordenarUnidad(int mX, int mY, Camera cam)
             for (int a = 0; a < MAX_ARBOLES; a++)
             {
                 if (!misArboles[a].activa)
-                    continue; // CORREGIDO: misArboles
+                    continue;
 
-                // CORRECCIÓN: Usamos el CENTRO del árbol
-                float centroArbolX = misArboles[a].x + 16; // CORREGIDO: misArboles
-                float centroArbolY = misArboles[a].y + 16; // CORREGIDO: misArboles
+                float centroArbolX = misArboles[a].x + 16;
+                float centroArbolY = misArboles[a].y + 16;
 
                 float d = sqrt(pow(centroArbolX - mundoX, 2) + pow(centroArbolY - mundoY, 2));
 
-                // Rango de clic a 60px
                 if (d < 60.0f)
                 {
                     unidades[i].estado = ESTADO_TALANDO;
                     unidades[i].targetIndex = a;
-
-                    // El destino es el borde del árbol, no el centro exacto
-                    unidades[i].destinoX = misArboles[a].x; // CORREGIDO: misArboles
-                    unidades[i].destinoY = misArboles[a].y; // CORREGIDO: misArboles
-
+                    unidades[i].destinoX = misArboles[a].x;
+                    unidades[i].destinoY = misArboles[a].y;
                     objetivoEncontrado = true;
                     break;
                 }
@@ -1554,20 +1678,19 @@ void ordenarUnidad(int mX, int mY, Camera cam)
             for (int m = 0; m < MAX_MINAS; m++)
             {
                 if (!misMinas[m].activa)
-                    continue; // CORREGIDO: misMinas
+                    continue;
 
-                // CORRECCIÓN: Usamos el CENTRO de la mina
-                float centroMinaX = misMinas[m].x + 16; // CORREGIDO: misMinas
-                float centroMinaY = misMinas[m].y + 16; // CORREGIDO: misMinas
+                float centroMinaX = misMinas[m].x + 16;
+                float centroMinaY = misMinas[m].y + 16;
 
                 float d = sqrt(pow(centroMinaX - mundoX, 2) + pow(centroMinaY - mundoY, 2));
 
                 if (d < 60.0f)
-                { // Rango aumentado a 60
+                {
                     unidades[i].estado = ESTADO_MINANDO;
                     unidades[i].targetIndex = m;
-                    unidades[i].destinoX = misMinas[m].x; // CORREGIDO: misMinas
-                    unidades[i].destinoY = misMinas[m].y; // CORREGIDO: misMinas
+                    unidades[i].destinoX = misMinas[m].x;
+                    unidades[i].destinoY = misMinas[m].y;
                     objetivoEncontrado = true;
                     break;
                 }
@@ -1620,7 +1743,6 @@ void dibujarMuelleYFlota(HDC hdc, Camera cam, Jugador *j)
     }
     else
     {
-        // Fallback si no tienes la imagen aún: Un cuadro marrón
         HBRUSH madera = CreateSolidBrush(RGB(100, 50, 0));
         RECT r = {mx, my, mx + tamMuelle, my + (tamMuelle / 2)};
         FillRect(hdc, &r, madera);
@@ -1629,24 +1751,22 @@ void dibujarMuelleYFlota(HDC hdc, Camera cam, Jugador *j)
 
     // 2. DIBUJAR BOTE DE PESCA (Estacionado)
     if (j->tieneBotePesca && j->estadoBarco != 1)
-    { // Si lo tienes y NO lo estás usando
+    {
         int bx = mx + (30 * cam.zoom);
-        int by = my - (50 * cam.zoom); // Arriba del muelle
+        int by = my - (50 * cam.zoom);
         int tamBote = 80 * cam.zoom;
         if (hBmpBote[0])
             DibujarImagen(hdc, hBmpBote[0], bx, by, tamBote, tamBote);
     }
 
     // 3. DIBUJAR FLOTA DE GUERRA (Estacionados)
-    // Se dibujan en fila hacia abajo del muelle
     for (int i = 0; i < j->cantBarcosGuerra; i++)
     {
-        // Si estás usando el barco de guerra, dibujamos uno menos en el muelle
         if (j->estadoBarco == 2 && i == 0)
             continue;
 
         int gx = mx + (40 * cam.zoom);
-        int gy = my + (80 * cam.zoom) + (i * 50 * cam.zoom); // Uno debajo del otro
+        int gy = my + (80 * cam.zoom) + (i * 50 * cam.zoom);
         int tamGuerra = 120 * cam.zoom;
 
         if (hBmpBarco[0])
@@ -1655,7 +1775,6 @@ void dibujarMuelleYFlota(HDC hdc, Camera cam, Jugador *j)
 }
 
 // --- 7. LÓGICA DE TIENDA (RTS y OBJETOS) ---
-// En src/mapa/mapa.c
 
 void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, HWND hwnd) {
     if (!j->tiendaAbierta) return;
@@ -1693,16 +1812,14 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
             if (my >= iy && my <= iy + 60 && mx >= tx && mx <= tx + 300) {
                 
                 // --- CORRECCIÓN 1: BLOQUEO POR NIVEL DE MOCHILA ---
-                // Si intenta comprar Espada (0), Pico (1) o Hacha (2) y no tiene Mochila Nvl 2...
                 if (i <= 2 && j->nivelMochila < 2) {
                     crearTextoFlotante(msgX, msgY, "Req. Mochila Nvl 2", 0, RGB(255, 50, 50));
-                    return; // Detener compra
+                    return;
                 }
-                // --------------------------------------------------
 
                 // Item 0: Espada
                 if (i == 0) {
-                    if (j->tieneEspada) return; // Ya la tiene
+                    if (j->tieneEspada) return;
                     if (j->oro < 50) { sprintf(msg, "Faltan %d Oro", 50 - j->oro); crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50)); }
                     else { j->oro -= 50; j->tieneEspada = TRUE; ganarExperiencia(j, 10); }
                 }
@@ -1721,7 +1838,6 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
                 // Item 3: Caña (También requiere Nvl 2)
                 else if (i == 3) {
                     if (j->tieneCana) return;
-                    // Check adicional específico para la caña si quieres, o dejar el global
                     if (j->nivelMochila < 2) { crearTextoFlotante(msgX, msgY, "Req. Mochila Nvl 2", 0, RGB(255, 50, 50)); return; }
                     
                     BOOL falta = FALSE;
@@ -1735,7 +1851,7 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
         }
     }
 
-    // --- TAB 1: TROPAS (Igual que antes) ---
+    // --- TAB 1: TROPAS ---
     else if (j->modoTienda == 1) {
         int cant = (esClickDerecho) ? 5 : 1; 
         for (int i = 0; i < 4; i++) {
@@ -1774,7 +1890,7 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
         }
     }
     
-    // --- TAB 2: LOGÍSTICA (Igual que antes) ---
+    // --- TAB 2: LOGÍSTICA ---
     else if (j->modoTienda == 2) {
         if (my >= startY && my <= startY+60) { // Mochila 2
              if (j->nivelMochila >= 2) return;
@@ -1815,28 +1931,22 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
         int precios[] = {1, 2, 5, 1, 3}; 
         int* stocks[] = {&j->madera, &j->piedra, &j->hierro, &j->hojas, &j->comida};
         
-        // --- CORRECCIÓN 2: OBTENER EL LÍMITE REAL DE ORO ---
-        int maxOro = obtenerCapacidadMaxima(j->nivelMochila); //
+        int maxOro = obtenerCapacidadMaxima(j->nivelMochila);
 
         for (int i = 0; i < 5; i++) {
             int iy = startY + (i * 60);
             if (my >= iy && my <= iy + 40 && mx >= tx && mx <= tx + 300) {
                 int cant = (esClickDerecho) ? 10 : 1;
                 
-                // Primero verificamos si tienes el recurso para vender
                 if (*stocks[i] >= cant) {
-                    
                     int ganancia = cant * precios[i];
                     
-                    // --- VERIFICAR SI EL ORO CABE EN LA MOCHILA ---
                     if (j->oro + ganancia > maxOro) {
-                         // Si se pasa, mostramos error
                          crearTextoFlotante(msgX, msgY, "Limite de Oro alcanzado!", 0, RGB(255, 50, 50));
                     } 
                     else {
-                        // Si cabe, hacemos la transacción
                         *stocks[i] -= cant;
-                        j->oro += ganancia; // Ahora es seguro sumar
+                        j->oro += ganancia;
                         
                         sprintf(msg, "+%d Oro", ganancia);
                         crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 215, 0));
@@ -1851,15 +1961,10 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
     }
 }
 
-/// --- DIBUJAR LA INTERFAZ DE LA TIENDA (TECLA T) ---
 void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
 {
-    // POSICIÓN DERECHA (Para que conviva con el Inventario en la Izquierda)
-    int anchoW = 340; // Ancho de la tienda
-    int altoW = 480;  // Alto de la tienda
-    
-    // CAMBIO DE LÓGICA:
-    // En lugar de tx = 600, calculamos: (AnchoPantalla - AnchoTienda - 20 margen)
+    int anchoW = 340;
+    int altoW = 480;
     int tx = ancho - anchoW - 20; 
     int ty = 80;
 
@@ -1872,7 +1977,7 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
     FrameRect(hdc, &r, borde);
     DeleteObject(borde);
 
-    // 2. PESTAÑAS (Categorías)
+    // 2. PESTAÑAS
     char *tabs[] = {"HERRAM.", "TROPAS", "LOGIST.", "VENDER"};
     int tabW = anchoW / 4;
 
@@ -1889,7 +1994,7 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
             HPEN penLine = CreatePen(PS_SOLID, 2, RGB(255, 215, 0));
             HGDIOBJ old = SelectObject(hdc, penLine);
             MoveToEx(hdc, tx + (i * tabW), ty + 30, NULL);
-            LineTo(hdc, tx + ((i + 1) * tabW), ty + 30); // Sin NULL
+            LineTo(hdc, tx + ((i + 1) * tabW), ty + 30);
             SelectObject(hdc, old);
             DeleteObject(penLine);
         }
@@ -1944,10 +2049,9 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
         }
     }
 
-    // --- TAB 1: TROPAS (Sprites) ---
+    // --- TAB 1: TROPAS ---
     else if (j->modoTienda == 1)
     {
-        // Usamos el frame [0][0] (De frente) de los arrays de animación
         struct TropaShop
         {
             char *nom;
@@ -1965,7 +2069,6 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
         for (int i = 0; i < 4; i++)
         {
             int iy = startY + (i * 80);
-            // DIBUJAR SPRITE DEL PERSONAJE
             if (tropas[i].sprite)
             {
                 DibujarImagen(hdc, tropas[i].sprite, startX, iy, 40, 40);
@@ -2088,7 +2191,6 @@ void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FIL
     inicializarVacas();
     inicializarMinas(mapa);
     inicializarTesoros();
-    // inicializarUnidades();
 
     jugador->x = 1600;
     jugador->y = 1600;
@@ -2144,17 +2246,13 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
     int startX = (ancho - totalAncho) / 2;
     int fixedY = (alto / 2) - (btnAlto / 2);
 
-    // 3. DIBUJAR BOTONES (Imágenes limpias)
-
-    // Botón 1: JUGAR
+    // 3. DIBUJAR BOTONES
     HBITMAP imgJugar = (hBmpBtnJugar) ? hBmpBtnJugar : hBmpBoton;
     DibujarImagen(hdc, imgJugar, startX, fixedY, btnAncho, btnAlto);
 
-    // Botón 2: PARTIDAS
     HBITMAP imgPartidas = (hBmpBtnPartidas) ? hBmpBtnPartidas : hBmpBoton;
     DibujarImagen(hdc, imgPartidas, startX + btnAncho + separacion, fixedY, btnAncho, btnAlto);
 
-    // Botón 3: INSTRUCCIONES
     HBITMAP imgInstr = (hBmpBtnInstrucciones) ? hBmpBtnInstrucciones : hBmpBoton;
     DibujarImagen(hdc, imgInstr, startX + (btnAncho + separacion) * 2, fixedY, btnAncho, btnAlto);
 
@@ -2165,8 +2263,6 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
     HBITMAP imgSalir = (hBmpBtnSalir) ? hBmpBtnSalir : hBmpBoton;
     DibujarImagen(hdc, imgSalir, salirX, salirY, btnAncho, btnAlto);
 
-    // (HEMOS ELIMINADO LA SECCIÓN 4 QUE DIBUJABA EL BORDE DORADO)
-
     // 5. TÍTULO DEL JUEGO
     if (hBmpTitulo)
     {
@@ -2176,13 +2272,11 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
     }
 }
 
-// Función auxiliar para detectar colisión simple (Local)
 int puntoEnRect(int x, int y, int rx, int ry, int rw, int rh)
 {
     return (x >= rx && x <= rx + rw && y >= ry && y <= ry + rh);
 }
 
-// --- PROCESAR CLIC EN EL MENÚ ---
 void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
 {
     RECT rc;
@@ -2190,25 +2284,19 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
     int ancho = rc.right;
     int alto = rc.bottom;
 
-    // Configuración idéntica a dibujarMenuConSprites
     int btnAncho = 500;
     int btnAlto = 200;
     int separacion = 30;
 
-    // Cálculo de posición inicial (Centrado)
     int totalAncho = (btnAncho * 3) + (separacion * 2);
     int startX = (ancho - totalAncho) / 2;
-    int startY = (alto / 2) - (btnAlto / 2); // Centrado verticalmente
+    int startY = (alto / 2) - (btnAlto / 2);
 
     // 1. BOTÓN JUGAR
     if (puntoEnRect(x, y, startX, startY, btnAncho, btnAlto))
     {
-        // Sonido de confirmación (Opcional)
-
-        // Cambiar estado a Selección de Mapa
         estado->estadoActual = ESTADO_SELECCION_MAPA;
-        estado->opcionSeleccionada = 0; // Resetear selección del siguiente menú
-
+        estado->opcionSeleccionada = 0;
         InvalidateRect(hwnd, NULL, FALSE);
         return;
     }
@@ -2238,14 +2326,13 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
         return;
     }
 
-    // 4. BOTÓN SALIR (Esquina Inferior Derecha)
+    // 4. BOTÓN SALIR
     int margen = 30;
     int xSalir = ancho - btnAncho - margen;
     int ySalir = alto - btnAlto - margen;
 
     if (puntoEnRect(x, y, xSalir, ySalir, btnAncho, btnAlto))
     {
-        // Confirmación antes de salir
         if (MessageBox(hwnd, "Seguro que quieres salir?", "Salir", MB_YESNO | MB_ICONQUESTION) == IDYES)
         {
             PostQuitMessage(0);
@@ -2253,7 +2340,6 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
     }
 }
 
-// --- DIBUJADO DE LA PANTALLA DE SELECCIÓN DE MAPA ---
 void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
 {
     RECT rect;
@@ -2274,7 +2360,6 @@ void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
     }
     else
     {
-        // Fondo oscuro por defecto
         HBRUSH fondo = CreateSolidBrush(RGB(20, 20, 30));
         FillRect(hdc, &rect, fondo);
         DeleteObject(fondo);
@@ -2283,16 +2368,14 @@ void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
     // 2. TÍTULO SUPERIOR
     SetBkMode(hdc, TRANSPARENT);
 
-    // Fuente Grande para el Título
     HFONT hFontTitulo = CreateFont(48, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
                                    DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
                                    CLEARTYPE_QUALITY, VARIABLE_PITCH, "Arial");
     HFONT hOldFont = (HFONT)SelectObject(hdc, hFontTitulo);
 
-    SetTextColor(hdc, RGB(255, 215, 0)); // Dorado
+    SetTextColor(hdc, RGB(255, 215, 0));
     const char *titulo = "SELECCIONA TU DESTINO";
 
-    // Centrar texto (cálculo aproximado o usando GetTextExtentPoint32)
     SIZE size;
     GetTextExtentPoint32(hdc, titulo, strlen(titulo), &size);
     TextOut(hdc, (ancho - size.cx) / 2, 50, titulo, strlen(titulo));
@@ -2305,7 +2388,6 @@ void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
     int cuadroAlto = 200;
     int separacion = 50;
 
-    // Calcular inicio para centrar los 3 bloques
     int totalAncho = (cuadroAncho * 3) + (separacion * 2);
     int startX = (ancho - totalAncho) / 2;
     int startY = (alto - cuadroAlto) / 2;
@@ -2316,7 +2398,6 @@ void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
         int y = startY;
         BOOL seleccionado = (estado->opcionSeleccionada == i);
 
-        // A. Seleccionar Imagen (Normal vs Seleccionada)
         HBITMAP img = NULL;
         switch (i)
         {
@@ -2331,21 +2412,18 @@ void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
             break;
         }
 
-        // B. Dibujar Imagen
         if (img)
         {
             DibujarImagen(hdc, img, x, y, cuadroAncho, cuadroAlto);
         }
         else
         {
-            // Placeholder si falla la imagen
             HBRUSH pBrush = CreateSolidBrush(seleccionado ? RGB(100, 100, 200) : RGB(50, 50, 50));
             RECT rP = {x, y, x + cuadroAncho, y + cuadroAlto};
             FillRect(hdc, &rP, pBrush);
             DeleteObject(pBrush);
         }
 
-        // C. Dibujar Marco (Dorado si seleccionado, Gris si no)
         int bordeGrosor = seleccionado ? 4 : 2;
         COLORREF colorBorde = seleccionado ? RGB(255, 215, 0) : RGB(100, 100, 100);
 
@@ -2359,7 +2437,6 @@ void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
         SelectObject(hdc, hOldPen);
         DeleteObject(hPen);
 
-        // D. Texto del Nombre del Mapa
         char nombre[32];
         switch (i)
         {
@@ -2382,13 +2459,11 @@ void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
     SetTextColor(hdc, RGB(200, 200, 200));
     const char *instr = "Haz Clic para seleccionar  |  Presiona ENTER para Iniciar  |  ESC para Volver";
 
-    // Centrar instrucciones
     SIZE sizeI;
     GetTextExtentPoint32(hdc, instr, strlen(instr), &sizeI);
     TextOut(hdc, (ancho - sizeI.cx) / 2, alto - 80, instr, strlen(instr));
 }
 
-// --- PROCESAR CLIC EN SELECCIÓN DE MAPA ---
 void procesarClickSeleccionMapa(int x, int y, HWND hwnd, EstadoJuego *estado)
 {
     RECT rc;
@@ -2396,60 +2471,44 @@ void procesarClickSeleccionMapa(int x, int y, HWND hwnd, EstadoJuego *estado)
     int ancho = rc.right;
     int alto = rc.bottom;
 
-    // Configuración de dimensiones (Debe ser IDÉNTICA a dibujarSeleccionMapa)
     int cuadroAncho = 300;
     int cuadroAlto = 200;
     int separacion = 50;
 
-    // Recálculo de posiciones dinámicas
     int totalAncho = (cuadroAncho * 3) + (separacion * 2);
     int startX = (ancho - totalAncho) / 2;
     int startY = (alto - cuadroAlto) / 2;
 
-    // Verificar clic en cada uno de los 3 mapas
     for (int i = 0; i < 3; i++)
     {
         int boxX = startX + (i * (cuadroAncho + separacion));
         int boxY = startY;
 
-        // Detección de colisión (Punto dentro de Rectángulo)
         if (x >= boxX && x <= boxX + cuadroAncho &&
             y >= boxY && y <= boxY + cuadroAlto)
         {
-            // Solo actualizamos si cambiamos de selección
             if (estado->opcionSeleccionada != i)
             {
                 estado->opcionSeleccionada = i;
-
-                // Sonido de selección (Opcional, usa sonido de sistema por defecto)
                 PlaySound("SystemSelect", NULL, SND_ASYNC);
-
-                // Forzar redibujado inmediato para ver el marco dorado
                 InvalidateRect(hwnd, NULL, FALSE);
             }
-            return; // Ya encontramos el clic, salimos
+            return;
         }
     }
 }
 
-// --- PROCESAR TECLA ENTER EN EL MENÚ ---
 void procesarEnterMenu(HWND hwnd, EstadoJuego *estado)
 {
-    // Solo actuamos si estamos en el menú principal
     if (estado->estadoActual != ESTADO_MENU)
         return;
 
     switch (estado->opcionSeleccionada)
     {
     case 0: // JUGAR
-        // Sonido de inicio
         PlaySound("SystemStart", NULL, SND_ASYNC);
-
-        // Cambiar de estado
         estado->estadoActual = ESTADO_SELECCION_MAPA;
-        estado->opcionSeleccionada = 0; // Pre-seleccionar el primer mapa por defecto
-
-        // Redibujar
+        estado->opcionSeleccionada = 0;
         InvalidateRect(hwnd, NULL, FALSE);
         break;
 
@@ -2484,13 +2543,74 @@ void procesarEnterMenu(HWND hwnd, EstadoJuego *estado)
 
 void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda, int mapaId)
 {
-    // 1. FONDO DE AGUA (La capa más baja)
-    HBRUSH agua = CreateSolidBrush(RGB(0, 100, 180));
-    RECT r = {0, 0, ancho, alto};
-    FillRect(hdc, &r, agua);
-    DeleteObject(agua);
+    // 1. FONDO DE AGUA CON DOS TONOS (NUEVO SISTEMA)
+    for (int fila = 0; fila < MUNDO_FILAS; fila++)
+    {
+        for (int col = 0; col < MUNDO_COLUMNAS; col++)
+        {
+            // Calcular posición en el mundo
+            int mundoX = (col * TAMANO_CELDA_BASE) + (TAMANO_CELDA_BASE / 2);
+            int mundoY = (fila * TAMANO_CELDA_BASE) + (TAMANO_CELDA_BASE / 2);
+            
+            // Posición en pantalla
+            int sx = (mundoX - cam.x) * cam.zoom;
+            int sy = (mundoY - cam.y) * cam.zoom;
+            
+            // Solo dibujar si está visible
+            if (sx > -TAMANO_CELDA_BASE && sx < ancho && 
+                sy > -TAMANO_CELDA_BASE && sy < alto)
+            {
+                COLORREF colorAgua;
+                
+                // Determinar color basado en zona segura
+                if (zonaAguaSegura[fila][col] == AGUA_SEGURA)
+                {
+                    colorAgua = RGB(135, 206, 250);  // AZUL CLARO (SkyBlue) - SEGURO
+                }
+                else
+                {
+                    colorAgua = RGB(0, 100, 180);    // AZUL OSCURO - PELIGROSO
+                }
+                
+                // Dibujar celda de agua
+                HBRUSH brushAgua = CreateSolidBrush(colorAgua);
+                RECT rAgua = {sx, sy, 
+                             sx + TAMANO_CELDA_BASE * cam.zoom, 
+                             sy + TAMANO_CELDA_BASE * cam.zoom};
+                FillRect(hdc, &rAgua, brushAgua);
+                DeleteObject(brushAgua);
+            }
+        }
+    }
 
-    // 2. ISLAS (Tierra firme)
+    // 2. DIBUJAR TIBURONES
+    for (int i = 0; i < MAX_TIBURONES; i++) {
+        if (!misTiburones[i].activa) continue;
+
+        if (misTiburones[i].x > cam.x - 100 && misTiburones[i].x < cam.x + (ancho/cam.zoom) + 100 &&
+            misTiburones[i].y > cam.y - 100 && misTiburones[i].y < cam.y + (alto/cam.zoom) + 100) {
+            
+            int screenX = (int)((misTiburones[i].x - cam.x) * cam.zoom);
+            int screenY = (int)((misTiburones[i].y - cam.y) * cam.zoom);
+            int tam = 48 * cam.zoom;
+
+            HBITMAP hBmpTibu = hBmpTiburonAnim[misTiburones[i].direccion][misTiburones[i].frameAnim];
+            
+            if (hBmpTibu) {
+                HDC hdcMem = CreateCompatibleDC(hdc);
+                HBITMAP hOld = (HBITMAP)SelectObject(hdcMem, hBmpTibu);
+                BITMAP bm; GetObject(hBmpTibu, sizeof(BITMAP), &bm);
+                
+                TransparentBlt(hdc, screenX, screenY, tam, tam, 
+                                hdcMem, 0, 0, bm.bmWidth, bm.bmHeight, 
+                                RGB(255, 0, 255));
+
+                SelectObject(hdcMem, hOld); DeleteDC(hdcMem);
+            }
+        }
+    }
+
+    // 3. ISLAS (Tierra firme)
     for (int i = 0; i < MAX_ISLAS; i++)
     {
         if (!misIslas[i].activa)
@@ -2499,7 +2619,6 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
         int sx = (misIslas[i].x - cam.x) * cam.zoom;
         int sy = (misIslas[i].y - cam.y) * cam.zoom;
 
-        // Optimización: No dibujar si está fuera de pantalla
         if (sx + (misIslas[i].ancho * cam.zoom) < 0 || sx > ancho)
             continue;
 
@@ -2507,42 +2626,13 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
         if (img)
             DibujarImagen(hdc, img, sx, sy, misIslas[i].ancho * cam.zoom, misIslas[i].alto * cam.zoom);
     }
-    // 2. DIBUJAR TIBURONES (NUEVO BLOQUE)
-    for (int i = 0; i < MAX_TIBURONES; i++) {
-        if (!misTiburones[i].activa) continue;
 
-        // Verificar si está dentro de la cámara antes de dibujar
-        if (misTiburones[i].x > cam.x - 100 && misTiburones[i].x < cam.x + (ancho/cam.zoom) + 100 &&
-    misTiburones[i].y > cam.y - 100 && misTiburones[i].y < cam.y + (alto/cam.zoom) + 100) {
-            
-            int screenX = (int)((misTiburones[i].x - cam.x) * cam.zoom);
-            int screenY = (int)((misTiburones[i].y - cam.y) * cam.zoom);
-            int tam = 48 * cam.zoom; // Tamaño del tiburón (ajústalo a tus sprites)
-
-            HBITMAP hBmpTibu = hBmpTiburonAnim[misTiburones[i].direccion][misTiburones[i].frameAnim];
-            
-            if (hBmpTibu) {
-                 // Usamos TransparentBlt si tus BMP tienen fondo rosa (RGB 255,0,255)
-                 // Si ya son transparentes (PNG convertidos correctamente), usa DibujarImagen normal.
-                 // Asumiendo fondo rosa para este ejemplo:
-                 HDC hdcMem = CreateCompatibleDC(hdc);
-                 HBITMAP hOld = (HBITMAP)SelectObject(hdcMem, hBmpTibu);
-                 BITMAP bm; GetObject(hBmpTibu, sizeof(BITMAP), &bm);
-                 
-                 TransparentBlt(hdc, screenX, screenY, tam, tam, 
-                                hdcMem, 0, 0, bm.bmWidth, bm.bmHeight, 
-                                RGB(255, 0, 255)); // Color rosa transparente
-
-                 SelectObject(hdcMem, hOld); DeleteDC(hdcMem);
-            }
-        }
-    }
-
-    // 3. OBJETOS ESTÁTICOS (Parte del escenario)
+    // 4. OBJETOS ESTÁTICOS
     dibujarTiendasEnIslas(hdc, cam, ancho, alto, frameTienda);
     dibujarArboles(hdc, cam, ancho, alto, mapaId);
     dibujarMuelleYFlota(hdc, cam, &miJugador);
-
-    // NOTA: Las vacas, minas y el jugador se dibujan en main.c
-    // para asegurar que queden ENCIMA del mapa.
+    dibujarVacas(hdc, cam, ancho, alto);
+    dibujarMinas(hdc, cam, ancho, alto);
+    dibujarTesoros(hdc, cam, ancho, alto);
+    dibujarUnidades(hdc, cam);
 }
