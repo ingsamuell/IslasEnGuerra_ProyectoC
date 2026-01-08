@@ -17,6 +17,6 @@ void agregarRecurso(int *recurso, int cantidad, int nivelMochila);
 // Visuales
 void dibujarItemRejilla(HDC hdc, HBITMAP icono, int cantidad, int maximo, int x, int y, const char *nombre);
 void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto);
-void dibujarJugador(HDC hdc, Jugador jugador, Camera cam);
+void dibujarJugador(HDC hdc, Jugador *jugador, Camera cam);
 
 #endif

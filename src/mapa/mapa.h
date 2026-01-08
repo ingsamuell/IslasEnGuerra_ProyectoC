@@ -64,10 +64,9 @@ void ordenarUnidad(int mouseX, int mouseY, Camera cam);
 
 /* --- DIBUJADO PRINCIPAL (Partida) --- */
 void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda, int mapaId);
-void dibujarJugador(HDC hdc, Jugador jugador, Camera camara);
 void dibujarHUD(HDC hdc, Jugador* jugador, int anchoVentana, int altoVentana);
 void dibujarTiendasEnIslas(HDC hdc, Camera cam, int ancho, int alto, int frameTienda);
-void dibujarTiendaInteractiva(HDC hdc, Jugador *j);
+void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto);
 void dibujarPrecio(HDC hdc, int x, int y, const char* costo1, const char* costo2, BOOL alcanzable);
 void dibujarItemRejilla(HDC hdc, HBITMAP icono, int cantidad, int maximo, int x, int y, const char *nombre);
 

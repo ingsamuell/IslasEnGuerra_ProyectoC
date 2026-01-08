@@ -177,21 +177,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 dibujarSeleccionMapa(hdcMem, hwnd, &estadoJuego);
             } 
             else if (estadoJuego.estadoActual == ESTADO_PARTIDA) {
-                // 1. MUNDO
+                // --- CAPA 1: MUNDO (Fondo) ---
                 dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto, estadoJuego.frameTienda, estadoJuego.mapaSeleccionado);
                 dibujarTesoros(hdcMem, miCamara, ancho, alto); 
                 dibujarMinas(hdcMem, miCamara, ancho, alto); 
-                actualizarYDibujarParticulas(hdcMem, miCamara);
                 dibujarEstablo(hdcMem, miCamara);
                 dibujarVacas(hdcMem, miCamara, ancho, alto);
                 dibujarUnidades(hdcMem, miCamara);
                 
-                // 2. JUGADOR
-                dibujarJugador(hdcMem, miJugador, miCamara);
+                // --- CAPA 2: JUGADOR ---
+                // Nota: Usamos '&' porque la función ahora pide un puntero
+                dibujarJugador(hdcMem, &miJugador, miCamara);
                 
-                actualizarYDibujarTextos(hdcMem, miCamara);
-
-                // 3. SELECCIÓN (RTS)
+                // --- CAPA 3: SELECCIÓN RTS (Cuadro verde) ---
                 if (dibujandoCuadro) {
                     HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 255, 0));
                     SelectObject(hdcMem, hPen);
@@ -200,13 +198,21 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     DeleteObject(hPen);
                 }
 
-                // 4. INTERFAZ (HUD)
+                // --- CAPA 4: INTERFAZ DE USUARIO (HUD y Ventanas) ---
+                // Dibujamos esto ANTES de los textos para que los textos queden encima
+                
+                // Barra inferior (Vida, XP, etc.)
                 dibujarHUD(hdcMem, &miJugador, ancho, alto);
 
-                // 5. TIENDA (Solo si está abierta con 'T')
+                // Tienda (Derecha)
                 if (miJugador.tiendaAbierta) {
-                    dibujarTiendaInteractiva(hdcMem, &miJugador);
+                    dibujarTiendaInteractiva(hdcMem, &miJugador, ancho, alto);
                 }
+
+                // --- CAPA 5: EFECTOS Y TEXTOS (Top Layer) ---
+                // ESTO ES LO CRÍTICO: Al ponerlo al final, nada lo tapa.
+                actualizarYDibujarParticulas(hdcMem, miCamara);
+                actualizarYDibujarTextos(hdcMem, miCamara);
             }
 
             BitBlt(hdc, 0, 0, ancho, alto, hdcMem, 0, 0, SRCCOPY);
@@ -267,10 +273,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                         case 'D': moverJugador(&miJugador, mapaMundo, 1, 0); break;
 
                         // --- INTERFAZ: MOCHILA (Bloq Mayús) ---
-                        case VK_CAPITAL: 
+                        // --- INTERFAZ: MOCHILA (Tecla I) ---
+                        case 'I': 
+                        case 'i':
                             alternarInventario(&miJugador);
-                            // Si abres mochila, cerramos tienda para no encimar
-                            if (miJugador.inventarioAbierto) miJugador.tiendaAbierta = 0;
+                            // Nota: No cerramos la tienda aquí para permitir ver ambas ventanas a la vez.
                             InvalidateRect(hwnd, NULL, FALSE);
                             break;
 
@@ -278,14 +285,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                         case 'T':
                         case 't':
                             if (miJugador.tiendaAbierta) {
-                                miJugador.tiendaAbierta = 0; // Cerrar
+                                miJugador.tiendaAbierta = 0; // Cerrar tienda
                             } else {
                                 // Verificar distancia a la tienda (Coord: 1450, 1900)
                                 float dist = sqrt(pow(miJugador.x - 1450, 2) + pow(miJugador.y - 1900, 2));
                                 if (dist < 150) {
                                     miJugador.tiendaAbierta = 1;
-                                    miJugador.inventarioAbierto = 0; // Cerrar mochila
                                     miJugador.modoTienda = 0; // Reset a Comprar
+                                    // Nota: No cerramos el inventario (miJugador.inventarioAbierto = 0)
+                                    // para que puedas ver tus items mientras compras.
                                 } else {
                                     crearTextoFlotante(miJugador.x, miJugador.y, "Acercate a la tienda!", 0, RGB(255, 100, 100));
                                 }
