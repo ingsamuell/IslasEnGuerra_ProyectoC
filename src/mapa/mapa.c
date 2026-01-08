@@ -456,23 +456,24 @@ void actualizarVacas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
     }
 }
 
-void golpearVaca(Jugador *j)
-{
+void golpearVaca(Jugador *j) {
     int rango = 50;
-    for (int i = 0; i < MAX_VACAS; i++)
-    {
-        if (!manada[i].activa || manada[i].estadoVida == 1)
-            continue;
-        if (abs((j->x + 16) - (manada[i].x + 16)) < rango && abs((j->y + 16) - (manada[i].y + 16)) < rango)
-        {
+    for (int i = 0; i < MAX_VACAS; i++) {
+        if (!manada[i].activa || manada[i].estadoVida == 1) continue;
+        if (abs((j->x + 16) - (manada[i].x + 16)) < rango && abs((j->y + 16) - (manada[i].y + 16)) < rango) {
             manada[i].vida--;
-            crearChispas(manada[i].x + 16, manada[i].y + 16, RGB(200, 0, 0));
-            if (manada[i].vida <= 0)
-            {
+            crearChispas(manada[i].x+16, manada[i].y+16, RGB(200,0,0));
+            if (manada[i].vida <= 0) {
                 manada[i].estadoVida = 1;
                 manada[i].tiempoMuerte = 300;
-                j->comida += 10;
-                crearTextoFlotante(manada[i].x, manada[i].y, "Carne", 10, RGB(255, 100, 100));
+                
+                // --- CORRECCIÓN LÍMITES ---
+                int ant = j->comida;
+                agregarRecurso(&j->comida, 10, j->nivelMochila);
+                int gan = j->comida - ant;
+                
+                if (gan > 0) crearTextoFlotante(manada[i].x, manada[i].y, "Carne", gan, RGB(255, 100, 100));
+                else crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
             }
             return;
         }
@@ -551,28 +552,41 @@ void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
     }
 }
 
-void talarArbol(Jugador *j)
-{
-    // Requiere Hacha nivel 2 si quieres hacerlo estricto, por ahora libre
+void talarArbol(Jugador *j) {
     int rango = 40;
-    for (int i = 0; i < MAX_ARBOLES; i++)
-    {
-        if (!misArboles[i].activa)
-            continue;
+    for (int i = 0; i < MAX_ARBOLES; i++) {
+        if (!misArboles[i].activa) continue;
         int tam = (misArboles[i].tipo == 1) ? 64 : 32;
-        if (abs((j->x + 16) - (misArboles[i].x + tam / 2)) < rango && abs((j->y + 16) - (misArboles[i].y + tam / 2)) < rango)
-        {
+        
+        // Calcular centro
+        if (abs((j->x+16) - (misArboles[i].x + tam/2)) < rango && abs((j->y+16) - (misArboles[i].y + tam/2)) < rango) {
+            
             misArboles[i].vida--;
-            crearChispas(misArboles[i].x + tam / 2, misArboles[i].y + tam / 2, RGB(139, 69, 19));
-            if (misArboles[i].vida <= 0)
-            {
+            crearChispas(misArboles[i].x + tam/2, misArboles[i].y + tam/2, RGB(139, 69, 19));
+            
+            if (misArboles[i].vida <= 0) {
                 misArboles[i].activa = 0;
+                misArboles[i].timerRegeneracion = 0;
+
                 int mad = (misArboles[i].tipo == 1) ? 5 : 3;
                 int hoj = (misArboles[i].tipo == 1) ? 10 : 4;
-                agregarRecurso(&j->madera, mad, j->nivelMochila); // Usamos la func nueva
+                
+                // --- LÓGICA DE LÍMITES ---
+                int antMad = j->madera;
+                int antHoj = j->hojas;
+
+                agregarRecurso(&j->madera, mad, j->nivelMochila);
                 agregarRecurso(&j->hojas, hoj, j->nivelMochila);
-                crearTextoFlotante(misArboles[i].x, misArboles[i].y, "Madera", mad, RGB(150, 75, 0));
-                crearTextoFlotante(misArboles[i].x, misArboles[i].y - 20, "Hojas", hoj, RGB(34, 139, 34));
+                
+                int ganMad = j->madera - antMad;
+                int ganHoj = j->hojas - antHoj;
+
+                if (ganMad > 0) crearTextoFlotante(misArboles[i].x, misArboles[i].y, "Madera", ganMad, RGB(150, 75, 0));
+                if (ganHoj > 0) crearTextoFlotante(misArboles[i].x, misArboles[i].y - 20, "Hojas", ganHoj, RGB(34, 139, 34));
+                
+                if (ganMad == 0 && ganHoj == 0) {
+                    crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
+                }
             }
             return;
         }
@@ -634,28 +648,34 @@ void inicializarMinas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
     }
 }
 
-void picarMina(Jugador *j)
-{
-    for (int i = 0; i < MAX_MINAS; i++)
-    {
-        if (!misMinas[i].activa)
-            continue;
-        if (abs((j->x + 16) - (misMinas[i].x + 16)) < 40 && abs((j->y + 16) - (misMinas[i].y + 16)) < 40)
-        {
+void picarMina(Jugador *j) {
+    for (int i = 0; i < MAX_MINAS; i++) {
+        if (!misMinas[i].activa) continue;
+        if (abs((j->x+16) - (misMinas[i].x+16)) < 40 && abs((j->y+16) - (misMinas[i].y+16)) < 40) {
+            
             misMinas[i].vida--;
-            crearChispas(misMinas[i].x + 16, misMinas[i].y + 16, RGB(200, 200, 200));
-            if (misMinas[i].vida <= 0)
-            {
+            crearChispas(misMinas[i].x+16, misMinas[i].y+16, RGB(200,200,200));
+            
+            if (misMinas[i].vida <= 0) {
                 misMinas[i].activa = 0;
-                if (misMinas[i].tipo == 0)
-                {
+                misMinas[i].timerRegeneracion = 0;
+
+                // --- LÓGICA DE LÍMITES ---
+                if (misMinas[i].tipo == 0) { // Piedra
+                    int ant = j->piedra;
                     agregarRecurso(&j->piedra, 5, j->nivelMochila);
-                    crearTextoFlotante(misMinas[i].x, misMinas[i].y, "Piedra", 5, RGB(180, 180, 180));
-                }
-                else
-                {
+                    int gan = j->piedra - ant;
+                    
+                    if (gan > 0) crearTextoFlotante(misMinas[i].x, misMinas[i].y, "Piedra", gan, RGB(150, 150, 150));
+                    else crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
+                    
+                } else { // Hierro
+                    int ant = j->hierro;
                     agregarRecurso(&j->hierro, 3, j->nivelMochila);
-                    crearTextoFlotante(misMinas[i].x, misMinas[i].y, "Hierro", 3, RGB(255, 215, 0));
+                    int gan = j->hierro - ant;
+                    
+                    if (gan > 0) crearTextoFlotante(misMinas[i].x, misMinas[i].y, "Hierro", gan, RGB(192, 192, 192));
+                    else crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
                 }
             }
             return;
@@ -765,50 +785,52 @@ void inicializarTesoros()
     misTesoros[1].activa = 1;
 }
 
-void abrirTesoro(Jugador *j)
-{
-    for (int i = 0; i < MAX_TESOROS; i++)
-    {
-        if (!misTesoros[i].activa || misTesoros[i].estado == 2)
-            continue;
+void abrirTesoro(Jugador *j) {
+    for (int i = 0; i < MAX_TESOROS; i++) {
+        if (!misTesoros[i].activa || misTesoros[i].estado == 2) continue;
 
-        // Comprobación de rango entre jugador y tesoro
-        if (abs((j->x + 16) - (misTesoros[i].x + 16)) < 60 &&
-            abs((j->y + 16) - (misTesoros[i].y + 16)) < 60)
-        {
-
-            // Primer click: Cambia de cerrado (0) a entreabierto/mostrando contenido (1)
-            if (misTesoros[i].estado == 0)
-            {
-                misTesoros[i].estado = 1;
-                return;
+        if (abs((j->x + 16) - (misTesoros[i].x + 16)) < 60 && 
+            abs((j->y + 16) - (misTesoros[i].y + 16)) < 60) {
+            
+            // Primer click: Abrir visualmente
+            if (misTesoros[i].estado == 0) { 
+                misTesoros[i].estado = 1; 
+                return; 
             }
 
-            // Segundo click: Recolectar botín (estado 1 -> 2)
-            if (misTesoros[i].estado == 1)
-            {
-                // 1. RECURSO SIEMPRE PRESENTE: ORO
-                int oro = 30 + (rand() % 11);    // 30 a 40 de oro
-                agregarRecurso(&j->oro, oro, 3); // Capacidad alta para oro
-                crearTextoFlotante(misTesoros[i].x, misTesoros[i].y, "Oro", oro, RGB(255, 215, 0));
+            // Segundo click: Recolectar
+            if (misTesoros[i].estado == 1) {
+                
+                // 1. ORO (Corregido para respetar nivel de mochila)
+                int oro = 30 + (rand() % 11);
+                int antOro = j->oro;
+                
+                // CAMBIO IMPORTANTE: Usamos j->nivelMochila, no '3'
+                agregarRecurso(&j->oro, oro, j->nivelMochila); 
+                int ganOro = j->oro - antOro;
 
-                // 2. RECURSO EXTRA: HIERRO (Solo si el tipo es 1 - Joyas)
-                if (misTesoros[i].tipo == 1)
-                {
-                    int hierro = 20 + (rand() % 10); // 5 a 10 de hierro
+                if (ganOro > 0) crearTextoFlotante(misTesoros[i].x, misTesoros[i].y, "Oro", ganOro, RGB(255, 215, 0));
+                else crearTextoFlotante(j->x, j->y - 40, "Bolsa de Oro Llena!", 0, RGB(255, 50, 50));
+
+                // 2. HIERRO EXTRA
+                if (misTesoros[i].tipo == 1) {
+                    int hierro = 20 + (rand() % 10);
+                    int antHierro = j->hierro;
+                    
                     agregarRecurso(&j->hierro, hierro, j->nivelMochila);
-
-                    // Mostramos el texto de hierro un poco más arriba para que no se solape
-                    crearTextoFlotante(misTesoros[i].x, misTesoros[i].y - 25, "Hierro", hierro, RGB(192, 192, 192));
+                    int ganHierro = j->hierro - antHierro;
+                    
+                    if (ganHierro > 0) crearTextoFlotante(misTesoros[i].x, misTesoros[i].y - 25, "Hierro", ganHierro, RGB(192, 192, 192));
                 }
 
-                // Marcar como recolectado (vacío)
-                misTesoros[i].estado = 2;
+                // Marcar como vaciado solo si obtuvimos el oro (opcional, aquí lo vaciamos siempre para no bloquear)
+                misTesoros[i].estado = 2; 
                 return;
             }
         }
     }
 }
+
 void dibujarTesoros(HDC hdc, Camera cam, int ancho, int alto)
 {
     for (int i = 0; i < MAX_TESOROS; i++)
@@ -830,21 +852,24 @@ void dibujarTesoros(HDC hdc, Camera cam, int ancho, int alto)
 
 // --- 5. LÓGICA DE JUEGO GENERAL ---
 
-void actualizarLogicaSistema(Jugador *j)
-{
+// En src/mapa/mapa.c
+
+void actualizarLogicaSistema(Jugador *j) {
     // Pesca
-    if (j->estadoBarco == 1)
-    {
+    if (j->estadoBarco == 1) { 
         j->timerPesca++;
-        if (j->timerPesca >= 600)
-        { // 10 seg
+        if (j->timerPesca >= 600) { // 10 seg
             j->timerPesca = 0;
-            agregarRecurso(&j->pescado, 3, j->nivelMochila);
-            crearTextoFlotante(j->x, j->y, "Pescado", 3, RGB(100, 200, 255));
+            
+            // --- CORRECCIÓN LÍMITES ---
+            int ant = j->comida; // Usamos comida en lugar de pescado para consistencia
+            agregarRecurso(&j->comida, 3, j->nivelMochila);
+            int gan = j->comida - ant;
+
+            if (gan > 0) crearTextoFlotante(j->x, j->y, "Pescado", gan, RGB(100, 200, 255));
+            else crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
         }
-    }
-    else
-        j->timerPesca = 0;
+    } else j->timerPesca = 0;
 }
 
 void actualizarRegeneracionRecursos()
@@ -1007,302 +1032,221 @@ void spawnearEscuadron(int tipo, int cantidad, int x, int y)
     }
 }
 
-void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j)
-{
-    for (int i = 0; i < MAX_UNIDADES; i++)
-    {
-        if (!unidades[i].activa)
-            continue;
+// En src/mapa/mapa.c
 
-        // Calcular distancia al objetivo de movimiento (para ESTADO_MOVIENDO)
+void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
+    for (int i = 0; i < MAX_UNIDADES; i++) {
+        if (!unidades[i].activa) continue;
+
         float dx = unidades[i].destinoX - unidades[i].x;
         float dy = unidades[i].destinoY - unidades[i].y;
         float dist = sqrt(dx * dx + dy * dy);
 
-        switch (unidades[i].estado)
-        {
+        switch (unidades[i].estado) {
 
-        case ESTADO_TALANDO:
-        {
-            int a = unidades[i].targetIndex;
-
-            // Si no hay árbol objetivo o ya no existe, buscar nuevo
-            if (a == -1 || !misArboles[a].activa)
-            {
-                int nuevo = buscarArbolCercano(unidades[i].x, unidades[i].y, 150.0f);
-                if (nuevo != -1)
-                {
-                    unidades[i].targetIndex = nuevo;
-                    unidades[i].destinoX = misArboles[nuevo].x;
-                    unidades[i].destinoY = misArboles[nuevo].y;
+            case ESTADO_TALANDO: {
+                int a = unidades[i].targetIndex;
+                if (a == -1 || !misArboles[a].activa) { 
+                    int nuevo = buscarArbolCercano(unidades[i].x, unidades[i].y, 150.0f);
+                    if (nuevo != -1) {
+                        unidades[i].targetIndex = nuevo;
+                        unidades[i].destinoX = misArboles[nuevo].x;
+                        unidades[i].destinoY = misArboles[nuevo].y;
+                    } else {
+                        unidades[i].estado = ESTADO_IDLE;
+                    }
+                    break; 
                 }
-                else
-                {
-                    unidades[i].estado = ESTADO_IDLE;
+                
+                float targetX = misArboles[a].x + 16;
+                float targetY = misArboles[a].y + 16;
+                float dxT = targetX - unidades[i].x;
+                float dyT = targetY - unidades[i].y;
+                float distObjeto = sqrt(dxT*dxT + dyT*dyT);
+
+                if (distObjeto > 50.0f) { 
+                    unidades[i].x += (dxT / distObjeto) * 2.0f;
+                    unidades[i].y += (dyT / distObjeto) * 2.0f;
+                    actualizarAnimacionUnidad(&unidades[i], dxT, dyT);
+                } else {
+                    unidades[i].timerTrabajo++;
+                    if (unidades[i].timerTrabajo >= 250) { 
+                        unidades[i].timerTrabajo = 0;
+                        
+                        // --- CORRECCIÓN TALAR: LÍMITES ---
+                        int mad = (misArboles[a].tipo == 1) ? 5 : 3;
+                        int hoj = (misArboles[a].tipo == 1) ? 10 : 4;
+                        
+                        // 1. Guardar valores previos
+                        int antMad = j->madera;
+                        int antHoj = j->hojas;
+
+                        // 2. Intentar agregar respetando límites
+                        agregarRecurso(&j->madera, mad, j->nivelMochila);
+                        agregarRecurso(&j->hojas, hoj, j->nivelMochila);
+
+                        // 3. Calcular lo real ganado
+                        int ganMad = j->madera - antMad;
+                        int ganHoj = j->hojas - antHoj;
+
+                        // 4. Feedback Visual Inteligente
+                        if (ganMad > 0) crearTextoFlotante(misArboles[a].x, misArboles[a].y, "Madera", ganMad, RGB(150, 75, 0));
+                        if (ganHoj > 0) crearTextoFlotante(misArboles[a].x, misArboles[a].y - 20, "Hojas", ganHoj, RGB(34, 139, 34));
+                        
+                        if (ganMad == 0 && ganHoj == 0) {
+                            crearTextoFlotante(unidades[i].x, unidades[i].y - 30, "Mochila Llena!", 0, RGB(255, 50, 50));
+                        }
+
+                        crearChispas(targetX, targetY, RGB(139, 69, 19));
+                        misArboles[a].activa = 0;
+                        misArboles[a].timerRegeneracion = 0;
+                        
+                        int col = (int)(misArboles[a].x / TAMANO_CELDA_BASE);
+                        int fil = (int)(misArboles[a].y / TAMANO_CELDA_BASE);
+                        if(fil >= 0 && fil < MUNDO_FILAS && col >= 0 && col < MUNDO_COLUMNAS) mapa[fil][col] = 1; 
+                        
+                        unidades[i].targetIndex = -1;
+                        int next = buscarArbolCercano(unidades[i].x, unidades[i].y, 200.0f);
+                        if(next != -1) unidades[i].targetIndex = next;
+                        else unidades[i].estado = ESTADO_IDLE;
+                    }
                 }
                 break;
             }
 
-            // Calcular posición del centro del árbol
-            float targetX = misArboles[a].x + 16;
-            float targetY = misArboles[a].y + 16;
-            float dx = targetX - unidades[i].x;
-            float dy = targetY - unidades[i].y;
-            float distObjeto = sqrt(dx * dx + dy * dy);
+            case ESTADO_MINANDO: {
+                int m = unidades[i].targetIndex;
+                if (m == -1 || !misMinas[m].activa) { 
+                    int nueva = buscarMinaCercana(unidades[i].x, unidades[i].y, 150.0f);
+                    if (nueva != -1) unidades[i].targetIndex = nueva;
+                    else unidades[i].estado = ESTADO_IDLE;
+                    break; 
+                }
+                
+                float targetX = misMinas[m].x + 16;
+                float targetY = misMinas[m].y + 16;
+                float dxM = targetX - unidades[i].x;
+                float dyM = targetY - unidades[i].y;
+                float distMina = sqrt(dxM*dxM + dyM*dyM);
 
-            // Si está lejos, moverse hacia el árbol
-            if (distObjeto > 50.0f)
-            {
-                unidades[i].x += (dx / distObjeto) * 2.0f;
-                unidades[i].y += (dy / distObjeto) * 2.0f;
-                actualizarAnimacionUnidad(&unidades[i], dx, dy);
-            }
-            // Si está cerca, trabajar
-            else
-            {
-                unidades[i].timerTrabajo++;
-
-                // Cuando se completa el trabajo (250 frames = ~4 segundos)
-                if (unidades[i].timerTrabajo >= 250)
-                {
-                    unidades[i].timerTrabajo = 0;
-
-                    // --- TALAR EL ÁRBOL (1 GOLPE) ---
-                    // Calcular recursos según tipo de árbol
-                    int mad = (misArboles[a].tipo == 1) ? 5 : 3;  // Grande: 5, Chico: 3
-                    int hoj = (misArboles[a].tipo == 1) ? 10 : 4; // Grande: 10, Chico: 4
-
-                    // Dar recursos al jugador
-                    j->madera += mad;
-                    j->hojas += hoj;
-
-                    // Mostrar textos flotantes
-                    crearTextoFlotante(misArboles[a].x, misArboles[a].y, "Madera", mad, RGB(150, 75, 0));
-                    crearTextoFlotante(misArboles[a].x, misArboles[a].y - 20, "Hojas", hoj, RGB(34, 139, 34));
-
-                    // Efecto visual
-                    crearChispas(targetX, targetY, RGB(139, 69, 19));
-
-                    // Desactivar el árbol (como matar vaca)
-                    misArboles[a].activa = 0;
-                    misArboles[a].timerRegeneracion = 0;
-
-                    // Actualizar mapa de colisiones (liberar el espacio)
-                    int col = (int)(misArboles[a].x / TAMANO_CELDA_BASE);
-                    int fil = (int)(misArboles[a].y / TAMANO_CELDA_BASE);
-                    if (fil >= 0 && fil < MUNDO_FILAS && col >= 0 && col < MUNDO_COLUMNAS)
-                        mapa[fil][col] = 1;
-
-                    // Buscar nuevo árbol automáticamente
-                    unidades[i].targetIndex = -1;
-                    int next = buscarArbolCercano(unidades[i].x, unidades[i].y, 200.0f);
-                    if (next != -1)
-                    {
-                        unidades[i].targetIndex = next;
-                        // Mantener en estado TALANDO con nuevo objetivo
-                    }
-                    else
-                    {
-                        unidades[i].estado = ESTADO_IDLE;
+                if (distMina > 50.0f) { 
+                    unidades[i].x += (dxM / distMina) * 2.0f;
+                    unidades[i].y += (dyM / distMina) * 2.0f;
+                    actualizarAnimacionUnidad(&unidades[i], dxM, dyM);
+                } else {
+                    unidades[i].timerTrabajo++;
+                    if (unidades[i].timerTrabajo >= 400) { 
+                        unidades[i].timerTrabajo = 0;
+                        
+                        // --- CORRECCIÓN MINAR: LÍMITES ---
+                        if (misMinas[m].tipo == 0) {  // Piedra
+                            int ant = j->piedra;
+                            agregarRecurso(&j->piedra, 5, j->nivelMochila);
+                            int gan = j->piedra - ant;
+                            
+                            if (gan > 0) crearTextoFlotante(unidades[i].x, unidades[i].y, "Piedra", gan, RGB(150, 150, 150));
+                            else crearTextoFlotante(unidades[i].x, unidades[i].y - 30, "Mochila Llena!", 0, RGB(255, 50, 50));
+                            
+                        } else {  // Hierro
+                            int ant = j->hierro;
+                            agregarRecurso(&j->hierro, 3, j->nivelMochila);
+                            int gan = j->hierro - ant;
+                            
+                            if (gan > 0) crearTextoFlotante(unidades[i].x, unidades[i].y, "Hierro", gan, RGB(192, 192, 192));
+                            else crearTextoFlotante(unidades[i].x, unidades[i].y - 30, "Mochila Llena!", 0, RGB(255, 50, 50));
+                        }
+                        
+                        crearChispas(targetX, targetY, RGB(200, 200, 200));
+                        misMinas[m].activa = 0;
+                        
+                        int col = (int)(misMinas[m].x / TAMANO_CELDA_BASE);
+                        int fil = (int)(misMinas[m].y / TAMANO_CELDA_BASE);
+                        if(fil >= 0 && fil < MUNDO_FILAS && col >= 0 && col < MUNDO_COLUMNAS) mapa[fil][col] = 1; 
+                        
+                        unidades[i].targetIndex = -1;
+                        int next = buscarMinaCercana(unidades[i].x, unidades[i].y, 200.0f);
+                        if(next != -1) unidades[i].targetIndex = next;
+                        else unidades[i].estado = ESTADO_IDLE;
                     }
                 }
-            }
-            break;
-        }
-
-        case ESTADO_MINANDO:
-        {
-            int m = unidades[i].targetIndex;
-
-            // Si no hay mina objetivo o ya no existe, buscar nueva
-            if (m == -1 || !misMinas[m].activa)
-            {
-                int nueva = buscarMinaCercana(unidades[i].x, unidades[i].y, 150.0f);
-                if (nueva != -1)
-                    unidades[i].targetIndex = nueva;
-                else
-                    unidades[i].estado = ESTADO_IDLE;
                 break;
             }
 
-            // Calcular posición del centro de la mina
-            float targetX = misMinas[m].x + 16;
-            float targetY = misMinas[m].y + 16;
-            float dx = targetX - unidades[i].x;
-            float dy = targetY - unidades[i].y;
-            float distMina = sqrt(dx * dx + dy * dy);
+            case ESTADO_CAZANDO: {
+                int v = unidades[i].targetIndex;
+                if (v == -1 || !manada[v].activa || manada[v].estadoVida != 0) {
+                    int proxima = buscarVacaCercana(unidades[i].x, unidades[i].y, 500.0f);
+                    if (proxima != -1) unidades[i].targetIndex = proxima;
+                    else unidades[i].estado = ESTADO_IDLE;
+                    break; 
+                }
 
-            // Si está lejos, moverse hacia la mina
-            if (distMina > 50.0f)
-            {
-                unidades[i].x += (dx / distMina) * 2.0f;
-                unidades[i].y += (dy / distMina) * 2.0f;
-                actualizarAnimacionUnidad(&unidades[i], dx, dy);
-            }
-            // Si está cerca, trabajar
-            else
-            {
-                unidades[i].timerTrabajo++;
+                float dvx = manada[v].x - unidades[i].x;
+                float dvy = manada[v].y - unidades[i].y;
+                float distVaca = sqrt(dvx * dvx + dvy * dvy);
 
-                // Cuando se completa el trabajo (400 frames = ~6.5 segundos)
-                if (unidades[i].timerTrabajo >= 400)
-                {
-                    unidades[i].timerTrabajo = 0;
+                if (distVaca > 35.0f) {
+                    unidades[i].x += (dvx / distVaca) * 2.2f;
+                    unidades[i].y += (dvy / distVaca) * 2.2f;
+                    actualizarAnimacionUnidad(&unidades[i], dvx, dvy);
+                } else {
+                    unidades[i].timerTrabajo++;
+                    if (unidades[i].timerTrabajo >= 300) { 
+                        manada[v].estadoVida = 1; 
+                        manada[v].tiempoMuerte = 300; 
+                        
+                        // --- CORRECCIÓN CAZA: LÍMITES ---
+                        int ant = j->comida;
+                        agregarRecurso(&j->comida, 15, j->nivelMochila);
+                        int gan = j->comida - ant;
 
-                    // --- MINAR (1 GOLPE) ---
-                    // Dar recursos según tipo de mina
-                    if (misMinas[m].tipo == 0)
-                    { // Piedra
-                        j->piedra += 5;
-                        crearTextoFlotante(unidades[i].x, unidades[i].y, "Piedra", 5, RGB(150, 150, 150));
-                    }
-                    else
-                    { // Hierro
-                        j->hierro += 3;
-                        crearTextoFlotante(unidades[i].x, unidades[i].y, "Hierro", 3, RGB(192, 192, 192));
-                    }
+                        if (gan > 0) crearTextoFlotante(manada[v].x, manada[v].y, "+15 Comida", 0, RGB(255, 200, 0)); // cantidad 0 porque ya va en texto
+                        else crearTextoFlotante(unidades[i].x, unidades[i].y - 30, "Mochila Llena!", 0, RGB(255, 50, 50));
+                        
+                        crearChispas(manada[v].x + 16, manada[v].y + 16, RGB(255, 0, 0));
 
-                    // Efecto visual
-                    crearChispas(targetX, targetY, RGB(200, 200, 200));
-
-                    // Desactivar la mina
-                    misMinas[m].activa = 0;
-
-                    // Actualizar mapa de colisiones
-                    int col = (int)(misMinas[m].x / TAMANO_CELDA_BASE);
-                    int fil = (int)(misMinas[m].y / TAMANO_CELDA_BASE);
-                    if (fil >= 0 && fil < MUNDO_FILAS && col >= 0 && col < MUNDO_COLUMNAS)
-                        mapa[fil][col] = 1;
-
-                    // Buscar nueva mina automáticamente
-                    unidades[i].targetIndex = -1;
-                    int next = buscarMinaCercana(unidades[i].x, unidades[i].y, 200.0f);
-                    if (next != -1)
-                    {
-                        unidades[i].targetIndex = next;
-                        // Mantener en estado MINANDO con nuevo objetivo
-                    }
-                    else
-                    {
-                        unidades[i].estado = ESTADO_IDLE;
+                        unidades[i].timerTrabajo = 0;
+                        unidades[i].targetIndex = -1;
+                        int siguienteVaca = buscarVacaCercana(unidades[i].x, unidades[i].y, 600.0f);
+                        if (siguienteVaca != -1) unidades[i].targetIndex = siguienteVaca;
+                        else unidades[i].estado = ESTADO_IDLE;
                     }
                 }
+                break;
             }
-            break;
-        }
-        // --- CORRECCIÓN IMPORTANTE: LÓGICA DEL CAZADOR ---
-        case ESTADO_CAZANDO:
-        {
-            int v = unidades[i].targetIndex;
 
-            // 1. Si el objetivo no existe o ya murió, BUSCAR OTRO INMEDIATAMENTE
-            if (v == -1 || !manada[v].activa || manada[v].estadoVida != 0)
-            {
-                // Rango de búsqueda automática (500px)
-                int proxima = buscarVacaCercana(unidades[i].x, unidades[i].y, 500.0f);
-
-                if (proxima != -1)
-                {
-                    unidades[i].targetIndex = proxima;
-                    // No cambiamos de estado, seguimos en CAZANDO pero con nuevo target
+            case ESTADO_MOVIENDO:
+                if (dist > 5.0f) {
+                    unidades[i].x += (dx / dist) * 2.2f;
+                    unidades[i].y += (dy / dist) * 2.2f;
+                    actualizarAnimacionUnidad(&unidades[i], dx, dy);
+                } else {
+                    unidades[i].estado = ESTADO_IDLE;
                 }
-                else
-                {
-                    unidades[i].estado = ESTADO_IDLE; // Solo descansa si no hay nada cerca
-                }
-                break; // Salimos del switch para procesar el nuevo target en el siguiente frame
-            }
+                break;
 
-            // 2. Perseguir a la vaca
-            float dvx = manada[v].x - unidades[i].x;
-            float dvy = manada[v].y - unidades[i].y;
-            float distVaca = sqrt(dvx * dvx + dvy * dvy);
-
-            if (distVaca > 35.0f)
-            {
-                unidades[i].x += (dvx / distVaca) * 2.2f; // Velocidad de persecución
-                unidades[i].y += (dvy / distVaca) * 2.2f;
-                actualizarAnimacionUnidad(&unidades[i], dvx, dvy);
-            }
-            else
-            {
-                // 3. Atacar/Trabajar
-                unidades[i].timerTrabajo++;
-                if (unidades[i].timerTrabajo >= 300)
-                {
-
-                    // Matar vaca
-                    manada[v].estadoVida = 1;
-                    manada[v].tiempoMuerte = 300; // Timer para desaparecer
-
-                    // Recompensa
-                    j->comida += 15;
-                    crearTextoFlotante(manada[v].x, manada[v].y, "+15 Comida", 1, RGB(255, 200, 0));
-                    crearChispas(manada[v].x + 16, manada[v].y + 16, RGB(255, 0, 0)); // Sangre/Golpe
-
-                    // Resetear timer
-                    unidades[i].timerTrabajo = 0;
-                    unidades[i].targetIndex = -1;
-
-                    // --- AQUÍ ESTÁ LA CLAVE: ENCADENAMIENTO ---
-                    // En lugar de ir a IDLE, buscamos la siguiente vaca inmediatamente
-                    int siguienteVaca = buscarVacaCercana(unidades[i].x, unidades[i].y, 600.0f);
-                    if (siguienteVaca != -1)
-                    {
-                        unidades[i].targetIndex = siguienteVaca;
-                        // Se mantiene en ESTADO_CAZANDO
-                    }
-                    else
-                    {
-                        unidades[i].estado = ESTADO_IDLE;
+            case ESTADO_IDLE:
+                if (unidades[i].tipo == TIPO_CAZADOR) {
+                    int vacaCerca = buscarVacaCercana(unidades[i].x, unidades[i].y, 200.0f);
+                    if (vacaCerca != -1) {
+                        unidades[i].estado = ESTADO_CAZANDO;
+                        unidades[i].targetIndex = vacaCerca;
                     }
                 }
-            }
-            break;
-        }
-
-        case ESTADO_MOVIENDO:
-            if (dist > 5.0f)
-            {
-                unidades[i].x += (dx / dist) * 2.2f;
-                unidades[i].y += (dy / dist) * 2.2f;
-                actualizarAnimacionUnidad(&unidades[i], dx, dy);
-            }
-            else
-            {
-                unidades[i].estado = ESTADO_IDLE;
-            }
-            break;
-
-        case ESTADO_IDLE:
-            // --- INTELIGENCIA ARTIFICIAL EN IDLE ---
-            // Si es un Cazador y está quieto, que mire si pasa una vaca cerca
-            if (unidades[i].tipo == TIPO_CAZADOR)
-            {
-                // Rango de detección automática en reposo (200px)
-                int vacaCerca = buscarVacaCercana(unidades[i].x, unidades[i].y, 200.0f);
-                if (vacaCerca != -1)
-                {
-                    unidades[i].estado = ESTADO_CAZANDO;
-                    unidades[i].targetIndex = vacaCerca;
-                }
-            }
-            break;
+                break;
         }
     }
 
     // Actualizar textos flotantes
-    for (int t = 0; t < MAX_TEXTOS; t++)
-    {
-        if (textos[t].activo && textos[t].vida > 0)
-        {
-            textos[t].y -= 0.5f;
-            textos[t].vida--;
-            if (textos[t].vida <= 0)
-                textos[t].activo = 0;
+    for (int t = 0; t < MAX_TEXTOS; t++) {
+        if (listaTextos[t].activo) {
+            listaTextos[t].y -= 0.5f; 
+            listaTextos[t].vida--;
+            if (listaTextos[t].vida <= 0) listaTextos[t].activo = 0;
         }
     }
 }
+
 void actualizarAnimacionUnidad(Unidad *u, float dx, float dy)
 {
     if (fabs(dx) > fabs(dy))
@@ -1638,17 +1582,19 @@ void dibujarMuelleYFlota(HDC hdc, Camera cam, Jugador *j)
 }
 
 // --- 7. LÓGICA DE TIENDA (RTS y OBJETOS) ---
+// En src/mapa/mapa.c
+
 void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, HWND hwnd) {
     if (!j->tiendaAbierta) return;
 
-    // 1. OBTENER EL ANCHO REAL (Para alinear a la derecha)
+    // 1. OBTENER POSICIÓN DINÁMICA
     RECT rect; GetClientRect(hwnd, &rect);
     int anchoVentana = rect.right;
     int anchoW = 340;
     int tx = anchoVentana - anchoW - 20; 
     int ty = 80;
     
-    // --- 1. CLIC EN PESTAÑAS ---
+    // --- CLIC EN PESTAÑAS ---
     if (my >= ty && my <= ty + 40) {
         if (mx >= tx && mx < tx + 85) j->modoTienda = 0;
         else if (mx >= tx + 85 && mx < tx + 170) j->modoTienda = 1;
@@ -1660,23 +1606,31 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
         return;
     }
 
-    //int startX = tx + 20;
+    int startX = tx + 20;
     int startY = ty + 50;
     char msg[32]; 
 
-    // --- POSICIÓN DEL MENSAJE: SOBRE EL JUGADOR ---
-    // Usamos las coordenadas del mundo del jugador para que el texto funcione con la cámara
+    // Mensaje sobre la cabeza del jugador
     float msgX = j->x;
-    float msgY = j->y - 40; // Un poco arriba de la cabeza
+    float msgY = j->y - 40;
 
     // --- TAB 0: HERRAMIENTAS ---
     if (j->modoTienda == 0) {
         for (int i = 0; i < 4; i++) {
             int iy = startY + (i * 80);
             if (my >= iy && my <= iy + 60 && mx >= tx && mx <= tx + 300) {
+                
+                // --- CORRECCIÓN 1: BLOQUEO POR NIVEL DE MOCHILA ---
+                // Si intenta comprar Espada (0), Pico (1) o Hacha (2) y no tiene Mochila Nvl 2...
+                if (i <= 2 && j->nivelMochila < 2) {
+                    crearTextoFlotante(msgX, msgY, "Req. Mochila Nvl 2", 0, RGB(255, 50, 50));
+                    return; // Detener compra
+                }
+                // --------------------------------------------------
+
                 // Item 0: Espada
                 if (i == 0) {
-                    if (j->tieneEspada) return;
+                    if (j->tieneEspada) return; // Ya la tiene
                     if (j->oro < 50) { sprintf(msg, "Faltan %d Oro", 50 - j->oro); crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50)); }
                     else { j->oro -= 50; j->tieneEspada = TRUE; ganarExperiencia(j, 10); }
                 }
@@ -1692,9 +1646,10 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
                     if (j->oro < 20) { sprintf(msg, "Faltan %d Oro", 20 - j->oro); crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50)); }
                     else { j->oro -= 20; j->tieneHacha = TRUE; ganarExperiencia(j, 10); }
                 }
-                // Item 3: Caña
+                // Item 3: Caña (También requiere Nvl 2)
                 else if (i == 3) {
                     if (j->tieneCana) return;
+                    // Check adicional específico para la caña si quieres, o dejar el global
                     if (j->nivelMochila < 2) { crearTextoFlotante(msgX, msgY, "Req. Mochila Nvl 2", 0, RGB(255, 50, 50)); return; }
                     
                     BOOL falta = FALSE;
@@ -1708,7 +1663,7 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
         }
     }
 
-    // --- TAB 1: TROPAS ---
+    // --- TAB 1: TROPAS (Igual que antes) ---
     else if (j->modoTienda == 1) {
         int cant = (esClickDerecho) ? 5 : 1; 
         for (int i = 0; i < 4; i++) {
@@ -1747,7 +1702,7 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
         }
     }
     
-    // --- TAB 2: LOGÍSTICA ---
+    // --- TAB 2: LOGÍSTICA (Igual que antes) ---
     else if (j->modoTienda == 2) {
         if (my >= startY && my <= startY+60) { // Mochila 2
              if (j->nivelMochila >= 2) return;
@@ -1787,23 +1742,36 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
     else if (j->modoTienda == 3) {
         int precios[] = {1, 2, 5, 1, 3}; 
         int* stocks[] = {&j->madera, &j->piedra, &j->hierro, &j->hojas, &j->comida};
+        
+        // --- CORRECCIÓN 2: OBTENER EL LÍMITE REAL DE ORO ---
+        int maxOro = obtenerCapacidadMaxima(j->nivelMochila); //
+
         for (int i = 0; i < 5; i++) {
             int iy = startY + (i * 60);
             if (my >= iy && my <= iy + 40 && mx >= tx && mx <= tx + 300) {
                 int cant = (esClickDerecho) ? 10 : 1;
+                
+                // Primero verificamos si tienes el recurso para vender
                 if (*stocks[i] >= cant) {
+                    
                     int ganancia = cant * precios[i];
-                    int capacidadRestante = obtenerCapacidadMaxima(j->nivelMochila) - j->oro;
-                    if (capacidadRestante < ganancia) {
-                        crearTextoFlotante(msgX, msgY, "Mochila Oro LLENA!", 0, RGB(255, 50, 50));
-                    } else {
+                    
+                    // --- VERIFICAR SI EL ORO CABE EN LA MOCHILA ---
+                    if (j->oro + ganancia > maxOro) {
+                         // Si se pasa, mostramos error
+                         crearTextoFlotante(msgX, msgY, "Limite de Oro alcanzado!", 0, RGB(255, 50, 50));
+                    } 
+                    else {
+                        // Si cabe, hacemos la transacción
                         *stocks[i] -= cant;
-                        agregarRecurso(&j->oro, ganancia, j->nivelMochila);
+                        j->oro += ganancia; // Ahora es seguro sumar
+                        
                         sprintf(msg, "+%d Oro", ganancia);
                         crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 215, 0));
                     }
                     InvalidateRect(hwnd, NULL, FALSE);
-                } else {
+                } 
+                else {
                     crearTextoFlotante(msgX, msgY, "No tienes suficiente", 0, RGB(255, 100, 100));
                 }
             }
