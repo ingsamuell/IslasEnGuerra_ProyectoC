@@ -4,7 +4,8 @@
 #include <math.h>               // Necesario para sqrt y pow
 #include "global.h"             
 #include "mundo/mapa.h"  
-#include "mundo/fauna.h"        
+#include "mundo/fauna.h"
+#include "mundo/naturaleza.h"        
 #include "recursos/recursos.h" 
 #include "jugador/jugador.h"
 
