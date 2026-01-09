@@ -97,17 +97,43 @@ void golpearVaca(Jugador *j) {
 
 void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto) {
     for (int i = 0; i < MAX_VACAS; i++) {
+        // 1. Omitir si la vaca no existe
         if (!manada[i].activa) continue;
-        
-        int sx = (manada[i].x - cam.x) * cam.zoom;
-        int sy = (manada[i].y - cam.y) * cam.zoom;
+
+        // 2. FILTRO DE NIEBLA (Imprescindible para el estilo Age of Empires)
+        int col = (int)(manada[i].x / TAMANO_CELDA_BASE);
+        int fila = (int)(manada[i].y / TAMANO_CELDA_BASE);
+
+        // Validar que estamos dentro de los límites de la matriz neblina
+        if (col >= 0 && col < MUNDO_COLUMNAS && fila >= 0 && fila < MUNDO_FILAS) {
+            // Si la celda es 0 (oscuridad), no se dibuja nada
+            if (neblina[fila][col] == 0) continue; 
+        }
+
+        // 3. CÁLCULO DE POSICIÓN EN PANTALLA
+        int sx = (int)((manada[i].x - cam.x) * cam.zoom);
+        int sy = (int)((manada[i].y - cam.y) * cam.zoom);
         int tam = 32 * cam.zoom;
 
+        // 4. OPTIMIZACIÓN: Solo dibujar si está dentro de la cámara
         if (sx > -tam && sx < ancho && sy > -tam && sy < alto) {
-            if (manada[i].estadoVida == 1) {
-                if (hBmpVacaMuerta) DibujarImagen(hdc, hBmpVacaMuerta, sx, sy, tam, tam);
-            } else {
-                if (hBmpVaca[manada[i].frameAnim]) DibujarImagen(hdc, hBmpVaca[manada[i].frameAnim], sx, sy, tam, tam);
+            
+            if (manada[i].estadoVida == 1) { 
+                // CASO: VACA MUERTA
+                if (hBmpVacaMuerta) {
+                    DibujarImagen(hdc, hBmpVacaMuerta, sx, sy, tam, tam);
+                }
+            } 
+            else { 
+                // CASO: VACA VIVA
+                // Dibujar el sprite animado
+                if (hBmpVaca[manada[i].frameAnim]) {
+                    DibujarImagen(hdc, hBmpVaca[manada[i].frameAnim], sx, sy, tam, tam);
+                }
+                
+                // DIBUJAR BARRA DE VIDA (Justo encima de la vaca)
+                // Usamos 5 como vida máxima (según tu código anterior)
+                dibujarBarraVidaLocal(hdc, sx, sy - 10, manada[i].vida, 5, tam);
             }
         }
     }

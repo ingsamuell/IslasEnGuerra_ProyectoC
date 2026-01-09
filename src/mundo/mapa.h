@@ -14,6 +14,7 @@ void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int 
 int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 
 /* --- SISTEMA DE ÁRBOLES --- */
+void dibujarBarraVidaLocal(HDC hdc, int x, int y, int vidaActual, int vidaMax, int anchoTotal);
 void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto, int mapaId);
 void talarArbol(Jugador *j); 

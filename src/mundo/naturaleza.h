@@ -10,6 +10,7 @@ extern Mina misMinas[MAX_MINAS];
 extern Tesoro misTesoros[MAX_TESOROS];
 
 // Inicialización
+void dibujarBarraVidaLocal(HDC hdc, int x, int y, int vidaActual, int vidaMax, int ancho);
 void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 void inicializarMinas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 void inicializarTesoros();

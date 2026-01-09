@@ -314,6 +314,12 @@ void dibujarUnidades(HDC hdc, Camera cam) {
             SelectObject(hdc, hOld);
             DeleteObject(hPen);
         }
+        int maxVida = 20; // Aldeano normal
+        if (unidades[i].tipo == TIPO_SOLDADO) maxVida = 50;
+        
+        int sx = (int)((unidades[i].x - cam.x) * cam.zoom);
+    	int sy = (int)((unidades[i].y - cam.y) * cam.zoom);
+        dibujarBarraVidaLocal(hdc, sx, sy - 10, unidades[i].vida, maxVida, 32 * cam.zoom);
 
         // Barra de progreso
         if (unidades[i].estado == ESTADO_TALANDO || unidades[i].estado == ESTADO_MINANDO || unidades[i].estado == ESTADO_CAZANDO) {

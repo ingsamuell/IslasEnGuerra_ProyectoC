@@ -447,6 +447,13 @@ void actualizarYDibujarParticulas(HDC hdc, Camera cam)
 
 void dibujarEstablo(HDC hdc, Camera cam)
 {
+	int col = (int)((ESTABLO_X + 100) / TAMANO_CELDA_BASE);
+    int fila = (int)((ESTABLO_Y + 100) / TAMANO_CELDA_BASE);
+
+    // 2. FILTRO DE NIEBLA
+    if (col >= 0 && col < MUNDO_COLUMNAS && fila >= 0 && fila < MUNDO_FILAS) {
+        if (neblina[fila][col] == 0) return; // Si está en la oscuridad, ni lo intentamos dibujar
+    }
     int sx = (int)((ESTABLO_X - cam.x) * cam.zoom);
     int sy = (int)((ESTABLO_Y - cam.y) * cam.zoom);
     if (hBmpEstablo)

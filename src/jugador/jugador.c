@@ -205,6 +205,7 @@ void dibujarJugador(HDC hdc, Jugador *jugador, Camera cam)
     // =========================================================
     if (jugador->estadoBarco > 0) {
         HBITMAP imgBarco = NULL;
+        dibujarBarraVidaLocal(hdc, cx - 10, cy - 25, jugador->vidaActual, jugador->vidaMax, 50 * cam.zoom);
         int dir = (jugador->direccion == DIR_IZQUIERDA) ? 0 : 1; 
         
         // Determinar imagen según tipo de barco

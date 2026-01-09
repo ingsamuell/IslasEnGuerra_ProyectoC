@@ -10,6 +10,30 @@ Arbol misArboles[MAX_ARBOLES];
 Mina misMinas[MAX_MINAS];
 Tesoro misTesoros[MAX_TESOROS];
 
+
+void dibujarBarraVidaLocal(HDC hdc, int x, int y, int vidaActual, int vidaMax, int ancho) {
+    // Solo dibujar si está dañado (vida < max) y no está muerto
+    if (vidaActual < vidaMax && vidaActual > 0) {
+        // Fondo Rojo
+        HBRUSH bBg = CreateSolidBrush(RGB(150, 0, 0));
+        RECT rBg = {x, y, x + ancho, y + 4};
+        FillRect(hdc, &rBg, bBg);
+        DeleteObject(bBg);
+
+        // Barra Verde
+        float pct = (float)vidaActual / (float)vidaMax;
+        int wGreen = (int)(ancho * pct);
+        HBRUSH bFg = CreateSolidBrush(RGB(0, 255, 0));
+        RECT rFg = {x, y, x + wGreen, y + 4};
+        FillRect(hdc, &rFg, bFg);
+        DeleteObject(bFg);
+        
+        // Borde Negro fino (Opcional, para contraste)
+        HBRUSH bFrame = CreateSolidBrush(RGB(0,0,0));
+        FrameRect(hdc, &rBg, bFrame);
+        DeleteObject(bFrame);
+    }
+}
 // Función auxiliar local (copia simple para no depender de mapa.c)
 void crearChispaNaturaleza(float x, float y) { 
     crearChispas((int)x, (int)y, RGB(255, 255, 255)); 
@@ -102,8 +126,10 @@ void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto, int mapaId) {
         else if (mapaId == 1) img = (misArboles[i].tipo == 1) ? hBmpArbolGrandeMapa2 : hBmpArbolChicoMapa2;
         else img = (misArboles[i].tipo == 1) ? hBmpArbolGrandeMapa3 : hBmpArbolChicoMapa3;
 
-        if (img && sx > -tam && sx < ancho && sy > -tam && sy < alto)
+        if (img && sx > -tam && sx < ancho && sy > -tam && sy < alto){
             DibujarImagen(hdc, img, sx, sy, tam, tam);
+            dibujarBarraVidaLocal(hdc, sx, sy - 8, misArboles[i].vida, 5, 32 * cam.zoom);
+        }
     }
 }
 
@@ -186,13 +212,35 @@ void picarMina(Jugador *j) {
 void dibujarMinas(HDC hdc, Camera cam, int ancho, int alto) {
     for (int i = 0; i < MAX_MINAS; i++) {
         if (!misMinas[i].activa) continue;
-        int sx = (misMinas[i].x - cam.x) * cam.zoom;
-        int sy = (misMinas[i].y - cam.y) * cam.zoom;
-        HBITMAP img = (misMinas[i].tipo == 1) ? hBmpHierroPicar : hBmpPiedraPicar;
-        if (img) DibujarImagen(hdc, img, sx, sy, 32 * cam.zoom, 32 * cam.zoom);
+
+        // --- 1. FILTRO DE NIEBLA (Imprescindible para que no se vean en lo oscuro) ---
+        int col = (int)(misMinas[i].x / TAMANO_CELDA_BASE);
+        int fila = (int)(misMinas[i].y / TAMANO_CELDA_BASE);
+
+        // Si la celda está en la oscuridad total (0), saltamos el dibujo
+        if (col >= 0 && col < MUNDO_COLUMNAS && fila >= 0 && fila < MUNDO_FILAS) {
+            if (neblina[fila][col] == 0) continue; 
+        }
+
+        // --- 2. CÁLCULO DE POSICIÓN ---
+        int sx = (int)((misMinas[i].x - cam.x) * cam.zoom);
+        int sy = (int)((misMinas[i].y - cam.y) * cam.zoom);
+        int tam = 32 * cam.zoom;
+
+        // --- 3. DIBUJO CON FILTRO DE PANTALLA ---
+        // Solo dibujamos si la mina es visible dentro de los bordes de la ventana
+        if (sx > -tam && sx < ancho && sy > -tam && sy < alto) {
+            HBITMAP img = (misMinas[i].tipo == 1) ? hBmpHierroPicar : hBmpPiedraPicar;
+            
+            if (img) {
+                DibujarImagen(hdc, img, sx, sy, tam, tam);
+                // Dibujamos la barra de vida solo si la imagen se dibujó
+                // Nota: Asegúrate de que '5' sea la vida máxima real o usa misMinas[i].vidaMax
+                dibujarBarraVidaLocal(hdc, sx, sy - 8, misMinas[i].vida, 5, tam);
+            }
+        }
     }
 }
-
 int buscarMinaCercana(float x, float y, float rango) {
     int mejorIndice = -1;
     float mejorDist = rango;
@@ -250,6 +298,12 @@ void abrirTesoro(Jugador *j) {
 void dibujarTesoros(HDC hdc, Camera cam, int ancho, int alto) {
     for (int i = 0; i < MAX_TESOROS; i++) {
         if (!misTesoros[i].activa) continue;
+        int col = (int)(misTesoros[i].x / TAMANO_CELDA_BASE);
+        int fila = (int)(misTesoros[i].y / TAMANO_CELDA_BASE);
+
+        if (col >= 0 && col < MUNDO_COLUMNAS && fila >= 0 && fila < MUNDO_FILAS) {
+            if (neblina[fila][col] == 0) continue; 
+        }
         int sx = (misTesoros[i].x - cam.x) * cam.zoom;
         int sy = (misTesoros[i].y - cam.y) * cam.zoom;
         HBITMAP img = hBmpTesoroVacio;

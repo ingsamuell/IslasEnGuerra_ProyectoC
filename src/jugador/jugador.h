@@ -6,6 +6,7 @@
 #include <windows.h>
 
 // Lógica
+void dibujarBarraVidaLocal(HDC hdc, int x, int y, int vidaActual, int vidaMax, int ancho);
 int obtenerCapacidadMaxima(int nivel);
 void ganarExperiencia(Jugador *j, int cantidad);
 void intentarCurar(Jugador *j);
