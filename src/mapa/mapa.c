@@ -2146,42 +2146,99 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
     // 2. CONFIGURACIÓN DE BOTONES
     int btnAncho = 500;
     int btnAlto = 200;
-    int separacion = 30;
+    int separacion = 200; // Separación entre botones horizontales
 
-    // Centrado
-    int totalAncho = (btnAncho * 3) + (separacion * 2);
-    int startX = (ancho - totalAncho) / 2;
-    int fixedY = (alto / 2) - (btnAlto / 2);
+    // --- TÍTULO (Arriba centrado) ---
+    int tituloWidth = 600;
+    int tituloHeight = 120;
+    int tituloX = (ancho - tituloWidth) / 2;
+    int tituloY = alto / 6; // 16.6% desde arriba
 
-    // 3. DIBUJAR BOTONES (Imágenes limpias)
+    if (hBmpTitulo)
+    {
+        BITMAP bm;
+        GetObject(hBmpTitulo, sizeof(BITMAP), &bm);
+        float aspect = (float)bm.bmWidth / bm.bmHeight;
+        tituloHeight = (int)(tituloWidth / aspect);
+        tituloY = alto / 8; // Ajustar si hay título gráfico
+        DibujarImagen(hdc, hBmpTitulo, tituloX, tituloY, tituloWidth, tituloHeight);
+    }
 
-    // Botón 1: JUGAR
-    HBITMAP imgJugar = (hBmpBtnJugar) ? hBmpBtnJugar : hBmpBoton;
-    DibujarImagen(hdc, imgJugar, startX, fixedY, btnAncho, btnAlto);
+    // 3. BOTONES PRINCIPALES (Centrados verticalmente)
+    // Calculamos el centro vertical para la fila de 3 botones
+    int centroY = alto / 2; // Centro de la pantalla
+    int startY = centroY - (btnAlto / 2); // Y donde empiezan los botones
 
-    // Botón 2: PARTIDAS
+    // --- BOTÓN "PARTIDAS" (Izquierda) ---
+    int partidasX = (ancho / 2) - btnAncho - separacion;
     HBITMAP imgPartidas = (hBmpBtnPartidas) ? hBmpBtnPartidas : hBmpBoton;
-    DibujarImagen(hdc, imgPartidas, startX + btnAncho + separacion, fixedY, btnAncho, btnAlto);
+    DibujarImagen(hdc, imgPartidas, partidasX, startY, btnAncho, btnAlto);
 
-    // Botón 3: INSTRUCCIONES
+    // --- BOTÓN "JUGAR" (Centro) ---
+    int jugarX = (ancho - btnAncho) / 2;
+    HBITMAP imgJugar = (hBmpBtnJugar) ? hBmpBtnJugar : hBmpBoton;
+    DibujarImagen(hdc, imgJugar, jugarX, startY, btnAncho, btnAlto);
+
+    // --- BOTÓN "INSTRUCCIONES" (Derecha) ---
+    int instruccionesX = (ancho / 2) + separacion;
     HBITMAP imgInstr = (hBmpBtnInstrucciones) ? hBmpBtnInstrucciones : hBmpBoton;
-    DibujarImagen(hdc, imgInstr, startX + (btnAncho + separacion) * 2, fixedY, btnAncho, btnAlto);
+    DibujarImagen(hdc, imgInstr, instruccionesX, startY, btnAncho, btnAlto);
 
-    // Botón 4: SALIR
+    // 4. BOTÓN "SALIR" (Esquina inferior derecha)
     int margen = 30;
     int salirX = ancho - btnAncho - margen;
     int salirY = alto - btnAlto - margen;
     HBITMAP imgSalir = (hBmpBtnSalir) ? hBmpBtnSalir : hBmpBoton;
     DibujarImagen(hdc, imgSalir, salirX, salirY, btnAncho, btnAlto);
 
-    // (HEMOS ELIMINADO LA SECCIÓN 4 QUE DIBUJABA EL BORDE DORADO)
-
-    // 5. TÍTULO DEL JUEGO
-    if (hBmpTitulo)
+    // 5. TEXTO EN LOS BOTONES (si usas botones genéricos)
+    if (hBmpBoton == imgJugar || hBmpBoton == imgPartidas || 
+        hBmpBoton == imgInstr || hBmpBoton == imgSalir)
     {
-        int tituloW = 600;
-        int tituloH = 150;
-        DibujarImagen(hdc, hBmpTitulo, (ancho - tituloW) / 2, fixedY - 180, tituloW, tituloH);
+        SetBkMode(hdc, TRANSPARENT);
+        HFONT hFont = CreateFont(36, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+                                DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
+                                CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                                VARIABLE_PITCH, "Arial");
+        HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+        
+        // Texto para cada botón
+        SetTextColor(hdc, RGB(255, 255, 255));
+        
+        // Botón Partidas
+        const char* txtPartidas = "PARTIDAS";
+        SIZE sizePartidas;
+        GetTextExtentPoint32(hdc, txtPartidas, strlen(txtPartidas), &sizePartidas);
+        int txtPX = partidasX + (btnAncho - sizePartidas.cx) / 2;
+        int txtPY = startY + (btnAlto - sizePartidas.cy) / 2;
+        TextOut(hdc, txtPX, txtPY, txtPartidas, strlen(txtPartidas));
+        
+        // Botón Jugar
+        const char* txtJugar = "JUGAR";
+        SIZE sizeJugar;
+        GetTextExtentPoint32(hdc, txtJugar, strlen(txtJugar), &sizeJugar);
+        int txtJX = jugarX + (btnAncho - sizeJugar.cx) / 2;
+        int txtJY = startY + (btnAlto - sizeJugar.cy) / 2;
+        TextOut(hdc, txtJX, txtJY, txtJugar, strlen(txtJugar));
+        
+        // Botón Instrucciones
+        const char* txtInst = "INSTRUCCIONES";
+        SIZE sizeInst;
+        GetTextExtentPoint32(hdc, txtInst, strlen(txtInst), &sizeInst);
+        int txtIX = instruccionesX + (btnAncho - sizeInst.cx) / 2;
+        int txtIY = startY + (btnAlto - sizeInst.cy) / 2;
+        TextOut(hdc, txtIX, txtIY, txtInst, strlen(txtInst));
+        
+        // Botón Salir
+        const char* txtSalir = "SALIR";
+        SIZE sizeSalir;
+        GetTextExtentPoint32(hdc, txtSalir, strlen(txtSalir), &sizeSalir);
+        int txtSX = salirX + (btnAncho - sizeSalir.cx) / 2;
+        int txtSY = salirY + (btnAlto - sizeSalir.cy) / 2;
+        TextOut(hdc, txtSX, txtSY, txtSalir, strlen(txtSalir));
+        
+        SelectObject(hdc, hOldFont);
+        DeleteObject(hFont);
     }
 }
 
@@ -2199,40 +2256,35 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
     int ancho = rc.right;
     int alto = rc.bottom;
 
-    // Configuración idéntica a dibujarMenuConSprites
+    // Configuración de botones (debe coincidir con dibujarMenuConSprites)
     int btnAncho = 500;
     int btnAlto = 200;
-    int separacion = 30;
+    int separacion = 50;
+    int centroY = alto / 2;
+    int startY = centroY - (btnAlto / 2);
+    int margen = 30;
 
-    // Cálculo de posición inicial (Centrado)
-    int totalAncho = (btnAncho * 3) + (separacion * 2);
-    int startX = (ancho - totalAncho) / 2;
-    int startY = (alto / 2) - (btnAlto / 2); // Centrado verticalmente
-
-    // 1. BOTÓN JUGAR
-    if (puntoEnRect(x, y, startX, startY, btnAncho, btnAlto))
-    {
-        // Sonido de confirmación (Opcional)
-
-        // Cambiar estado a Selección de Mapa
-        estado->estadoActual = ESTADO_SELECCION_MAPA;
-        estado->opcionSeleccionada = 0; // Resetear selección del siguiente menú
-
-        InvalidateRect(hwnd, NULL, FALSE);
-        return;
-    }
-
-    // 2. BOTÓN PARTIDAS
-    int xPartidas = startX + btnAncho + separacion;
-    if (puntoEnRect(x, y, xPartidas, startY, btnAncho, btnAlto))
+    // --- BOTÓN "PARTIDAS" (Izquierda) ---
+    int partidasX = (ancho / 2) - btnAncho - separacion;
+    if (puntoEnRect(x, y, partidasX, startY, btnAncho, btnAlto))
     {
         MessageBox(hwnd, "Sistema de guardado en desarrollo.", "Partidas", MB_OK | MB_ICONINFORMATION);
         return;
     }
 
-    // 3. BOTÓN INSTRUCCIONES
-    int xInstr = startX + (btnAncho + separacion) * 2;
-    if (puntoEnRect(x, y, xInstr, startY, btnAncho, btnAlto))
+    // --- BOTÓN "JUGAR" (Centro) ---
+    int jugarX = (ancho - btnAncho) / 2;
+    if (puntoEnRect(x, y, jugarX, startY, btnAncho, btnAlto))
+    {
+        estado->estadoActual = ESTADO_SELECCION_MAPA;
+        estado->opcionSeleccionada = 0;
+        InvalidateRect(hwnd, NULL, FALSE);
+        return;
+    }
+
+    // --- BOTÓN "INSTRUCCIONES" (Derecha) ---
+    int instruccionesX = (ancho / 2) + separacion;
+    if (puntoEnRect(x, y, instruccionesX, startY, btnAncho, btnAlto))
     {
         char *msg = "CONTROLES:\n\n"
                     "W, A, S, D: Mover personaje\n"
@@ -2247,14 +2299,12 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
         return;
     }
 
-    // 4. BOTÓN SALIR (Esquina Inferior Derecha)
-    int margen = 30;
-    int xSalir = ancho - btnAncho - margen;
-    int ySalir = alto - btnAlto - margen;
+    // --- BOTÓN "SALIR" (Esquina inferior derecha) ---
+    int salirX = ancho - btnAncho - margen;
+    int salirY = alto - btnAlto - margen;
 
-    if (puntoEnRect(x, y, xSalir, ySalir, btnAncho, btnAlto))
+    if (puntoEnRect(x, y, salirX, salirY, btnAncho, btnAlto))
     {
-        // Confirmación antes de salir
         if (MessageBox(hwnd, "Seguro que quieres salir?", "Salir", MB_YESNO | MB_ICONQUESTION) == IDYES)
         {
             PostQuitMessage(0);
