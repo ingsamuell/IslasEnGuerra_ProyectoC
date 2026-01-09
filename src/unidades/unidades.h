@@ -12,6 +12,7 @@ void inicializarUnidades();
 void spawnearEscuadron(int tipo, int cantidad, int x, int y);
 
 // Lógica y Actualización
+void aplicarSeparacion(int id, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j);
 void actualizarAnimacionUnidad(Unidad *u, float dx, float dy);
 

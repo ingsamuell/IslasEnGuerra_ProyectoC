@@ -90,6 +90,7 @@ extern HBITMAP hBmpIslaSec3;
 extern HBITMAP hBmpIslaSec4;
 extern HBITMAP hBmpArbolChico;
 extern HBITMAP hBmpArbolGrande;
+extern char neblina[MUNDO_FILAS][MUNDO_COLUMNAS];
 
 // Mapa 2
 extern HBITMAP hBmpIslaGrandeMapa2;

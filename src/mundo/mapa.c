@@ -15,6 +15,7 @@
 Particula chispas[MAX_PARTICULAS];
 Isla misIslas[MAX_ISLAS];
 TextoFlotante listaTextos[MAX_TEXTOS] = {0};
+char neblina[MUNDO_FILAS][MUNDO_COLUMNAS];
 
 // Referencias externas necesarias
 extern Jugador miJugador;
@@ -183,10 +184,39 @@ void generarColisionDeMapaCompleto(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int m
     }
 }
 
+void configurarNieblaInicial(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    // 1. Primero, ponemos TODO el mundo como VISIBLE (1)
+    for (int y = 0; y < MUNDO_FILAS; y++) {
+        for (int x = 0; x < MUNDO_COLUMNAS; x++) {
+            neblina[y][x] = 1;
+        }
+    }
+
+    // 2. Ahora, ocultamos SOLO la Isla Principal (Índice 0)
+    // Usamos las coordenadas de misIslas[0] que definimos en inicializarIslas
+    int inicioX = misIslas[0].x / TAMANO_CELDA_BASE;
+    int inicioY = misIslas[0].y / TAMANO_CELDA_BASE;
+    int finX = (misIslas[0].x + misIslas[0].ancho) / TAMANO_CELDA_BASE;
+    int finY = (misIslas[0].y + misIslas[0].alto) / TAMANO_CELDA_BASE;
+
+    for (int y = inicioY; y < finY; y++) {
+        for (int x = inicioX; x < finX; x++) {
+            // CONDICIÓN CLAVE: Solo ocultamos si es TIERRA (mapa[y][x] == 1)
+            // Si es agua dentro del cuadro de la isla, se deja visible.
+            if (y >= 0 && y < MUNDO_FILAS && x >= 0 && x < MUNDO_COLUMNAS) {
+                if (mapa[y][x] == 1) { 
+                    neblina[y][x] = 0; // 0 = Oculto (Gris)
+                }
+            }
+        }
+    }
+}
+
 void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId)
 {
     inicializarIslas(mapaId);
     generarColisionDeMapaCompleto(mapa, mapaId);
+    configurarNieblaInicial(mapa);
 }
 
 int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
@@ -260,7 +290,7 @@ void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int 
 
                 // Feedback visual aleatorio
                 if (rand() % 30 == 0)
-                    crearTextoFlotante(jugador->x, jugador->y, "¡Tiburones a la vista!", 0, RGB(255, 50, 50));
+                    crearTextoFlotante(jugador->x, jugador->y, "Tiburones a la vista!", 0, RGB(255, 50, 50));
             }
         }
 
@@ -298,7 +328,7 @@ void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int 
                 puedeMoverseY = false;
 
                 if (rand() % 30 == 0)
-                    crearTextoFlotante(jugador->x, jugador->y, "¡Agua muy profunda!", 0, RGB(100, 200, 255));
+                    crearTextoFlotante(jugador->x, jugador->y, "Agua muy profunda!", 0, RGB(100, 200, 255));
             }
         }
 
@@ -425,6 +455,27 @@ void dibujarEstablo(HDC hdc, Camera cam)
 
 // --- 5. LÓGICA DE JUEGO GENERAL ---
 
+void descubrirMapa(float centroX, float centroY, float radio) {
+    int radioCeldas = (int)(radio / TAMANO_CELDA_BASE) + 1;
+    int cx = (int)(centroX / TAMANO_CELDA_BASE);
+    int cy = (int)(centroY / TAMANO_CELDA_BASE);
+
+    for (int y = cy - radioCeldas; y <= cy + radioCeldas; y++) {
+        for (int x = cx - radioCeldas; x <= cx + radioCeldas; x++) {
+            if (y >= 0 && y < MUNDO_FILAS && x >= 0 && x < MUNDO_COLUMNAS) {
+                // Si está oculto (0), lo hacemos visible (1)
+                if (neblina[y][x] == 0) {
+                     // Calcular distancia real para hacer un círculo
+                    float dx = (x * TAMANO_CELDA_BASE) + 8 - centroX;
+                    float dy = (y * TAMANO_CELDA_BASE) + 8 - centroY;
+                    if (sqrt(dx*dx + dy*dy) < radio) {
+                        neblina[y][x] = 1;
+                    }
+                }
+            }
+        }
+    }
+}
 void actualizarLogicaSistema(Jugador *j)
 {
     // Pesca
@@ -446,9 +497,10 @@ void actualizarLogicaSistema(Jugador *j)
                 crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
         }
     }
-    else
-        j->timerPesca = 0;
+    else{
+        j->timerPesca = 0;}
     actualizarTiburones(j); // <--- AGREGAR AQUÍ
+    descubrirMapa(j->x + 16, j->y + 16, 100.0f);
 }
 
 void actualizarRegeneracionRecursos()
@@ -459,22 +511,16 @@ void actualizarRegeneracionRecursos()
 }
 void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
 {
-    // 1. SI YA ESTAMOS EN BARCO -> BAJARSE
+    // 1. SI YA ESTAMOS EN BARCO -> BAJARSE (Esto queda igual)
     if (j->estadoBarco > 0)
     {
-        // Solo bajar si tocamos Muelle o Tierra
         float distMuelle = sqrt(pow(j->x - MUELLE_X, 2) + pow(j->y - MUELLE_Y, 2));
 
         if (EsSuelo(j->x + 16, j->y + 32, mapa) || distMuelle < 150)
         {
             j->estadoBarco = 0; // A PIE
             crearTextoFlotante(j->x, j->y, "A tierra!", 0, RGB(255, 255, 255));
-            // Pequeño empujón hacia el muelle para que no quede en el agua
-            if (distMuelle < 150)
-            {
-                j->x = MUELLE_X + 20;
-                j->y = MUELLE_Y + 20;
-            }
+            if (distMuelle < 150) { j->x = MUELLE_X + 20; j->y = MUELLE_Y + 20; }
         }
         else
         {
@@ -484,36 +530,63 @@ void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
     }
 
     // 2. SI ESTAMOS A PIE -> MONTARSE
-    // Solo permitir si estamos cerca del MUELLE
     float dist = sqrt(pow(j->x - MUELLE_X, 2) + pow(j->y - MUELLE_Y, 2));
 
-    if (dist < 150)
-    { // Radio de interacción del muelle
+    if (dist < 150) // Estamos en el muelle
+    { 
+        // Verificamos qué opciones tenemos disponibles
+        BOOL puedePesca = (j->tieneBotePesca && j->tieneCana);
+        BOOL puedeGuerra = (j->cantBarcosGuerra > 0);
 
-        // PRIORIDAD: ¿Qué barco sacamos?
-        // Si el jugador quiere pescar (tiene caña y bote)
-        if (j->tieneBotePesca && j->tieneCana)
-        {
-            j->estadoBarco = 1; // MODO PESCA
-            j->x += 60;         // Salir un poco al agua
+        // CASO A: TIENE AMBOS -> PREGUNTAR
+        if (puedePesca && puedeGuerra) {
+            int opcion = MessageBox(NULL, 
+                "Tienes acceso a multiple naves.\n\nElige tu destino:\nSI = Bote de Pesca\nNO = Barco de Guerra\nCANCELAR = Quedarse", 
+                "Capitan del Puerto", 
+                MB_YESNOCANCEL | MB_ICONQUESTION);
+
+            if (opcion == IDYES) {
+                // Eligió PESCA
+                j->estadoBarco = 1; 
+                j->x += 60; 
+                crearTextoFlotante(j->x, j->y, "A pescar!", 0, RGB(100, 255, 255));
+            }
+            else if (opcion == IDNO) {
+                // Eligió GUERRA
+                j->estadoBarco = 2; 
+                j->x += 60;
+                crearTextoFlotante(j->x, j->y, "A la batalla!", 0, RGB(255, 50, 50));
+            }
+            // Si elige Cancelar, no hacemos nada (se queda a pie)
+            return;
+        }
+
+        // CASO B: SOLO TIENE BOTE DE PESCA
+        else if (puedePesca) {
+            j->estadoBarco = 1; 
+            j->x += 60; 
             crearTextoFlotante(j->x, j->y, "A pescar!", 0, RGB(100, 255, 255));
         }
-        // Si quiere guerra
-        else if (j->cantBarcosGuerra > 0)
-        {
-            j->estadoBarco = 2; // MODO GUERRA
+
+        // CASO C: SOLO TIENE BARCO DE GUERRA
+        else if (puedeGuerra) {
+            j->estadoBarco = 2; 
             j->x += 60;
             crearTextoFlotante(j->x, j->y, "A la batalla!", 0, RGB(255, 50, 50));
         }
-        // ERRORES
-        else if (j->tieneBotePesca && !j->tieneCana)
-        {
-            crearTextoFlotante(j->x, j->y, "Falta la cana!", 0, RGB(255, 50, 50));
+
+        // CASO D: ERRORES / NO TIENE NADA ÚTIL
+        else {
+            if (j->tieneBotePesca && !j->tieneCana) {
+                crearTextoFlotante(j->x, j->y, "Falta la cana!", 0, RGB(255, 50, 50));
+            } else {
+                crearTextoFlotante(j->x, j->y, "No tienes barcos!", 0, RGB(200, 200, 200));
+            }
         }
-        else
-        {
-            crearTextoFlotante(j->x, j->y, "No tienes barcos!", 0, RGB(200, 200, 200));
-        }
+    }
+    else {
+        // Lejos del muelle
+        crearTextoFlotante(j->x, j->y, "", 0, RGB(200, 200, 200));
     }
 }
 
@@ -1695,67 +1768,125 @@ void procesarEnterMenu(HWND hwnd, EstadoJuego *estado)
 
 void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda, int mapaId)
 {
-    // 1. FONDO DE AGUA (MEJORADO: Profundo vs Costa)
-
-    // A) Pintamos TODO de "Agua Profunda" (Azul Oscuro)
-    HBRUSH aguaProfunda = CreateSolidBrush(RGB(0, 0, 120)); // Azul marino oscuro
+    // ---------------------------------------------------------
+    // 1. CAPA FONDO: AGUA
+    // ---------------------------------------------------------
+    // A) Agua Profunda
+    HBRUSH aguaProfunda = CreateSolidBrush(RGB(0, 0, 100));
     RECT r = {0, 0, ancho, alto};
     FillRect(hdc, &r, aguaProfunda);
     DeleteObject(aguaProfunda);
 
-    // B) Pintamos la "Zona Segura" (Agua Clara) como un círculo gigante
-    // El centro es (1600, 1600) y el radio es 900 (mismo que en la lógica de movimiento)
-    int radio = 900;
-    int centroX = 1600;
-    int centroY = 1600;
-
-    // Convertir a coordenadas de pantalla
+    // B) Agua Costa (Zona Segura)
+    int radio = 900; 
+    int centroX = 1600; int centroY = 1600;
     int screenX = (centroX - cam.x) * cam.zoom;
     int screenY = (centroY - cam.y) * cam.zoom;
     int radioZoom = radio * cam.zoom;
 
-    // Crear brocha de agua clara (la original)
     HBRUSH aguaCosta = CreateSolidBrush(RGB(0, 100, 180));
     HGDIOBJ oldBrush = SelectObject(hdc, aguaCosta);
-
-    // Quitamos el borde del círculo (NULL_PEN) para que se vea suave
-    HPEN nullPen = CreatePen(PS_NULL, 0, RGB(0, 0, 0));
+    HPEN nullPen = CreatePen(PS_NULL, 0, 0);
     HGDIOBJ oldPen = SelectObject(hdc, nullPen);
-
-    // Dibujar el círculo de agua segura
+    
     Ellipse(hdc, screenX - radioZoom, screenY - radioZoom, screenX + radioZoom, screenY + radioZoom);
+    
+    SelectObject(hdc, oldPen); SelectObject(hdc, oldBrush);
+    DeleteObject(aguaCosta); DeleteObject(nullPen);
 
-    // Restaurar objetos GDI
-    SelectObject(hdc, oldPen);
-    SelectObject(hdc, oldBrush);
-    DeleteObject(aguaCosta);
-    DeleteObject(nullPen);
-
-    // 2. ISLAS (Tierra firme)
-    for (int i = 0; i < MAX_ISLAS; i++)
-    {
-        if (!misIslas[i].activa)
-            continue;
-
+    // ---------------------------------------------------------
+    // 2. CAPA SUELO: ISLAS
+    // ---------------------------------------------------------
+    for (int i = 0; i < MAX_ISLAS; i++) {
+        if (!misIslas[i].activa) continue;
         int sx = (misIslas[i].x - cam.x) * cam.zoom;
         int sy = (misIslas[i].y - cam.y) * cam.zoom;
-
-        // Optimización: No dibujar si está fuera de pantalla
-        if (sx + (misIslas[i].ancho * cam.zoom) < 0 || sx > ancho)
-            continue;
+        if (sx + (misIslas[i].ancho * cam.zoom) < 0 || sx > ancho) continue; // Optimización
 
         HBITMAP img = obtenerImagenIsla(i, mapaId);
-        if (img)
-            DibujarImagen(hdc, img, sx, sy, misIslas[i].ancho * cam.zoom, misIslas[i].alto * cam.zoom);
+        if (img) DibujarImagen(hdc, img, sx, sy, misIslas[i].ancho * cam.zoom, misIslas[i].alto * cam.zoom);
     }
-    // 2. DIBUJAR TIBURONES (NUEVO BLOQUE)
-    dibujarTiburones(hdc, cam, ancho, alto);
 
-    // 3. OBJETOS ESTÁTICOS (Parte del escenario)
+    // ---------------------------------------------------------
+    // 3. CAPA OBJETOS: NATURALEZA Y FAUNA
+    // ---------------------------------------------------------
+    // (Aquí dibujamos todo lo que debe poder ser tapado por la niebla)
     dibujarTiendasEnIslas(hdc, cam, ancho, alto, frameTienda);
+    dibujarTesoros(hdc, cam, ancho, alto);
+    dibujarMinas(hdc, cam, ancho, alto);
     dibujarArboles(hdc, cam, ancho, alto, mapaId);
-    dibujarMuelleYFlota(hdc, cam, &miJugador);
+    
+    dibujarTiburones(hdc, cam, ancho, alto);
+    dibujarVacas(hdc, cam, ancho, alto); // Ahora las vacas se dibujan ANTES de la niebla
+    
+    // Muelle y Tienda
+    dibujarMuelleYFlota(hdc, cam, &miJugador); // Si tienes esta función implementada
+    // Si la tienda es un objeto estático, dibújala aquí también.
 
-    // NOTA: Las vacas, minas y el jugador se dibujan en main.c
-    // para asegurar que queden ENCIMA del mapa.
+    // ---------------------------------------------------------
+    // 4. CAPA PERSONAJES: JUGADOR Y UNIDADES
+    // ---------------------------------------------------------
+    dibujarUnidades(hdc, cam);
+    dibujarJugador(hdc, &miJugador, cam);
+
+    // ---------------------------------------------------------
+    // 5. CAPA SUPERIOR: NIEBLA DE GUERRA (¡AQUÍ ES EL CAMBIO!)
+    // ---------------------------------------------------------
+    // Al dibujarla al final, tapará todo lo anterior (vacas, arboles, etc)
+    // donde neblina == 0.
+    
+    HBRUSH brochaNiebla = CreateSolidBrush(RGB(220, 220, 230)); // Gris/Blanco nube
+    HPEN sinBorde = CreatePen(PS_NULL, 0, 0);
+    
+    oldBrush = SelectObject(hdc, brochaNiebla);
+    oldPen = SelectObject(hdc, sinBorde);
+
+    // Límites de cámara para optimizar
+    int inicioCol = max(0, (int)(cam.x / TAMANO_CELDA_BASE) - 2);
+    int inicioFila = max(0, (int)(cam.y / TAMANO_CELDA_BASE) - 2);
+    int celdasAncho = (int)(ancho / (TAMANO_CELDA_BASE * cam.zoom)) + 4;
+    int celdasAlto = (int)(alto / (TAMANO_CELDA_BASE * cam.zoom)) + 4;
+    int finCol = min(MUNDO_COLUMNAS, inicioCol + celdasAncho);
+    int finFila = min(MUNDO_FILAS, inicioFila + celdasAlto);
+
+    for (int f = inicioFila; f < finFila; f++) {
+        for (int c = inicioCol; c < finCol; c++) {
+            
+            // Si la celda está OCULTA (0)
+            if (neblina[f][c] == 0) {
+                int x = (int)(((c * TAMANO_CELDA_BASE) - cam.x) * cam.zoom);
+                int y = (int)(((f * TAMANO_CELDA_BASE) - cam.y) * cam.zoom);
+                int celdaTam = (int)(TAMANO_CELDA_BASE * cam.zoom);
+                
+                // Dibujamos "nube" un poco más grande para que se solapen
+                int expansion = celdaTam / 2; 
+                Ellipse(hdc, x - expansion, y - expansion, x + celdaTam + expansion, y + celdaTam + expansion);
+            }
+        }
+    }
+
+    SelectObject(hdc, oldPen); SelectObject(hdc, oldBrush);
+    DeleteObject(brochaNiebla); DeleteObject(sinBorde);
+
+    // ---------------------------------------------------------
+    // 6. CAPA INTERFAZ: HUD (Siempre visible sobre la niebla)
+    // ---------------------------------------------------------
+    dibujarHUD(hdc, &miJugador, ancho, alto);
+    
+    // Textos flotantes (Números de daño, recursos, etc.)
+    for (int i = 0; i < MAX_TEXTOS; i++) {
+        if (listaTextos[i].activo) {
+             int tx = (int)((listaTextos[i].x - cam.x) * cam.zoom);
+             int ty = (int)((listaTextos[i].y - cam.y) * cam.zoom);
+             
+             // Sombra del texto
+             SetTextColor(hdc, RGB(0,0,0));
+             SetBkMode(hdc, TRANSPARENT);
+             TextOut(hdc, tx+1, ty+1, listaTextos[i].texto, strlen(listaTextos[i].texto));
+             
+             // Texto real
+             SetTextColor(hdc, listaTextos[i].color);
+             TextOut(hdc, tx, ty, listaTextos[i].texto, strlen(listaTextos[i].texto));
+        }
+    }
 }

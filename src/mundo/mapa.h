@@ -63,6 +63,8 @@ void dibujarTiendasEnIslas(HDC hdc, Camera cam, int ancho, int alto, int frameTi
 void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto);
 void dibujarPrecio(HDC hdc, int x, int y, const char* costo1, const char* costo2, BOOL alcanzable);
 void dibujarItemRejilla(HDC hdc, HBITMAP icono, int cantidad, int maximo, int x, int y, const char *nombre);
+void configurarNieblaInicial(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
+void descubrirMapa(float centroX, float centroY, float radio);
 
 // --- LÓGICA DE RECLUTAMIENTO ---
 void reclutarTrabajador(Jugador *j, int tipo);

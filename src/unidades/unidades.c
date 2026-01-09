@@ -40,9 +40,51 @@ void spawnearEscuadron(int tipo, int cantidad, int x, int y) {
     }
 }
 
+void aplicarSeparacion(int id, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    float sepX = 0, sepY = 0;
+    int vecinos = 0;
+    float radioPersonal = 25.0f; // Distancia mínima entre aldeanos
+
+    for (int j = 0; j < MAX_UNIDADES; j++) {
+        // No compararse con uno mismo ni con unidades muertas
+        if (id == j || !unidades[j].activa) continue;
+
+        float dx = unidades[id].x - unidades[j].x;
+        float dy = unidades[id].y - unidades[j].y;
+        float distSq = dx*dx + dy*dy;
+
+        // Si están dentro del radio personal (muy cerca)
+        if (distSq < (radioPersonal * radioPersonal) && distSq > 0.1f) {
+            float dist = sqrt(distSq);
+            
+            // Calculamos una fuerza de repulsión:
+            // Cuanto más cerca estén, más fuerte es el empujón.
+            float fuerza = (radioPersonal - dist) / radioPersonal; 
+            
+            sepX += (dx / dist) * fuerza;
+            sepY += (dy / dist) * fuerza;
+            vecinos++;
+        }
+    }
+
+    if (vecinos > 0) {
+        // Aplicamos el empujón (Separación)
+        // El factor 1.5f controla qué tan fuerte se empujan (ajústalo si vibran mucho)
+        float nuevoX = unidades[id].x + (sepX * 1.5f);
+        float nuevoY = unidades[id].y + (sepY * 1.5f);
+
+        // IMPORTANTE: Solo empujamos si el destino es suelo (para no tirarlos al agua)
+        // Usamos +16 para verificar el centro del sprite
+        if (EsSuelo((int)nuevoX + 16, (int)nuevoY + 16, mapa)) {
+            unidades[id].x = nuevoX;
+            unidades[id].y = nuevoY;
+        }
+    }
+}
 void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
     for (int i = 0; i < MAX_UNIDADES; i++) {
         if (!unidades[i].activa) continue;
+        aplicarSeparacion(i, mapa);
 
         float dx = unidades[i].destinoX - unidades[i].x;
         float dy = unidades[i].destinoY - unidades[i].y;
