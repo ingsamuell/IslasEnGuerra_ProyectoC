@@ -105,9 +105,4 @@ void darOrdenMovimiento(Unidad unidades[], int max, int clickX, int clickY);
 void dibujarMina(HDC hdc, Camera cam);
 extern Unidad unidades[MAX_UNIDADES]; // Indica a otros archivos que el arreglo existe
 
-/* --- SISTEMA DE AGUA SEGURA --- */
-void calcularZonasAguaSegura(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
-int esAguaSeguraParaBote(int x, int y);
-extern char zonaAguaSegura[MUNDO_FILAS][MUNDO_COLUMNAS];
-
 #endif /* MAPA_H */
