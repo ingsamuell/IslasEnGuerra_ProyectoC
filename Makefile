@@ -3,7 +3,16 @@ CC = gcc
 
 # 2. Archivos fuente (.c)
 # Incluimos todos los archivos .c de tu proyecto
-SRC = src/main.c src/mapa/mapa.c src/recursos/recursos.c src/sistema/sistema.c src/jugador/jugador.c
+SRC = src/main.c \
+      src/sistema/sistema.c \
+      src/recursos/recursos.c \
+      src/jugador/jugador.c \
+      src/mundo/mapa.c \
+      src/mundo/fauna.c \
+      src/mundo/terreno.c \
+      src/mundo/naturaleza.c \
+      src/unidades/unidades.c \
+      src/sistema/tienda.c
 
 # 3. Nombre del ejecutable final
 TARGET = IslasEnGuerra

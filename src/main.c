@@ -3,7 +3,8 @@
 #include <stdio.h>
 #include <math.h>               // Necesario para sqrt y pow
 #include "global.h"             
-#include "mapa/mapa.h"          
+#include "mundo/mapa.h"  
+#include "mundo/fauna.h"        
 #include "recursos/recursos.h" 
 #include "jugador/jugador.h"
 
@@ -19,7 +20,7 @@ TextoFlotante textos[MAX_TEXTOS];
 Arbol arboles[MAX_ARBOLES];
 Mina minas[MAX_MINAS];
 Particula particulas[MAX_PARTICULAS];
-Tiburon misTiburones[MAX_TIBURONES];
+
 
 /* ========== PROCEDIMIENTO DE VENTANA ========== */
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -420,7 +421,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         else {
             if (estadoJuego.estadoActual == ESTADO_PARTIDA) {
                 // Actualizar sistemas del juego
-                actualizarVacas(mapaMundo); 
+                actualizarVacas(); 
                 actualizarLogicaSistema(&miJugador);
                 actualizarUnidades(mapaMundo, &miJugador);
                 actualizarRegeneracionRecursos();

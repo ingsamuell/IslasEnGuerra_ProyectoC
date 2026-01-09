@@ -1,5 +1,6 @@
 /* src/mapa/mapa.c - VERSIÓN LIMPIA Y PROFESIONAL */
 #include "mapa.h"
+#include "fauna.h"
 #include "../global.h"
 #include "../recursos/recursos.h"
 #include "../jugador/jugador.h"
@@ -10,7 +11,6 @@
 
 // --- VARIABLES GLOBALES INTERNAS ---
 Unidad unidades[MAX_UNIDADES];
-Vaca manada[MAX_VACAS];
 Mina misMinas[MAX_MINAS];
 Particula chispas[MAX_PARTICULAS];
 Isla misIslas[MAX_ISLAS];
@@ -189,30 +189,6 @@ void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId)
 {
     inicializarIslas(mapaId);
     generarColisionDeMapaCompleto(mapa, mapaId);
-    // --- GENERACIÓN DE TIBURONES ---
-    int tiburonesCreados = 0;
-    int intentos = 0;
-    while (tiburonesCreados < MAX_TIBURONES && intentos < 2000) {
-        int tx = rand() % (MUNDO_COLUMNAS * TAMANO_CELDA_BASE);
-        int ty = rand() % (MUNDO_FILAS * TAMANO_CELDA_BASE);
-
-        // Calcular distancia al centro del mapa (aprox 1600,1600)
-        float distCentro = sqrt(pow(tx - 1600, 2) + pow(ty - 1600, 2));
-
-        // CONDICIONES:
-        // 1. Que sea agua (EsSuelo == 0)
-        // 2. Que esté LEJOS de la isla (distancia > 1100) para que estén en "mar profundo"
-        if (!EsSuelo(tx, ty, mapa) && distCentro > 1100) {
-            misTiburones[tiburonesCreados].x = (float)tx;
-            misTiburones[tiburonesCreados].y = (float)ty;
-            misTiburones[tiburonesCreados].direccion = rand() % 2; // 0 o 1 random
-            misTiburones[tiburonesCreados].frameAnim = rand() % 4; // Empezar en frame random
-            misTiburones[tiburonesCreados].timerAnim = rand() % 10;
-            misTiburones[tiburonesCreados].activa = 1;
-            tiburonesCreados++;
-        }
-        intentos++;
-    }
 }
 
 int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
@@ -426,122 +402,6 @@ void actualizarYDibujarParticulas(HDC hdc, Camera cam)
 
 // --- 4. ENTIDADES DEL JUEGO (VACAS, ARBOLES, MINAS, TESOROS) ---
 
-// --- VACAS ---
-void inicializarVacas()
-{
-    for (int i = 0; i < MAX_VACAS; i++)
-        manada[i].activa = 0;
-    for (int i = 0; i < 7; i++)
-    {
-        manada[i].activa = 1;
-        manada[i].x = ESTABLO_X + (rand() % 150);
-        manada[i].y = ESTABLO_Y + ((i / 2) * 40) + (rand() % 30);
-        manada[i].xInicial = manada[i].x;
-        manada[i].direccion = (rand() % 2 == 0) ? 1 : -1;
-        manada[i].vida = 5;
-        manada[i].estadoVida = 0;
-        manada[i].frameAnim = (manada[i].direccion == 1) ? 4 : 0;
-    }
-}
-
-void actualizarVacas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
-{
-    for (int i = 0; i < MAX_VACAS; i++)
-    {
-        if (!manada[i].activa)
-            continue;
-        if (manada[i].estadoVida == 1)
-        { // Muerta
-            manada[i].tiempoMuerte--;
-            if (manada[i].tiempoMuerte <= 0)
-            {
-                manada[i].activa = 0;            // Desaparece el cadáver, comienza el Respawn
-                manada[i].timerRegeneracion = 0; // Reset por seguridad
-            }
-            continue;
-        }
-        // Patrulla
-        if (manada[i].direccion == 1)
-        {
-            manada[i].x++;
-            if (manada[i].x >= manada[i].xInicial + 30)
-            {
-                manada[i].direccion = -1;
-                manada[i].frameAnim = 0;
-            }
-        }
-        else
-        {
-            manada[i].x--;
-            if (manada[i].x <= manada[i].xInicial)
-            {
-                manada[i].direccion = 1;
-                manada[i].frameAnim = 4;
-            }
-        }
-        // Animación
-        manada[i].contadorAnim++;
-        if (manada[i].contadorAnim > 8)
-        {
-            manada[i].frameAnim++;
-            if (manada[i].direccion == 1 && manada[i].frameAnim > 7)
-                manada[i].frameAnim = 4;
-            if (manada[i].direccion == -1 && manada[i].frameAnim > 3)
-                manada[i].frameAnim = 0;
-            manada[i].contadorAnim = 0;
-        }
-    }
-}
-
-void golpearVaca(Jugador *j) {
-    int rango = 50;
-    for (int i = 0; i < MAX_VACAS; i++) {
-        if (!manada[i].activa || manada[i].estadoVida == 1) continue;
-        if (abs((j->x + 16) - (manada[i].x + 16)) < rango && abs((j->y + 16) - (manada[i].y + 16)) < rango) {
-            manada[i].vida--;
-            crearChispas(manada[i].x+16, manada[i].y+16, RGB(200,0,0));
-            if (manada[i].vida <= 0) {
-                manada[i].estadoVida = 1;
-                manada[i].tiempoMuerte = 300;
-                
-                // --- CORRECCIÓN LÍMITES ---
-                int ant = j->comida;
-                agregarRecurso(&j->comida, 10, j->nivelMochila);
-                int gan = j->comida - ant;
-                
-                if (gan > 0) crearTextoFlotante(manada[i].x, manada[i].y, "Carne", gan, RGB(255, 100, 100));
-                else crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
-            }
-            return;
-        }
-    }
-}
-
-void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto)
-{
-    for (int i = 0; i < MAX_VACAS; i++)
-    {
-        if (!manada[i].activa)
-            continue;
-        int sx = (manada[i].x - cam.x) * cam.zoom;
-        int sy = (manada[i].y - cam.y) * cam.zoom;
-        int tam = 32 * cam.zoom;
-        if (sx > -tam && sx < ancho && sy > -tam && sy < alto)
-        {
-            if (manada[i].estadoVida == 1)
-            {
-                if (hBmpVacaMuerta)
-                    DibujarImagen(hdc, hBmpVacaMuerta, sx, sy, tam, tam);
-            }
-            else
-            {
-                if (hBmpVaca[manada[i].frameAnim])
-                    DibujarImagen(hdc, hBmpVaca[manada[i].frameAnim], sx, sy, tam, tam);
-            }
-        }
-    }
-}
-
 void dibujarEstablo(HDC hdc, Camera cam)
 {
     int sx = (int)((ESTABLO_X - cam.x) * cam.zoom);
@@ -551,49 +411,6 @@ void dibujarEstablo(HDC hdc, Camera cam)
 }
 
 
-
-void actualizarTiburones(Jugador *j) {
-    // 1. Reducir el timer de inmunidad del jugador si fue golpeado recientemente
-    if (j->timerInmunidadBarco > 0) j->timerInmunidadBarco--;
-
-    for (int i = 0; i < MAX_TIBURONES; i++) {
-        if (!misTiburones[i].activa) continue;
-
-        // --- A) ANIMACIÓN ---
-        misTiburones[i].timerAnim++;
-        if (misTiburones[i].timerAnim >= 8) { // Velocidad de la animación (ajústalo si va muy rápido/lento)
-            misTiburones[i].timerAnim = 0;
-            misTiburones[i].frameAnim++;
-            if (misTiburones[i].frameAnim >= 4) {
-                misTiburones[i].frameAnim = 0; // Volver al inicio
-                // Opcional: Cambiar de dirección al terminar un ciclo para que "naden" de lado a lado
-                // misTiburones[i].direccion = !misTiburones[i].direccion; 
-            }
-        }
-
-        // --- B) COLISIÓN CON BARCO DE GUERRA (Daño) ---
-        if (j->estadoBarco == 2 && j->timerInmunidadBarco == 0) { // Solo si es barco guerra y no es inmune
-            float dist = sqrt(pow(j->x - misTiburones[i].x, 2) + pow(j->y - misTiburones[i].y, 2));
-            
-            // Si está muy cerca (colisión)
-            if (dist < 40.0f) { 
-                // DAÑO AL JUGADOR
-                j->vidaActual -= 10; // Pierde 10 de vida
-                if (j->vidaActual < 0) j->vidaActual = 0;
-
-                // Efectos visuales
-                crearTextoFlotante(j->x, j->y, "-10 VIDA!", 0, RGB(255, 0, 0));
-                crearChispas(j->x + 16, j->y + 16, RGB(200, 0, 0)); // Chispas rojas (sangre/daño)
-
-                // Activar inmunidad por 1 segundo (aprox 60 frames) para no morir instantáneamente
-                j->timerInmunidadBarco = 60; 
-
-                // Opcional: El tiburón podría "sumergirse" (desactivarse) temporalmente tras atacar
-                // misTiburones[i].activa = 0; 
-            }
-        }
-    }
-}
 // --- ÁRBOLES ---
 void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
 {
@@ -827,30 +644,6 @@ int buscarMinaCercana(float x, float y, float rango)
     return mejorIndice;
 }
 
-int buscarVacaCercana(float x, float y, float rango)
-{
-    int mejorIndice = -1;
-    float mejorDist = rango;
-
-    for (int i = 0; i < MAX_VACAS; i++)
-    {
-        // Solo buscamos vacas activas y VIVAS (estadoVida 0)
-        if (!manada[i].activa || manada[i].estadoVida != 0)
-            continue;
-
-        float dx = (manada[i].x + 16) - x;
-        float dy = (manada[i].y + 16) - y;
-        float dist = sqrt(dx * dx + dy * dy);
-
-        if (dist < mejorDist)
-        {
-            mejorDist = dist;
-            mejorIndice = i;
-        }
-    }
-    return mejorIndice;
-}
-
 // --- TESOROS ---
 void inicializarTesoros()
 {
@@ -988,24 +781,7 @@ void actualizarRegeneracionRecursos()
         }
     }
 
-    // 3. VACAS (NUEVO)
-    for (int i = 0; i < MAX_VACAS; i++)
-    {
-        if (!manada[i].activa)
-        {
-            manada[i].timerRegeneracion++;
-            if (manada[i].timerRegeneracion >= TIEMPO_RESPAWN_RECURSOS)
-            {
-                manada[i].activa = 1;
-                manada[i].estadoVida = 0;     // Vuelve a estar VIVA
-                manada[i].vida = 5;           // Vida completa
-                manada[i].tiempoMuerte = 300; // Resetear timer de animación muerte
-                manada[i].timerRegeneracion = 0;
-                manada[i].x = manada[i].xInicial;
-                crearChispaBlanca(manada[i].x, manada[i].y);
-            }
-        }
-    }
+    actualizarRegeneracionFauna();
 }
 void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
 {
@@ -2095,6 +1871,7 @@ void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FIL
     inicializarMapa(mapa, mapaId);
     inicializarArboles(mapa);
     inicializarVacas();
+    inicializarTiburones(mapa);
     inicializarMinas(mapa);
     inicializarTesoros();
     // inicializarUnidades();
@@ -2597,35 +2374,7 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
             DibujarImagen(hdc, img, sx, sy, misIslas[i].ancho * cam.zoom, misIslas[i].alto * cam.zoom);
     }
     // 2. DIBUJAR TIBURONES (NUEVO BLOQUE)
-    for (int i = 0; i < MAX_TIBURONES; i++) {
-        if (!misTiburones[i].activa) continue;
-
-        // Verificar si está dentro de la cámara antes de dibujar
-        if (misTiburones[i].x > cam.x - 100 && misTiburones[i].x < cam.x + (ancho/cam.zoom) + 100 &&
-    misTiburones[i].y > cam.y - 100 && misTiburones[i].y < cam.y + (alto/cam.zoom) + 100) {
-            
-            int screenX = (int)((misTiburones[i].x - cam.x) * cam.zoom);
-            int screenY = (int)((misTiburones[i].y - cam.y) * cam.zoom);
-            int tam = 48 * cam.zoom; // Tamaño del tiburón (ajústalo a tus sprites)
-
-            HBITMAP hBmpTibu = hBmpTiburonAnim[misTiburones[i].direccion][misTiburones[i].frameAnim];
-            
-            if (hBmpTibu) {
-                 // Usamos TransparentBlt si tus BMP tienen fondo rosa (RGB 255,0,255)
-                 // Si ya son transparentes (PNG convertidos correctamente), usa DibujarImagen normal.
-                 // Asumiendo fondo rosa para este ejemplo:
-                 HDC hdcMem = CreateCompatibleDC(hdc);
-                 HBITMAP hOld = (HBITMAP)SelectObject(hdcMem, hBmpTibu);
-                 BITMAP bm; GetObject(hBmpTibu, sizeof(BITMAP), &bm);
-                 
-                 TransparentBlt(hdc, screenX, screenY, tam, tam, 
-                                hdcMem, 0, 0, bm.bmWidth, bm.bmHeight, 
-                                RGB(255, 0, 255)); // Color rosa transparente
-
-                 SelectObject(hdcMem, hOld); DeleteDC(hdcMem);
-            }
-        }
-    }
+    dibujarTiburones(hdc, cam, ancho, alto);
 
     // 3. OBJETOS ESTÁTICOS (Parte del escenario)
     dibujarTiendasEnIslas(hdc, cam, ancho, alto, frameTienda);

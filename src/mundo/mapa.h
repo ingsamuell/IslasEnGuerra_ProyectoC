@@ -13,17 +13,11 @@ void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int 
 // IMPORTANTE: EsSuelo ahora recibe el mapa para la colisión precisa
 int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 
-/* --- SISTEMA DE VACAS --- */
-void inicializarVacas(); // Sin argumentos
-void actualizarVacas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
-void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto);
-void golpearVaca(Jugador *j);
-
 /* --- SISTEMA DE ÁRBOLES --- */
 void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 void dibujarArboles(HDC hdc, Camera cam, int ancho, int alto, int mapaId);
 void talarArbol(Jugador *j); 
-void actualizarTiburones(Jugador *j);
+
 // Inicializa las minas en el mapa
 void inicializarMinas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 
@@ -89,7 +83,6 @@ void dibujarInterfazSeleccion(HDC hdc); // La función del cuadro verde
 // Inicialización de islas con parámetro de mapa
 void inicializarIslas(int mapaId);
 // Prototipos de Funciones de Sistema
-int buscarVacaCercana(float x, float y, float rango);
 int buscarArbolCercano(float x, float y, float rango);
 void inicializarRecursosEstaticos(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 int buscarMinaCercana(float x, float y, float rango);
