@@ -49,12 +49,12 @@ void actualizarCamara(Camera *camara, Jugador jugador);
 // --- SISTEMA RTS ---
 void seleccionarUnidades(int mouseX, int mouseY, Camera cam);
 void dibujarEstablo(HDC hdc, Camera cam);
-void inicializarUnidades();
-void spawnearEscuadron(int tipo, int cantidad, int x, int y); // Ahora recibe CANTIDAD
+
+
 void dibujarUnidades(HDC hdc, Camera cam);
 
 // Control
-void ordenarUnidad(int mouseX, int mouseY, Camera cam);
+
 
 /* --- DIBUJADO PRINCIPAL (Partida) --- */
 void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda, int mapaId);
@@ -89,10 +89,10 @@ int buscarMinaCercana(float x, float y, float rango);
 void actualizarRegeneracionRecursos();
 void crearChispaBlanca(float x, float y);
 void actualizarParticulas();
-void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j);
-void actualizarAnimacionUnidad(Unidad *u, float dx, float dy);
-void dibujarUnidades(HDC hdc, Camera cam);
-void darOrdenMovimiento(Unidad unidades[], int max, int clickX, int clickY);
+
+
+
+
 
 // Al final del archivo, antes del #endif
 void dibujarMina(HDC hdc, Camera cam);
