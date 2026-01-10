@@ -8,7 +8,7 @@
 /* --- LÓGICA DEL JUEGO (Setup y Física) --- */
 void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId);
 void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId);
-void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy);
+
 void dibujarMiniMapa(HDC hdc, Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int anchoPantalla, int altoPantalla);
 
 // IMPORTANTE: EsSuelo ahora recibe el mapa para la colisión precisa
@@ -34,7 +34,7 @@ void agregarTextoFlotante(int x, int y, char* contenido, COLORREF color);
 void actualizarYDibujarTextos(HDC hdc, Camera cam);
 void actualizarLogicaSistema(Jugador *j);
 void crearTextoFlotante(int x, int y, const char* formato, int cantidad, COLORREF color);
-void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
+
 
 // --- NUEVO: Función auxiliar para colisiones de caja (si la necesitas pública) ---
 int VerificarColisionCaja(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
@@ -45,7 +45,7 @@ void abrirTesoro(Jugador *j);
 void dibujarTesoros(HDC hdc, Camera cam, int ancho, int alto);
 
 /* --- CÁMARA --- */
-void actualizarCamara(Camera *camara, Jugador jugador);
+
 //
 
 // --- SISTEMA RTS ---

@@ -9,7 +9,6 @@ SRC = src/main.c \
       src/jugador/jugador.c \
       src/mundo/mapa.c \
       src/mundo/fauna.c \
-      src/mundo/terreno.c \
       src/mundo/naturaleza.c \
       src/unidades/unidades.c \
       src/sistema/tienda.c

@@ -5,6 +5,10 @@
 #include "../global.h"
 #include <windows.h>
 
+// --- NUEVAS FUNCIONES DE MOVIMIENTO (Traídas de mapa.c) ---
+void moverJugador(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy);
+void actualizarCamara(Camera *camara, Jugador j);
+void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 // Lógica
 void dibujarBarraVidaLocal(HDC hdc, int x, int y, int vidaActual, int vidaMax, int ancho);
 int obtenerCapacidadMaxima(int nivel);

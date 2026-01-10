@@ -1,6 +1,8 @@
 /* src/jugador/jugador.c */
 #include "jugador.h"
 #include "../recursos/recursos.h"
+#include "../mundo/mapa.h" // <--- AGREGAR ESTO (Para colisiones)
+#include <math.h>          // <--- AGREGAR ESTO (Para distancias)
 #include <stdio.h>
 
 // =========================================================
@@ -251,4 +253,88 @@ void dibujarJugador(HDC hdc, Jugador *jugador, Camera cam)
         }
     }
     DibujarImagen(hdc, spriteFinal, cx, cy, tam, tam);
+}
+
+// =========================================================
+// MOVIMIENTO Y CÁMARA (Migrado de mapa.c)
+// =========================================================
+
+void moverJugador(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy) {
+    // 1. Orientación
+    if (dy > 0) j->direccion = 0; // Abajo
+    else if (dy < 0) j->direccion = 1; // Arriba
+    else if (dx < 0) j->direccion = 2; // Izquierda
+    else if (dx > 0) j->direccion = 3; // Derecha
+
+    // 2. Animación
+    if (dx != 0 || dy != 0) {
+        j->pasoAnimacion++;
+        int estado = (j->pasoAnimacion / 4) % 4; // Velocidad de animación
+        j->frameAnim = (estado == 0) ? 1 : ((estado == 2) ? 2 : 0);
+    } else {
+        j->frameAnim = 1; // Quieto
+    }
+
+    // 3. Colisiones
+    int centroX = 1600; int centroY = 1600; int radioSeguro = 900; // Limites (ajusta según tu mapa)
+
+    // --- EJE X ---
+    int futuroX = j->x + (dx * j->velocidad);
+    // Usamos EsSuelo de mapa.h para verificar
+    int esTierraX = EsSuelo(futuroX + 16, j->y + 24, mapa); 
+    
+    BOOL puedeX = (j->estadoBarco == 0 && esTierraX) || (j->estadoBarco > 0 && !esTierraX);
+    
+    // Límite Bote
+    if (puedeX && j->estadoBarco == 1) {
+        if (sqrt(pow(futuroX - centroX, 2) + pow(j->y - centroY, 2)) > radioSeguro) puedeX = FALSE;
+    }
+    if (puedeX) j->x = futuroX;
+
+    // --- EJE Y ---
+    int futuroY = j->y + (dy * j->velocidad);
+    int esTierraY = EsSuelo(j->x + 16, futuroY + 24, mapa);
+    
+    BOOL puedeY = (j->estadoBarco == 0 && esTierraY) || (j->estadoBarco > 0 && !esTierraY);
+    
+    if (puedeY && j->estadoBarco == 1) {
+        if (sqrt(pow(j->x - centroX, 2) + pow(futuroY - centroY, 2)) > radioSeguro) puedeY = FALSE;
+    }
+    if (puedeY) j->y = futuroY;
+}
+
+void actualizarCamara(Camera *cam, Jugador j) {
+    int anchoPantalla = GetSystemMetrics(SM_CXSCREEN);
+    int altoPantalla = GetSystemMetrics(SM_CYSCREEN);
+    
+    // Centrar
+    cam->x = j.x - (anchoPantalla / 2 / cam->zoom);
+    cam->y = j.y - (altoPantalla / 2 / cam->zoom);
+    
+    // Límites (0,0)
+    if (cam->x < 0) cam->x = 0;
+    if (cam->y < 0) cam->y = 0;
+}
+
+void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    // Coordenadas del muelle (ajusta a las de tu mapa real)
+    int muelleX = 2050; 
+    int muelleY = 1600;
+
+    // 1. Bajarse
+    if (j->estadoBarco > 0) {
+        float dist = sqrt(pow(j->x - muelleX, 2) + pow(j->y - muelleY, 2));
+        if (EsSuelo(j->x, j->y, mapa) || dist < 150) {
+            j->estadoBarco = 0;
+            if (dist < 150) { j->x = muelleX + 20; j->y = muelleY + 20; }
+        }
+        return;
+    }
+
+    // 2. Subirse
+    float dist = sqrt(pow(j->x - muelleX, 2) + pow(j->y - muelleY, 2));
+    if (dist < 150) {
+        if (j->tieneBotePesca) { j->estadoBarco = 1; j->x += 60; }
+        else if (j->cantBarcosGuerra > 0) { j->estadoBarco = 2; j->x += 60; }
+    }
 }
