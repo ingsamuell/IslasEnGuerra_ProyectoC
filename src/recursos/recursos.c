@@ -68,6 +68,15 @@ HBITMAP hBmpEstablo = NULL;
 HBITMAP hBmpHierroPicar = NULL;
 HBITMAP hBmpPiedraPicar = NULL;
 
+// --- DEFINICIÓN DE EDIFICIOS ---
+HBITMAP hBmpEdificioPeq[3] = {NULL, NULL, NULL};
+HBITMAP hBmpEdificioPeqEnemigo[3] = {NULL, NULL, NULL};
+HBITMAP hBmpEdificioMed[3] = {NULL, NULL, NULL};
+HBITMAP hBmpEdificioMedEnemigo[3] = {NULL, NULL, NULL};
+HBITMAP hBmpEdificioGrande[3] = {NULL, NULL, NULL};
+HBITMAP hBmpEdificioGrandeEnemigo[3] = {NULL, NULL, NULL};
+HBITMAP hBmpBanderaEnemiga = NULL;
+
 // Mapas Adicionales
 HBITMAP hBmpIslaGrandeMapa2 = NULL;
 HBITMAP hBmpIslaSec1Mapa2 = NULL;
@@ -179,6 +188,36 @@ void CargarRecursos()
     // 3. MUNDO Y OBJETOS
     hBmpArbolChico = CargarImagen("assets/mundo/Arbol_islaUno.bmp");
     hBmpArbolGrande = CargarImagen("assets/mundo/Arbolgrande_islaUno.bmp");
+
+    // --- CARGAR EDIFICIOS (PEQUEÑOS) ---
+    hBmpEdificioPeq[0] = CargarImagen("./assets/edificios/EdificioPeq_mapa1.bmp");
+    hBmpEdificioPeq[1] = CargarImagen("./assets/edificios/EdificioPeq_mapa2.bmp");
+    hBmpEdificioPeq[2] = CargarImagen("./assets/edificios/EdificioPeq_mapa3.bmp");
+
+    hBmpEdificioPeqEnemigo[0] = CargarImagen("./assets/edificios/EdificioPeq_enemigo_mapa1.bmp");
+    hBmpEdificioPeqEnemigo[1] = CargarImagen("./assets/edificios/EdificioPeq_enemigo_mapa2.bmp");
+    hBmpEdificioPeqEnemigo[2] = CargarImagen("./assets/edificios/EdificioPeq_enemigo_mapa3.bmp");
+
+    // --- CARGAR EDIFICIOS (MEDIANOS) ---
+    hBmpEdificioMed[0] = CargarImagen("./assets/edificios/EdificioMed_mapa1.bmp");
+    hBmpEdificioMed[1] = CargarImagen("./assets/edificios/EdificioMed_mapa2.bmp");
+    hBmpEdificioMed[2] = CargarImagen("./assets/edificios/EdificioMed_mapa3.bmp");
+
+    hBmpEdificioMedEnemigo[0] = CargarImagen("./assets/edificios/EdificioMed_enemigo_mapa1.bmp");
+    hBmpEdificioMedEnemigo[1] = CargarImagen("./assets/edificios/EdificioMed_enemigo_mapa2.bmp");
+    hBmpEdificioMedEnemigo[2] = CargarImagen("./assets/edificios/EdificioMed_enemigo_mapa3.bmp");
+
+    // --- CARGAR EDIFICIOS (GRANDES) ---
+    hBmpEdificioGrande[0] = CargarImagen("./assets/edificios/EdificioGrande_mapa1.bmp");
+    hBmpEdificioGrande[1] = CargarImagen("./assets/edificios/EdificioGrande_mapa2.bmp");
+    hBmpEdificioGrande[2] = CargarImagen("./assets/edificios/EdificioGrande_mapa3.bmp");
+
+    hBmpEdificioGrandeEnemigo[0] = CargarImagen("./assets/edificios/EdificioGrande_enemigo_mapa1.bmp");
+    hBmpEdificioGrandeEnemigo[1] = CargarImagen("./assets/edificios/EdificioGrande_enemigo_mapa2.bmp");
+    hBmpEdificioGrandeEnemigo[2] = CargarImagen("./assets/edificios/EdificioGrande_enemigo_mapa3.bmp");
+
+    // --- CARGAR BANDERA ---
+    hBmpBanderaEnemiga = CargarImagen("./assets/edificios/Bandera_islaEnemiga.bmp");
 
     // Vacas
     hBmpVaca[0] = CargarImagen("assets/animales/vaca-0.bmp");

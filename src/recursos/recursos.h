@@ -140,6 +140,18 @@ extern HBITMAP hBmpCuadroMapa2Sel;
 extern HBITMAP hBmpCuadroMapa3Normal;
 extern HBITMAP hBmpCuadroMapa3Sel;
 
+// --- EDIFICIOS (Arrays de 3 frames: mapa1, mapa2, mapa3) ---
+extern HBITMAP hBmpEdificioPeq[3];          // Jugador Pequeño
+extern HBITMAP hBmpEdificioPeqEnemigo[3];   // Enemigo Pequeño
+
+extern HBITMAP hBmpEdificioMed[3];          // Jugador Mediano
+extern HBITMAP hBmpEdificioMedEnemigo[3];   // Enemigo Mediano
+
+extern HBITMAP hBmpEdificioGrande[3];       // Jugador Grande
+extern HBITMAP hBmpEdificioGrandeEnemigo[3];// Enemigo Grande
+
+extern HBITMAP hBmpBanderaEnemiga;          // Bandera
+
 // --- 7. ARRAYS GLOBALES (Objetos del juego) ---
 extern Arbol arboles[MAX_ARBOLES];
 extern Mina minas[MAX_MINAS];
