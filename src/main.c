@@ -9,6 +9,7 @@
 #include "recursos/recursos.h"
 #include "jugador/jugador.h"
 #include "unidades/unidades.h"
+#include "sistema/tienda.h"
 
 /* ========== VARIABLES GLOBALES ========== */
 char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
