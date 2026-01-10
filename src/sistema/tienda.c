@@ -3,6 +3,7 @@
 #include "../unidades/unidades.h" // Necesario para spawnear soldados comprados
 #include "../jugador/jugador.h"
 #include "../mundo/mapa.h"
+#include "../mundo/edificios.h" 
 #include <stdio.h>
 
 // --- LÓGICA DE DIBUJO DEL EDIFICIO (MAPA) ---
@@ -38,18 +39,15 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
     int ty = 80;
 
     // --- CLIC EN PESTAÑAS ---
-    if (my >= ty && my <= ty + 40)
+if (my >= ty && my <= ty + 40)
     {
-        if (mx >= tx && mx < tx + 85)
-            j->modoTienda = 0;
-        else if (mx >= tx + 85 && mx < tx + 170)
-            j->modoTienda = 1;
-        else if (mx >= tx + 170 && mx < tx + 255)
-            j->modoTienda = 2;
-        else if (mx >= tx + 255 && mx < tx + 340)
-            j->modoTienda = 3;
+        int tabAncho = 68; // 340 / 5
+        if (mx >= tx && mx < tx + tabAncho) j->modoTienda = 0;
+        else if (mx >= tx + tabAncho && mx < tx + (tabAncho*2)) j->modoTienda = 1;
+        else if (mx >= tx + (tabAncho*2) && mx < tx + (tabAncho*3)) j->modoTienda = 2;
+        else if (mx >= tx + (tabAncho*3) && mx < tx + (tabAncho*4)) j->modoTienda = 3;
+        else if (mx >= tx + (tabAncho*4) && mx < tx + anchoW) j->modoTienda = 4;
 
-        PlaySound("SystemSelect", NULL, SND_ASYNC);
         InvalidateRect(hwnd, NULL, FALSE);
         return;
     }
@@ -372,6 +370,43 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
             }
         }
     }
+    // =========================================================
+    // TAB 4: EDIFICIOS (NUEVO)
+    // =========================================================
+    else if (j->modoTienda == 4)
+    {
+        // Precios (Deben coincidir visualmente con la lógica de edificios.c)
+        int costos[] = {100, 300, 600}; // Peq, Med, Gran
+
+        for (int i = 0; i < 3; i++) // 3 tipos de edificios
+        {
+            int iy = startY + (i * 80);
+            if (my >= iy && my <= iy + 60 && mx >= tx && mx <= tx + 300)
+            {
+                // Validación básica de Dinero (Solo para avisar, el cobro real es al construir)
+                if (j->oro < costos[i]) {
+                    sprintf(msg, "Faltan %d Oro", costos[i] - j->oro);
+                    crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
+
+                    return;
+                }
+                // Validación de Límite (Opcional, ya se valida al colocar, pero queda bien aquí)
+                if (misEdificios[i].activo) {
+                    crearTextoFlotante(msgX, msgY, "Ya construido!", 0, RGB(255, 100, 100));
+                    return;
+                }
+                // ¡ACTIVAR MODO FANTASMA!
+                j->edificioSeleccionado = i + 1; // 1=Peq, 2=Med, 3=Grande
+                j->tiendaAbierta = 0; // Cerramos la tienda automáticamente
+                
+                crearTextoFlotante(msgX, msgY, "Modo Construccion", 0, RGB(0, 255, 0));
+                
+                // Forzamos repintado para que desaparezca la tienda y aparezca el fantasma
+                InvalidateRect(hwnd, NULL, FALSE);
+            }
+        }
+    }	
+    
 }
 
 // --- LÓGICA DE DIBUJO DE LA UI (PANEL) ---
@@ -396,25 +431,24 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
     DeleteObject(borde);
 
     // 2. PESTAÑAS (Categorías)
-    char *tabs[] = {"HERRAM.", "TROPAS", "LOGIST.", "VENDER"};
-    int tabW = anchoW / 4;
+	char *tabs[] = {"HERR.", "TROP.", "LOGIST", "VEND.", "EDIF."}; // Nombres cortos
+    int tabW = anchoW / 5;
 
-    SetBkMode(hdc, TRANSPARENT);
-    for (int i = 0; i < 4; i++)
+   SetBkMode(hdc, TRANSPARENT);
+    for (int i = 0; i < 5; i++)
     {
         COLORREF colorT = (j->modoTienda == i) ? RGB(255, 215, 0) : RGB(100, 100, 100);
         SetTextColor(hdc, colorT);
+        // Ajuste fino de X para centrar texto
         TextOut(hdc, tx + 5 + (i * tabW), ty + 10, tabs[i], strlen(tabs[i]));
 
-        // Línea debajo de la pestaña activa
         if (j->modoTienda == i)
         {
             HPEN penLine = CreatePen(PS_SOLID, 2, RGB(255, 215, 0));
             HGDIOBJ old = SelectObject(hdc, penLine);
             MoveToEx(hdc, tx + (i * tabW), ty + 30, NULL);
-            LineTo(hdc, tx + ((i + 1) * tabW), ty + 30); // Sin NULL
-            SelectObject(hdc, old);
-            DeleteObject(penLine);
+            LineTo(hdc, tx + ((i + 1) * tabW), ty + 30);
+            SelectObject(hdc, old); DeleteObject(penLine);
         }
     }
 
@@ -589,5 +623,50 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
             TextOut(hdc, startX + 40, iy + 15, texto, strlen(texto));
             SetTextColor(hdc, RGB(255, 255, 255));
         }
+    }
+    // =========================================================
+    // TAB 4: EDIFICIOS (VISUAL)
+    // =========================================================
+    else if (j->modoTienda == 4)
+    {
+        struct EdifUI {
+            char *nombre;
+            HBITMAP sprite;
+            char *costo;
+            int tipoID;
+        };
+        
+        // Usamos el sprite [0] de cada array para el icono
+        struct EdifUI lista[] = {
+            {"Choza", hBmpEdificioPeq[0], "100 Oro", 0},
+            {"Torre", hBmpEdificioMed[0], "300 Oro", 1},
+            {"Fortaleza", hBmpEdificioGrande[0], "600 Oro", 2}
+        };
+
+        for (int i = 0; i < 3; i++)
+        {
+            int iy = startY + (i * 80);
+            
+            // Icono del edificio (usamos el sprite del juego)
+            if (lista[i].sprite)
+                DibujarImagen(hdc, lista[i].sprite, startX, iy, 48, 48);
+            
+            // Nombre
+            TextOut(hdc, startX + 60, iy, lista[i].nombre, strlen(lista[i].nombre));
+            
+            // Estado (Comprado o Precio)
+            if (misEdificios[lista[i].tipoID].activo) {
+                SetTextColor(hdc, RGB(100, 255, 100));
+                TextOut(hdc, startX + 60, iy + 20, "CONSTRUIDO", 10);
+            } else {
+                SetTextColor(hdc, RGB(255, 215, 0));
+                TextOut(hdc, startX + 60, iy + 20, lista[i].costo, strlen(lista[i].costo));
+            }
+            SetTextColor(hdc, RGB(255, 255, 255));
+        }
+        
+        // Instrucción
+        SetTextColor(hdc, RGB(200, 200, 200));
+        TextOut(hdc, startX, startY + 350, "Click para construir", 20);
     }
 }

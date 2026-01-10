@@ -15,6 +15,9 @@ int obtenerCapacidadMaxima(int nivel);
 void ganarExperiencia(Jugador *j, int cantidad);
 void intentarCurar(Jugador *j);
 void alternarInventario(Jugador *j);
+void procesarClickMochila(int x, int y, Jugador *j, HWND hwnd);
+void alternarInventario(Jugador *j);
+void intentarCurar(Jugador *j);
 
 // --- CORRECCIÓN AQUÍ: Volvemos a la firma que mapa.c necesita ---
 void agregarRecurso(int *recurso, int cantidad, int nivelMochila);

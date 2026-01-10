@@ -43,88 +43,100 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         return 1;
 
     case WM_LBUTTONDOWN:
+{
+    int mx = LOWORD(lParam);
+    int my = HIWORD(lParam);
+
+    if (estadoJuego.estadoActual == ESTADO_PARTIDA)
     {
-        int mx = LOWORD(lParam);
-        int my = HIWORD(lParam);
+        // --- 1. PRIORIDAD: CLIC EN LA INTERFAZ (TIENDA / MOCHILA) ---
+        BOOL clicEnUI = FALSE;
 
-        if (estadoJuego.estadoActual == ESTADO_PARTIDA)
+        if (miJugador.tiendaAbierta)
         {
-            // --- 1. DETECTAR SI EL CLIC ES EN LA INTERFAZ DE LA TIENDA ---
-            BOOL clicEnTienda = FALSE;
-            
-            if (miJugador.tiendaAbierta)
+            RECT rcClient; GetClientRect(hwnd, &rcClient);
+            int anchoW = 340;
+            int tx = rcClient.right - anchoW - 20;
+            int ty = 80;
+
+            if (mx >= tx && mx <= tx + anchoW && my >= ty && my <= ty + 480)
             {
-                // Calculamos el área de la tienda
-                RECT rcClient; GetClientRect(hwnd, &rcClient);
-                int anchoW = 340;
-                int tx = rcClient.right - anchoW - 20;
-                int ty = 80;
-                
-                // Si el clic está DENTRO del rectángulo de la tienda
-                if (mx >= tx && mx <= tx + anchoW && my >= ty && my <= ty + 480)
-                {
-                    clicEnTienda = TRUE;
-                    procesarClickMochilaTienda(mx, my, FALSE, &miJugador, hwnd);
-                    // Importante: Al ser clic en UI, no hacemos nada más en el mapa
-                }
+                clicEnUI = TRUE;
+                procesarClickMochilaTienda(mx, my, FALSE, &miJugador, hwnd);
             }
+        }
 
-            // Si el clic NO fue en la tienda, interactuamos con el mundo
-            if (!clicEnTienda)
+
+        // --- 2. INTERACCIÓN CON EL MUNDO (Solo si no clicamos en la UI) ---
+        if (!clicEnUI)
+        {
+            // A) MODO CONSTRUCCIÓN
+            if (miJugador.edificioSeleccionado > 0) 
             {
-                // --- 2. MODO CONSTRUCCIÓN (NUEVO) ---
-                // Si tenemos un edificio seleccionado (Fantasma verde), intentamos colocarlo
-                if (miJugador.edificioSeleccionado > 0) 
-                {
-                    intentarColocarEdificio(&miJugador, mx, my, estadoJuego.mapaSeleccionado);
-                }
-                // --- 3. SELECCIÓN DE UNIDADES (RTS) ---
-                // Si no estamos construyendo, entonces seleccionamos tropas
-                else 
-                {
-                    seleccionando = TRUE;
-                    inicioSel.x = mx;
-                    inicioSel.y = my;
-                    finSel.x = mx;
-                    finSel.y = my;
+                // Convertir coordenadas de PANTALLA a MUNDO
+                int mundoX = (int)((mx / miCamara.zoom) + miCamara.x);
+                int mundoY = (int)((my / miCamara.zoom) + miCamara.y);
 
-                    // Si no usas SHIFT, limpiar selección previa
-                    if (!(wParam & MK_SHIFT))
-                    {
-                        for (int i = 0; i < MAX_UNIDADES; i++) unidades[i].seleccionado = 0;
-                    }
+                // Intentar construir (Pasamos mapaMundo que es la matriz char[200][200])
+                intentarColocarEdificio(&miJugador, mundoX, mundoY, mapaMundo);
+            }
+            // B) SELECCIÓN DE UNIDADES (RTS)
+            else 
+            {
+                seleccionando = TRUE;
+                inicioSel.x = mx;
+                inicioSel.y = my;
+                finSel.x = mx;
+                finSel.y = my;
+
+                // Si no usas SHIFT, limpiar selección previa de tropas
+                if (!(wParam & MK_SHIFT))
+                {
+                    for (int i = 0; i < MAX_UNIDADES; i++) unidades[i].seleccionado = 0;
                 }
             }
         }
-        // --- OTROS ESTADOS DEL JUEGO ---
-        else if (estadoJuego.estadoActual == ESTADO_MENU) 
-            procesarClickMenu(mx, my, hwnd, &estadoJuego);
-        else if (estadoJuego.estadoActual == ESTADO_SELECCION_MAPA) 
-            procesarClickSeleccionMapa(mx, my, hwnd, &estadoJuego);
-
-        InvalidateRect(hwnd, NULL, FALSE);
-        return 0;
     }
+    // --- OTROS ESTADOS DEL JUEGO ---
+    else if (estadoJuego.estadoActual == ESTADO_MENU) 
+    {
+        procesarClickMenu(mx, my, hwnd, &estadoJuego);
+    }
+    else if (estadoJuego.estadoActual == ESTADO_SELECCION_MAPA) 
+    {
+        procesarClickSeleccionMapa(mx, my, hwnd, &estadoJuego);
+    }
+
+    InvalidateRect(hwnd, NULL, FALSE);
+    return 0;
+}
 
     case WM_MOUSEMOVE:
-    {
-        // 1. Guardar posición del mouse para la UI global (tienda, menús)
-        estadoJuego.puntoMouse.x = LOWORD(lParam);
-        estadoJuego.puntoMouse.y = HIWORD(lParam);
+{
+    // 1. Guardar posición global del mouse
+    estadoJuego.puntoMouse.x = LOWORD(lParam);
+    estadoJuego.puntoMouse.y = HIWORD(lParam);
 
-        // 2. Si estamos arrastrando el cuadro de selección (RTS)
-        if (estadoJuego.estadoActual == ESTADO_PARTIDA && seleccionando)
+    // 2. Si estamos arrastrando el cuadro de selección (RTS)
+    if (estadoJuego.estadoActual == ESTADO_PARTIDA)
+    {
+        if (seleccionando)
         {
-            // Actualizamos la esquina final del cuadro
             finSel.x = LOWORD(lParam);
             finSel.y = HIWORD(lParam);
-
-            // ¡IMPORTANTE! Forzamos a Windows a redibujar la pantalla
-            // Si falta esto, el cuadro no se ve hasta que sueltas el click
+            // TRUE en el tercer parámetro para un redibujado más agresivo del cuadro
             InvalidateRect(hwnd, NULL, FALSE);
         }
-        break;
+        
+        // 3. Si tenemos un edificio seleccionado para construir
+        // Necesitamos redibujar para que el "fantasma" siga al mouse
+        if (miJugador.edificioSeleccionado > 0) 
+        {
+            InvalidateRect(hwnd, NULL, FALSE);
+        }
     }
+    break;
+}
 
     case WM_LBUTTONUP:
     {
@@ -147,7 +159,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         }
         return 0;
     }
-
+    
+   
     case WM_RBUTTONDOWN:
     {
         if (estadoJuego.estadoActual == ESTADO_PARTIDA)
@@ -238,7 +251,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 SelectObject(hdcMem, hOldPen);
                 DeleteObject(hPenSel);
             }
+            
+			int mundoMouseX = (int)(miCamara.x + (estadoJuego.puntoMouse.x / miCamara.zoom));
+int mundoMouseY = (int)(miCamara.y + (estadoJuego.puntoMouse.y / miCamara.zoom));
 
+if (miJugador.edificioSeleccionado > 0) {
+    // Pasamos &miCamara al final como pide tu edificios.c
+    dibujarFantasmaConstruccion(hdcMem, &miJugador, mundoMouseX, mundoMouseY, estadoJuego.mapaSeleccionado, &miCamara);
+}
+
+// 2. Corregir la llamada al MiniMapa (El orden exacto que pide tu .h)
+if (miJugador.tieneMapa) {
+    dibujarMiniMapa(hdcMem, &miJugador, mapaMundo, ancho, alto);
+}
             // --- CAPA 4: INTERFAZ DE USUARIO (HUD y Ventanas) ---
             dibujarHUD(hdcMem, &miJugador, ancho, alto);
 
@@ -246,6 +271,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             {
                 dibujarTiendaInteractiva(hdcMem, &miJugador, ancho, alto);
             }
+            
 
             // --- CAPA 5: EFECTOS Y TEXTOS (Top Layer) ---
             actualizarYDibujarParticulas(hdcMem, miCamara);
