@@ -17,6 +17,8 @@ Particula chispas[MAX_PARTICULAS];
 Isla misIslas[MAX_ISLAS];
 TextoFlotante listaTextos[MAX_TEXTOS] = {0};
 char neblina[MUNDO_FILAS][MUNDO_COLUMNAS];
+Edificio misEdificios[MAX_EDIFICIOS_JUGADOR];
+Edificio edificiosEnemigos[MAX_EDIFICIOS_ENEMIGOS];
 
 // Referencias externas necesarias
 extern Jugador miJugador;
@@ -209,10 +211,6 @@ int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
     return (mapa[fila][col] == 1);
 }
 
-
-
-
-
 // --- 3. TEXTOS Y EFECTOS ---
 
 void crearTextoFlotante(int x, int y, const char *contenido, int cantidad, COLORREF color)
@@ -346,6 +344,7 @@ void descubrirMapa(float centroX, float centroY, float radio) {
         }
     }
 }
+
 void actualizarLogicaSistema(Jugador *j)
 {
     // Pesca
@@ -427,16 +426,6 @@ void dibujarMuelleYFlota(HDC hdc, Camera cam, Jugador *j)
     }
 }
 
-// --- 7. LÓGICA DE TIENDA (RTS y OBJETOS) ---
-// En src/mapa/mapa.c
-
-
-
-/// --- DIBUJAR LA INTERFAZ DE LA TIENDA (TECLA T) ---
-
-
-
-
 // --- 8. INITIALIZACIÓN JUEGO ---
 
 void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId)
@@ -448,6 +437,7 @@ void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FIL
     inicializarMinas(mapa);
     inicializarTesoros();
     inicializarUnidades();
+    inicializarEdificios();
 
     jugador->x = 1600;
     jugador->y = 1600;
@@ -1115,5 +1105,32 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
              SetTextColor(hdc, listaTextos[i].color);
              TextOut(hdc, tx, ty, listaTextos[i].texto, strlen(listaTextos[i].texto));
         }
+    }
+}
+
+void inicializarEdificios() {
+    // 1. Limpiar edificios del jugador (todos inactivos al inicio)
+    for (int i = 0; i < MAX_EDIFICIOS_JUGADOR; i++) {
+        misEdificios[i].activo = 0;
+        misEdificios[i].enConstruccion = 0;
+        misEdificios[i].esEnemigo = 0;
+        misEdificios[i].tipo = i + 1; // 1, 2, 3 preasignados por slot
+    }
+
+    // 2. Configurar edificios enemigos (Ya activos en las islas)
+    // Coordenadas aproximadas de las 4 islas (¡AJUSTA ESTAS COORDENADAS A TUS ISLAS!)
+    // Isla 1: Arriba-Izquierda, Isla 2: Arriba-Derecha, etc.
+    float coordsX[4] = {400, 2600, 400, 2600}; 
+    float coordsY[4] = {400, 400, 2600, 2600};
+
+    for (int i = 0; i < MAX_EDIFICIOS_ENEMIGOS; i++) {
+        edificiosEnemigos[i].activo = 1;      // Ya existen
+        edificiosEnemigos[i].enConstruccion = 0; // Ya construidos
+        edificiosEnemigos[i].esEnemigo = 1;
+        edificiosEnemigos[i].tipo = 3;        // Digamos que son Grandes (Bases)
+        edificiosEnemigos[i].x = coordsX[i];
+        edificiosEnemigos[i].y = coordsY[i];
+        edificiosEnemigos[i].vidaMax = 2000;
+        edificiosEnemigos[i].vidaActual = 2000;
     }
 }

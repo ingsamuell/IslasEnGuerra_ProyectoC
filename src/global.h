@@ -141,6 +141,22 @@ typedef struct {
     int activa;     // 1 = Existe
 } Isla;
 
+typedef struct {
+    int activo;         // 1 = Existe, 0 = No construido
+    float x, y;         // Posición (esquina superior izquierda)
+    int tipo;           // 1=Pequeño, 2=Mediano, 3=Grande
+    int esEnemigo;      // 1 = Enemigo, 0 = Jugador
+    
+    // SISTEMA DE CONSTRUCCIÓN
+    int enConstruccion; // 1 = Se está construyendo (barra de progreso), 0 = Terminado
+    float tiempoProgreso; // Cuánto tiempo lleva construyéndose (segundos)
+    float tiempoTotal;    // Cuánto tarda en total (segundos)
+    
+    // ESTADÍSTICAS
+    int vidaMax;
+    int vidaActual;
+} Edificio;
+
 // --- ESTRUCTURA DEL JUGADOR ---
 typedef struct {
     float x, y;
@@ -191,6 +207,11 @@ typedef struct {
     int frameAnim;
     int pasoAnimacion;
     int frameDestello;
+
+    // --- MODO CONSTRUCCIÓN (NUEVO) ---
+    int edificioSeleccionado; // 0 = Nada, 1 = Peq, 2 = Med, 3 = Grande
+    int costoConstruccionActual; // Para recordar cuánto cobrar
+    // ---------------------------------
 
 } Jugador;
 

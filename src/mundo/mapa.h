@@ -5,6 +5,17 @@
 #include <wingdi.h>
 #include "../global.h"
 
+// Constantes de Límites
+#define MAX_EDIFICIOS_JUGADOR 3   // 1 de cada tipo
+#define MAX_EDIFICIOS_ENEMIGOS 4  // 1 por cada isla secundaria
+
+// Arrays Globales (Externos)
+extern Edificio misEdificios[MAX_EDIFICIOS_JUGADOR];
+extern Edificio edificiosEnemigos[MAX_EDIFICIOS_ENEMIGOS];
+
+// Prototipo para inicializar los edificios al arrancar
+void inicializarEdificios();
+
 /* --- LÓGICA DEL JUEGO (Setup y Física) --- */
 void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId);
 void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId);
