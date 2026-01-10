@@ -28,12 +28,25 @@ void agregarRecurso(int *recurso, int cantidad, int nivelMochila) {
 
 void ganarExperiencia(Jugador *j, int cantidad) {
     j->experiencia += cantidad;
-    if (j->experiencia >= j->experienciaSiguienteNivel) {
+
+    // Usamos un WHILE por si gana tanta XP que sube 2 niveles de golpe
+    while (j->experiencia >= j->experienciaSiguienteNivel) {
+        // 1. Restar la XP necesaria (Overflow: te quedas con lo que sobra)
+        j->experiencia -= j->experienciaSiguienteNivel;
+        
+        // 2. Subir Nivel
         j->nivel++;
-        j->experiencia = 0;
-        j->experienciaSiguienteNivel = (int)(j->experienciaSiguienteNivel * 1.5);
-        j->vidaMax += 20; 
+        
+        // 3. Calcular siguiente meta (Formula Lineal: Nivel * 100)
+        // Nvl 1->2 (100xp), Nvl 2->3 (200xp), Nvl 3->4 (300xp)...
+        j->experienciaSiguienteNivel = j->nivel * 100;
+        
+        // 4. Recompensas (Curar y aumentar vida max)
+        j->vidaMax += 10; 
         j->vidaActual = j->vidaMax;
+
+        // 5. Feedback Visual (Texto dorado)
+        crearTextoFlotante(j->x, j->y - 50, "¡SUBIENDO DE NIVEL!", 0, RGB(255, 215, 0));
     }
 }
 
@@ -171,25 +184,78 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
         TextOut(hdc, px + 20, py + alturaFondo - 25, tNivel, strlen(tNivel));
     }
 
-    // F. BARRA XP
+    // F. BARRA XP (CORREGIDO)
     if (hBmpBarraXPVacia && hBmpBarraXPLlena) {
-        BITMAP bm; GetObject(hBmpBarraXPVacia, sizeof(BITMAP), &bm);
-        int xpX = (ancho - bm.bmWidth) / 2;
-        int xpY = alto - bm.bmHeight - 20;
-        DibujarImagen(hdc, hBmpBarraXPVacia, xpX, xpY, bm.bmWidth, bm.bmHeight);
+        BITMAP bm; 
+        GetObject(hBmpBarraXPVacia, sizeof(BITMAP), &bm);
+        
+        // F. BARRA XP (DISEÑO POR CÓDIGO - SIN BMP)
+    
+    // 1. Configuración de dimensiones
+    int anchoBarra = 400; // Largo de la barra
+    int altoBarra = 18;   // Grosor de la barra
+    int xpX = (ancho - anchoBarra) / 2; // Centrado horizontal
+    int xpY = 10; // Pegado arriba
 
-        float pct = (float)jugador->experiencia / jugador->experienciaSiguienteNivel;
-        if (pct > 1) pct = 1;
-        int fillW = (int)(bm.bmWidth * pct);
-        if (fillW > 0) {
-            HDC hdcMem = CreateCompatibleDC(hdc);
-            HBITMAP hOld = (HBITMAP)SelectObject(hdcMem, hBmpBarraXPLlena);
-            TransparentBlt(hdc, xpX, xpY, fillW, bm.bmHeight, hdcMem, 0, 0, fillW, bm.bmHeight, RGB(255, 0, 255));
-            SelectObject(hdcMem, hOld); DeleteDC(hdcMem);
-        }
-        char tNivel[32]; sprintf(tNivel, "NVL %d", jugador->nivel);
-        SetTextColor(hdc, RGB(0, 255, 255));
-        TextOut(hdc, xpX - 60, xpY + 5, tNivel, strlen(tNivel));
+    // 2. Dibujar FONDO (Gris Oscuro)
+    RECT rFondo = {xpX, xpY, xpX + anchoBarra, xpY + altoBarra};
+    HBRUSH brFondo = CreateSolidBrush(RGB(40, 40, 40)); // Gris muy oscuro
+    FillRect(hdc, &rFondo, brFondo);
+    DeleteObject(brFondo);
+
+    // 3. Dibujar RELLENO (Cyan Brillante)
+    // Prevenimos división por cero
+    int metaXP = (jugador->experienciaSiguienteNivel > 0) ? jugador->experienciaSiguienteNivel : 100;
+    
+    float pct = (float)jugador->experiencia / metaXP;
+    if (pct > 1) pct = 1;
+    if (pct < 0) pct = 0;
+    
+    int fillW = (int)(anchoBarra * pct); // Ancho proporcional
+    
+    if (fillW > 0) {
+        RECT rRelleno = {xpX, xpY, xpX + fillW, xpY + altoBarra};
+        // Puedes cambiar este color RGB(0, 200, 255) a Amarillo o Verde si prefieres
+        HBRUSH brRelleno = CreateSolidBrush(RGB(0, 200, 255)); 
+        FillRect(hdc, &rRelleno, brRelleno);
+        DeleteObject(brRelleno);
+    }
+
+    // 4. Dibujar BORDE (Blanco)
+    HBRUSH brBorde = CreateSolidBrush(RGB(200, 200, 200));
+    FrameRect(hdc, &rFondo, brBorde);
+    DeleteObject(brBorde);
+
+    // 5. TEXTOS (Con sombra para que se lean bien)
+    SetBkMode(hdc, TRANSPARENT);
+    
+    // --- Texto "NIVEL X" a la izquierda ---
+    char tNivel[32]; 
+    sprintf(tNivel, "NVL %d", jugador->nivel);
+    
+    // Sombra negra (offset +1, +1)
+    SetTextColor(hdc, RGB(0,0,0));
+    TextOut(hdc, xpX - 65 + 1, xpY + 1 + 1, tNivel, strlen(tNivel));
+    // Texto real (Dorado)
+    SetTextColor(hdc, RGB(255, 215, 0)); 
+    TextOut(hdc, xpX - 65, xpY + 1, tNivel, strlen(tNivel));
+
+    // --- Texto "XX / 100" dentro de la barra ---
+    char tProgreso[32];
+    sprintf(tProgreso, "%d / %d", jugador->experiencia, metaXP);
+    
+    // Centrar texto matemáticamente
+    SIZE size;
+    GetTextExtentPoint32(hdc, tProgreso, strlen(tProgreso), &size);
+    int textX = xpX + (anchoBarra - size.cx) / 2;
+    int textY = xpY + (altoBarra - size.cy) / 2;
+
+    // Sombra negra
+    SetTextColor(hdc, RGB(0,0,0));
+    TextOut(hdc, textX + 1, textY + 1, tProgreso, strlen(tProgreso));
+    // Texto real (Blanco)
+    SetTextColor(hdc, RGB(255, 255, 255)); 
+    TextOut(hdc, textX, textY, tProgreso, strlen(tProgreso));
     }
 }
 

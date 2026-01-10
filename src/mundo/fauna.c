@@ -2,6 +2,7 @@
 #include "mapa.h"       // Para usar EsSuelo(), crearChispas(), crearTextoFlotante()
 #include "../recursos/recursos.h" // Para acceder a las imágenes (hBmpVaca, etc.)
 #include "../jugador/jugador.h"
+#include "../global.h"
 #include <math.h>
 #include <stdio.h>
 
@@ -71,26 +72,35 @@ void actualizarVacas() {
 void golpearVaca(Jugador *j) {
     int rango = 50;
     for (int i = 0; i < MAX_VACAS; i++) {
+        // Ignorar vacas inactivas o ya muertas
         if (!manada[i].activa || manada[i].estadoVida == 1) continue;
         
+        // Detección de golpe
         if (abs((j->x + 16) - (manada[i].x + 16)) < rango && 
             abs((j->y + 16) - (manada[i].y + 16)) < rango) {
             
             manada[i].vida--;
-            crearChispas(manada[i].x + 16, manada[i].y + 16, RGB(200, 0, 0));
+            crearChispas(manada[i].x + 16, manada[i].y + 16, RGB(200, 0, 0)); // Sangre
             
+            // --- AQUÍ OCURRE LA MUERTE ---
             if (manada[i].vida <= 0) {
-                manada[i].estadoVida = 1;
-                manada[i].tiempoMuerte = 300;
+                manada[i].estadoVida = 1; // Marcar como muerta
+                manada[i].tiempoMuerte = 300; // Tiempo para desaparecer
                 
+                // 1. Dar recursos (Comida)
                 int ant = j->comida;
-                agregarRecurso(&j->comida, 10, j->nivelMochila); // Ahora requiere incluir jugador.h o similar si no es via mapa
+                agregarRecurso(&j->comida, 10, j->nivelMochila);
                 int gan = j->comida - ant;
                 
                 if (gan > 0) crearTextoFlotante(manada[i].x, manada[i].y, "Carne", gan, RGB(255, 100, 100));
                 else crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
+
+                // 2. [NUEVO] Dar Experiencia
+                ganarExperiencia(j, XP_VACA); // +15 XP
+                crearTextoFlotante(manada[i].x, manada[i].y - 25, "+15 XP", 0, RGB(0, 255, 255)); // Texto Cyan
+                
             }
-            return;
+            return; // Solo golpear una vaca a la vez
         }
     }
 }

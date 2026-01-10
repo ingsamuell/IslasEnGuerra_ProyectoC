@@ -73,6 +73,18 @@
 #define CUEVA_Y 1250
 #define TIEMPO_RESPAWN_RECURSOS 1800  // 30 segundos si el juego corre a 60 FPS
 
+// --- SISTEMA DE EXPERIENCIA (NUEVO) ---
+#define XP_ARBOL      5
+#define XP_PIEDRA     10
+#define XP_HIERRO     15
+#define XP_RECOLECCION 2
+
+#define XP_VACA       15
+#define XP_TIBURON    40
+#define XP_ENEMIGO    60
+
+#define XP_BASE_NIVEL 100 // Formula: Nivel * 100
+
 // Vida inicial de los recursos
 #define VIDA_INICIAL_ARBOL 5
 #define VIDA_INICIAL_MINA 10

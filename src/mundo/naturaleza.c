@@ -1,7 +1,9 @@
 #include "naturaleza.h"
 #include "mapa.h"             // Para EsSuelo(), crearChispas(), crearTextoFlotante()
 #include "../recursos/recursos.h" // Para las imágenes (HBITMAPs)
-#include "../jugador/jugador.h"   // Para modificar el inventario del jugador
+#include "../jugador/jugador.h"
+#include "../mundo/mapa.h"
+#include "../global.h"   // Para modificar el inventario del jugador
 #include <math.h>
 #include <stdio.h>
 
@@ -85,6 +87,7 @@ void talarArbol(Jugador *j) {
             misArboles[i].vida--;
             crearChispas(misArboles[i].x + tam/2, misArboles[i].y + tam/2, RGB(139, 69, 19));
             
+            // --- AQUÍ EMPIEZA LA MAGIA CUANDO EL ÁRBOL CAE ---
             if (misArboles[i].vida <= 0) {
                 misArboles[i].activa = 0;
                 misArboles[i].timerRegeneracion = 0;
@@ -104,6 +107,14 @@ void talarArbol(Jugador *j) {
                 if (ganMad > 0) crearTextoFlotante(misArboles[i].x, misArboles[i].y, "Madera", ganMad, RGB(150, 75, 0));
                 if (ganHoj > 0) crearTextoFlotante(misArboles[i].x, misArboles[i].y - 20, "Hojas", ganHoj, RGB(34, 139, 34));
                 
+                // =========================================================
+                // FASE 5: GANAR EXPERIENCIA (NUEVO CÓDIGO)
+                // =========================================================
+                // La XP se gana incluso si la mochila está llena, porque el trabajo se hizo.
+                ganarExperiencia(j, XP_ARBOL); 
+                crearTextoFlotante(misArboles[i].x, misArboles[i].y - 40, "+5 XP", 0, RGB(0, 255, 255)); // Texto Cyan
+                // =========================================================
+
                 if (ganMad == 0 && ganHoj == 0) {
                     crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
                 }
@@ -180,28 +191,44 @@ void inicializarMinas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
 void picarMina(Jugador *j) {
     for (int i = 0; i < MAX_MINAS; i++) {
         if (!misMinas[i].activa) continue;
+        
+        // Detección de colisión (golpe)
         if (abs((j->x+16) - (misMinas[i].x+16)) < 40 && 
             abs((j->y+16) - (misMinas[i].y+16)) < 40) {
             
             misMinas[i].vida--;
             crearChispas(misMinas[i].x+16, misMinas[i].y+16, RGB(200,200,200));
             
+            // --- SI LA MINA SE ROMPE ---
             if (misMinas[i].vida <= 0) {
                 misMinas[i].activa = 0;
                 misMinas[i].timerRegeneracion = 0;
 
-                if (misMinas[i].tipo == 0) { // Piedra
+                // CASO 1: PIEDRA
+                if (misMinas[i].tipo == 0) { 
                     int ant = j->piedra;
                     agregarRecurso(&j->piedra, 5, j->nivelMochila);
                     int gan = j->piedra - ant;
+                    
                     if (gan > 0) crearTextoFlotante(misMinas[i].x, misMinas[i].y, "Piedra", gan, RGB(150, 150, 150));
                     else crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
-                } else { // Hierro
+
+                    // --- FASE 5: XP POR PIEDRA ---
+                    ganarExperiencia(j, XP_PIEDRA); 
+                    crearTextoFlotante(misMinas[i].x, misMinas[i].y - 25, "+10 XP", 0, RGB(0, 255, 255));
+                } 
+                // CASO 2: HIERRO
+                else { 
                     int ant = j->hierro;
                     agregarRecurso(&j->hierro, 3, j->nivelMochila);
                     int gan = j->hierro - ant;
+                    
                     if (gan > 0) crearTextoFlotante(misMinas[i].x, misMinas[i].y, "Hierro", gan, RGB(192, 192, 192));
                     else crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
+
+                    // --- FASE 5: XP POR HIERRO ---
+                    ganarExperiencia(j, XP_HIERRO); 
+                    crearTextoFlotante(misMinas[i].x, misMinas[i].y - 25, "+15 XP", 0, RGB(0, 255, 255));
                 }
             }
             return;

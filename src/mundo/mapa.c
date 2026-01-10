@@ -456,6 +456,7 @@ void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FIL
     jugador->vidaMax = 100;
     jugador->nivel = 1;
     jugador->experiencia = 0;
+    jugador->experienciaSiguienteNivel = 100;
 
     // Valores por defecto
     jugador->inventarioAbierto = 0;

@@ -61,7 +61,9 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
     float msgX = j->x;
     float msgY = j->y - 40;
 
-    // --- TAB 0: HERRAMIENTAS ---
+    // =========================================================
+    // TAB 0: HERRAMIENTAS
+    // =========================================================
     if (j->modoTienda == 0)
     {
         for (int i = 0; i < 4; i++)
@@ -69,99 +71,100 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
             int iy = startY + (i * 80);
             if (my >= iy && my <= iy + 60 && mx >= tx && mx <= tx + 300)
             {
-
-                // --- CORRECCIÓN 1: BLOQUEO POR NIVEL DE MOCHILA ---
-                // Si intenta comprar Espada (0), Pico (1) o Hacha (2) y no tiene Mochila Nvl 2...
-                if (i <= 2 && j->nivelMochila < 2)
+                // --- NUEVA REGLA: PRIMERO LA MOCHILA ---
+                // Bloqueo total si no tienes Mochila Nivel 2
+                if (j->nivelMochila < 2) 
                 {
-                    crearTextoFlotante(msgX, msgY, "Req. Mochila Nvl 2", 0, RGB(255, 50, 50));
-                    return; // Detener compra
+                    crearTextoFlotante(msgX, msgY, "Req. Mochila Nvl 2", 0, RGB(255, 50, 50)); 
+                    PlaySound("SystemHand", NULL, SND_ASYNC);
+                    return; // Detiene la función aquí, no compra nada.
                 }
-                // --------------------------------------------------
 
+                // --- BLOQUEOS POR NIVEL DE JUGADOR (PLAN DE ERAS) ---
+                int nivelReq = 1;
+                if (i == 0) nivelReq = 3; // Espada -> Nivel 3
+                if (i == 1) nivelReq = 2; // Pico -> Nivel 2
+                if (i == 2) nivelReq = 2; // Hacha -> Nivel 2
+                if (i == 3) nivelReq = 4; // Caña -> Nivel 4
+
+                if (j->nivel < nivelReq)
+                {
+                    sprintf(msg, "Req. Nivel %d", nivelReq);
+                    crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
+                    PlaySound("SystemHand", NULL, SND_ASYNC);
+                    return; 
+                }
+                
+                // --- PROCESO DE COMPRA ---
+                
                 // Item 0: Espada
                 if (i == 0)
                 {
-                    if (j->tieneEspada)
-                        return; // Ya la tiene
-                    if (j->oro < 50)
-                    {
+                    if (j->tieneEspada) return; 
+                    
+                    if (j->oro < 50) {
                         sprintf(msg, "Faltan %d Oro", 50 - j->oro);
                         crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
-                    }
-                    else
-                    {
+                    } else {
                         j->oro -= 50;
                         j->tieneEspada = TRUE;
                         ganarExperiencia(j, 10);
+                        crearTextoFlotante(msgX, msgY, "Espada Equipada!", 0, RGB(0, 255, 0));
                     }
                 }
                 // Item 1: Pico
                 else if (i == 1)
                 {
-                    if (j->tienePico)
-                        return;
-                    if (j->oro < 30)
-                    {
+                    if (j->tienePico) return;
+
+                    if (j->oro < 30) {
                         sprintf(msg, "Faltan %d Oro", 30 - j->oro);
                         crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
-                    }
-                    else
-                    {
+                    } else {
                         j->oro -= 30;
                         j->tienePico = TRUE;
                         ganarExperiencia(j, 10);
+                        crearTextoFlotante(msgX, msgY, "Pico Equipado!", 0, RGB(0, 255, 0));
                     }
                 }
                 // Item 2: Hacha
                 else if (i == 2)
                 {
-                    if (j->tieneHacha)
-                        return;
-                    if (j->oro < 20)
-                    {
+                    if (j->tieneHacha) return;
+
+                    if (j->oro < 20) {
                         sprintf(msg, "Faltan %d Oro", 20 - j->oro);
                         crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
-                    }
-                    else
-                    {
+                    } else {
                         j->oro -= 20;
                         j->tieneHacha = TRUE;
                         ganarExperiencia(j, 10);
+                        crearTextoFlotante(msgX, msgY, "Hacha Equipada!", 0, RGB(0, 255, 0));
                     }
                 }
-                // Item 3: Caña (También requiere Nvl 2)
+                // Item 3: Caña
                 else if (i == 3)
                 {
-                    if (j->tieneCana)
-                        return;
-                    // Check adicional específico para la caña si quieres, o dejar el global
-                    if (j->nivelMochila < 2)
-                    {
-                        crearTextoFlotante(msgX, msgY, "Req. Mochila Nvl 2", 0, RGB(255, 50, 50));
-                        return;
-                    }
+                    if (j->tieneCana) return;
 
                     BOOL falta = FALSE;
-                    if (j->madera < 10)
-                    {
+                    if (j->madera < 10) {
                         sprintf(msg, "Faltan %d Mad", 10 - j->madera);
                         crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
                         falta = TRUE;
                     }
-                    if (j->oro < 30)
-                    {
+                    if (j->oro < 30) {
                         sprintf(msg, "Faltan %d Oro", 30 - j->oro);
                         crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50));
                         falta = TRUE;
                     }
 
-                    if (!falta)
-                    {
+                    if (!falta) {
                         j->oro -= 30;
                         j->madera -= 10;
                         j->tieneCana = TRUE;
                         ganarExperiencia(j, 20);
+                        crearTextoFlotante(msgX, msgY, "Cana Equipada!", 0, RGB(0, 255, 0));
                     }
                 }
                 InvalidateRect(hwnd, NULL, FALSE);
@@ -169,7 +172,9 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
         }
     }
 
-    // --- TAB 1: TROPAS (Igual que antes) ---
+    // =========================================================
+    // TAB 1: TROPAS
+    // =========================================================
     else if (j->modoTienda == 1)
     {
         int cant = (esClickDerecho) ? 5 : 1;
@@ -178,24 +183,21 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
             int iy = startY + (i * 80);
             if (my >= iy && my <= iy + 60 && mx >= tx && mx <= tx + 300)
             {
-                // Soldado
+                // --- BLOQUEOS TROPAS ---
+                if (i == 0 && j->nivel < 3) {
+                    crearTextoFlotante(msgX, msgY, "Req. Nivel 3", 0, RGB(255, 50, 50));
+                    PlaySound("SystemHand", NULL, SND_ASYNC);
+                    return;
+                }
+
+                // Soldado (i=0)
                 if (i == 0)
                 {
                     BOOL falta = FALSE;
-                    if (j->hierro < 10 * cant)
-                    {
-                        sprintf(msg, "Faltan %d Hie", (10 * cant) - j->hierro);
-                        crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
-                        falta = TRUE;
-                    }
-                    if (j->oro < 40 * cant)
-                    {
-                        sprintf(msg, "Faltan %d Oro", (40 * cant) - j->oro);
-                        crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50));
-                        falta = TRUE;
-                    }
-                    if (!falta)
-                    {
+                    if (j->hierro < 10 * cant) { sprintf(msg, "Faltan %d Hie", (10 * cant) - j->hierro); crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+                    if (j->oro < 40 * cant) { sprintf(msg, "Faltan %d Oro", (40 * cant) - j->oro); crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+                    
+                    if (!falta) {
                         j->oro -= 40 * cant;
                         j->hierro -= 10 * cant;
                         j->cantSoldados += cant;
@@ -203,24 +205,14 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
                         ganarExperiencia(j, 10 * cant);
                     }
                 }
-                // Minero
+                // Minero (i=1)
                 else if (i == 1)
                 {
                     BOOL falta = FALSE;
-                    if (j->piedra < 5 * cant)
-                    {
-                        sprintf(msg, "Faltan %d Pie", (5 * cant) - j->piedra);
-                        crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
-                        falta = TRUE;
-                    }
-                    if (j->oro < 15 * cant)
-                    {
-                        sprintf(msg, "Faltan %d Oro", (15 * cant) - j->oro);
-                        crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50));
-                        falta = TRUE;
-                    }
-                    if (!falta)
-                    {
+                    if (j->piedra < 5 * cant) { sprintf(msg, "Faltan %d Pie", (5 * cant) - j->piedra); crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+                    if (j->oro < 15 * cant) { sprintf(msg, "Faltan %d Oro", (15 * cant) - j->oro); crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+                    
+                    if (!falta) {
                         j->oro -= 15 * cant;
                         j->piedra -= 5 * cant;
                         j->cantMineros += cant;
@@ -228,24 +220,14 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
                         ganarExperiencia(j, 5 * cant);
                     }
                 }
-                // Leñador
+                // Leñador (i=2)
                 else if (i == 2)
                 {
                     BOOL falta = FALSE;
-                    if (j->madera < 10 * cant)
-                    {
-                        sprintf(msg, "Faltan %d Mad", (10 * cant) - j->madera);
-                        crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
-                        falta = TRUE;
-                    }
-                    if (j->oro < 10 * cant)
-                    {
-                        sprintf(msg, "Faltan %d Oro", (10 * cant) - j->oro);
-                        crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50));
-                        falta = TRUE;
-                    }
-                    if (!falta)
-                    {
+                    if (j->madera < 10 * cant) { sprintf(msg, "Faltan %d Mad", (10 * cant) - j->madera); crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+                    if (j->oro < 10 * cant) { sprintf(msg, "Faltan %d Oro", (10 * cant) - j->oro); crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+                    
+                    if (!falta) {
                         j->oro -= 10 * cant;
                         j->madera -= 10 * cant;
                         j->cantLenadores += cant;
@@ -253,24 +235,14 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
                         ganarExperiencia(j, 5 * cant);
                     }
                 }
-                // Cazador
+                // Cazador (i=3)
                 else if (i == 3)
                 {
                     BOOL falta = FALSE;
-                    if (j->hierro < 3 * cant)
-                    {
-                        sprintf(msg, "Faltan %d Hie", (3 * cant) - j->hierro);
-                        crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
-                        falta = TRUE;
-                    }
-                    if (j->oro < 20 * cant)
-                    {
-                        sprintf(msg, "Faltan %d Oro", (20 * cant) - j->oro);
-                        crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50));
-                        falta = TRUE;
-                    }
-                    if (!falta)
-                    {
+                    if (j->hierro < 3 * cant) { sprintf(msg, "Faltan %d Hie", (3 * cant) - j->hierro); crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+                    if (j->oro < 20 * cant) { sprintf(msg, "Faltan %d Oro", (20 * cant) - j->oro); crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+                    
+                    if (!falta) {
                         j->oro -= 20 * cant;
                         j->hierro -= 3 * cant;
                         j->cantCazadores += cant;
@@ -283,139 +255,91 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
         }
     }
 
-    // --- TAB 2: LOGÍSTICA (Igual que antes) ---
+    // =========================================================
+    // TAB 2: LOGÍSTICA / MEJORAS
+    // =========================================================
     else if (j->modoTienda == 2)
     {
         if (my >= startY && my <= startY + 60)
-        { // Mochila 2
-            if (j->nivelMochila >= 2)
-                return;
+        { // Mochila 2 (Requiere Nivel 2)
+            if (j->nivel < 2) { crearTextoFlotante(msgX, msgY, "Req. Nivel 2", 0, RGB(255, 50, 50)); return; }
+            if (j->nivelMochila >= 2) return;
+
             BOOL falta = FALSE;
-            if (j->hojas < 20)
-            {
-                sprintf(msg, "Faltan %d Hojas", 20 - j->hojas);
-                crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
-                falta = TRUE;
-            }
-            if (j->oro < 99)
-            {
-                sprintf(msg, "Faltan %d Oro", 99 - j->oro);
-                crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50));
-                falta = TRUE;
-            }
-            if (!falta)
-            {
+            if (j->hojas < 20) { sprintf(msg, "Faltan %d Hojas", 20 - j->hojas); crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+            if (j->oro < 99) { sprintf(msg, "Faltan %d Oro", 99 - j->oro); crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+            
+            if (!falta) {
                 j->oro -= 99;
                 j->hojas -= 20;
                 j->nivelMochila = 2;
                 ganarExperiencia(j, 50);
-                MessageBox(hwnd, "Capacidad aumentada!", "Mejora", MB_OK);
+                MessageBox(hwnd, "Mochila Mejorada (Nvl 2)!", "Mejora", MB_OK);
             }
         }
         else if (my >= startY + 80 && my <= startY + 140)
-        { // Mochila 3
-            if (j->nivelMochila >= 3)
-                return;
-            if (j->nivelMochila < 2)
-            {
-                crearTextoFlotante(msgX, msgY, "Req. Mochila Nvl 2", 0, RGB(255, 50, 50));
-                return;
-            }
+        { // Mochila 3 (Requiere Nivel 4)
+            if (j->nivel < 4) { crearTextoFlotante(msgX, msgY, "Req. Nivel 4", 0, RGB(255, 50, 50)); return; }
+            if (j->nivelMochila >= 3) return;
+            
             BOOL falta = FALSE;
-            if (j->hierro < 50)
-            {
-                sprintf(msg, "Faltan %d Hie", 50 - j->hierro);
-                crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
-                falta = TRUE;
-            }
-            if (j->oro < 200)
-            {
-                sprintf(msg, "Faltan %d Oro", 200 - j->oro);
-                crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50));
-                falta = TRUE;
-            }
-            if (!falta)
-            {
+            if (j->hierro < 50) { sprintf(msg, "Faltan %d Hie", 50 - j->hierro); crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+            if (j->oro < 200) { sprintf(msg, "Faltan %d Oro", 200 - j->oro); crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+            
+            if (!falta) {
                 j->oro -= 200;
                 j->hierro -= 50;
                 j->nivelMochila = 3;
                 ganarExperiencia(j, 100);
+                MessageBox(hwnd, "Mochila MAXIMA (Nvl 3)!", "Mejora", MB_OK);
             }
         }
         else if (my >= startY + 160 && my <= startY + 220)
-        { // Galeon
-            if (j->cantBarcosGuerra >= 4)
-            {
-                crearTextoFlotante(msgX, msgY, "Flota Maxima", 0, RGB(255, 100, 100));
-                return;
-            }
-            if (j->nivelMochila < 2)
-            {
-                crearTextoFlotante(msgX, msgY, "Req. Mochila Nvl 2", 0, RGB(255, 50, 50));
-                return;
-            }
+        { // Barco de Guerra (Requiere Nivel 5)
+            if (j->nivel < 5) { crearTextoFlotante(msgX, msgY, "Req. Nivel 5", 0, RGB(255, 50, 50)); return; }
+            if (j->cantBarcosGuerra >= 4) { crearTextoFlotante(msgX, msgY, "Flota Maxima", 0, RGB(255, 100, 100)); return; }
+            
             BOOL falta = FALSE;
-            if (j->madera < 50)
-            {
-                sprintf(msg, "Faltan %d Mad", 50 - j->madera);
-                crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
-                falta = TRUE;
-            }
-            if (j->oro < 100)
-            {
-                sprintf(msg, "Faltan %d Oro", 100 - j->oro);
-                crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50));
-                falta = TRUE;
-            }
-            if (!falta)
-            {
+            if (j->madera < 50) { sprintf(msg, "Faltan %d Mad", 50 - j->madera); crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+            if (j->oro < 100) { sprintf(msg, "Faltan %d Oro", 100 - j->oro); crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+            
+            if (!falta) {
                 j->oro -= 100;
                 j->madera -= 50;
                 j->cantBarcosGuerra++;
                 ganarExperiencia(j, 50);
+                crearTextoFlotante(msgX, msgY, "Barco Comprado!", 0, RGB(0, 255, 255));
             }
         }
         else if (my >= startY + 240 && my <= startY + 300)
-        { // Bote
-            if (j->tieneBotePesca)
-                return;
-            if (j->nivelMochila < 2)
-            {
-                crearTextoFlotante(msgX, msgY, "Req. Mochila Nvl 2", 0, RGB(255, 50, 50));
-                return;
-            }
+        { // Bote de Pesca (Requiere Nivel 4)
+            if (j->nivel < 4) { crearTextoFlotante(msgX, msgY, "Req. Nivel 4", 0, RGB(255, 50, 50)); return; }
+            if (j->tieneBotePesca) return;
+            
             BOOL falta = FALSE;
-            if (j->madera < 30)
-            {
-                sprintf(msg, "Faltan %d Mad", 30 - j->madera);
-                crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
-                falta = TRUE;
-            }
-            if (j->oro < 50)
-            {
-                sprintf(msg, "Faltan %d Oro", 50 - j->oro);
-                crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50));
-                falta = TRUE;
-            }
-            if (!falta)
-            {
+            if (j->madera < 30) { sprintf(msg, "Faltan %d Mad", 30 - j->madera); crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+            if (j->oro < 50) { sprintf(msg, "Faltan %d Oro", 50 - j->oro); crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+            
+            if (!falta) {
                 j->oro -= 50;
                 j->madera -= 30;
                 j->tieneBotePesca = TRUE;
                 ganarExperiencia(j, 30);
+                crearTextoFlotante(msgX, msgY, "Bote Adquirido!", 0, RGB(0, 255, 255));
             }
         }
         InvalidateRect(hwnd, NULL, FALSE);
     }
 
-    // --- TAB 3: VENDER ---
+    // =========================================================
+    // TAB 3: VENDER
+    // =========================================================
     else if (j->modoTienda == 3)
     {
         int precios[] = {1, 2, 5, 1, 3};
         int *stocks[] = {&j->madera, &j->piedra, &j->hierro, &j->hojas, &j->comida};
 
-        // --- CORRECCIÓN 2: OBTENER EL LÍMITE REAL DE ORO ---
-        int maxOro = obtenerCapacidadMaxima(j->nivelMochila); //
+        int maxOro = obtenerCapacidadMaxima(j->nivelMochila);
 
         for (int i = 0; i < 5; i++)
         {
@@ -424,24 +348,18 @@ void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, 
             {
                 int cant = (esClickDerecho) ? 10 : 1;
 
-                // Primero verificamos si tienes el recurso para vender
                 if (*stocks[i] >= cant)
                 {
-
                     int ganancia = cant * precios[i];
 
-                    // --- VERIFICAR SI EL ORO CABE EN LA MOCHILA ---
                     if (j->oro + ganancia > maxOro)
                     {
-                        // Si se pasa, mostramos error
                         crearTextoFlotante(msgX, msgY, "Limite de Oro alcanzado!", 0, RGB(255, 50, 50));
                     }
                     else
                     {
-                        // Si cabe, hacemos la transacción
                         *stocks[i] -= cant;
-                        j->oro += ganancia; // Ahora es seguro sumar
-
+                        j->oro += ganancia; 
                         sprintf(msg, "+%d Oro", ganancia);
                         crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 215, 0));
                     }
