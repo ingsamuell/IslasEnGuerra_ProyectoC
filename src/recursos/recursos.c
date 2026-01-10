@@ -181,15 +181,15 @@ void CargarRecursos()
     hBmpArbolGrande = CargarImagen("assets/mundo/Arbolgrande_islaUno.bmp");
 
     // Vacas
-    hBmpVaca[0] = CargarImagen("assets/mundo/vaca_0.bmp");
-    hBmpVaca[1] = CargarImagen("assets/mundo/vaca-1.bmp");
-    hBmpVaca[2] = CargarImagen("assets/mundo/vaca-2.bmp");
-    hBmpVaca[3] = CargarImagen("assets/mundo/vaca-3.bmp");
-    hBmpVaca[4] = CargarImagen("assets/mundo/vaca-4.bmp");
-    hBmpVaca[5] = CargarImagen("assets/mundo/vaca-5.bmp");
-    hBmpVaca[6] = CargarImagen("assets/mundo/vaca-6.bmp");
-    hBmpVaca[7] = CargarImagen("assets/mundo/vaca-7.bmp");
-    hBmpVacaMuerta = CargarImagen("assets/mundo/vaca_muerta.bmp");
+    hBmpVaca[0] = CargarImagen("assets/animales/vaca-0.bmp");
+    hBmpVaca[1] = CargarImagen("assets/animales/vaca-1.bmp");
+    hBmpVaca[2] = CargarImagen("assets/animales/vaca-2.bmp");
+    hBmpVaca[3] = CargarImagen("assets/animales/vaca-3.bmp");
+    hBmpVaca[4] = CargarImagen("assets/animales/vaca-4.bmp");
+    hBmpVaca[5] = CargarImagen("assets/animales/vaca-5.bmp");
+    hBmpVaca[6] = CargarImagen("assets/animales/vaca-6.bmp");
+    hBmpVaca[7] = CargarImagen("assets/animales/vaca-7.bmp");
+    hBmpVacaMuerta = CargarImagen("assets/animales/vaca_muerta.bmp");
     hBmpEstablo = CargarImagen("assets/animales/ranchito_vacas.bmp");
     
     //Tiburones
