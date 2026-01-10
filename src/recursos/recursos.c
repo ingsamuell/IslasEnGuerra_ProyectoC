@@ -215,13 +215,22 @@ void CargarRecursos()
     hBmpPiedraPicar = CargarImagen("assets/mundo/Piedra-picar.bmp");
     hBmpMina = CargarImagen("assets/mundo/Mina-cueva.bmp");
 
-    // Mapa 2 y 3
+    // Mapa 2 - ARCHIPIELAGO (SI EXISTEN)
     hBmpIslaGrandeMapa2 = CargarImagen("assets/mundo/Isla_grande_mapa2.bmp");
     hBmpIslaSec1Mapa2 = CargarImagen("assets/mundo/islasecundaria_UNO_mapa2.bmp");
-    // ... (El resto de tus islas se mantienen igual) ...
+    hBmpIslaSec2Mapa2 = CargarImagen("assets/mundo/islasecundaria_DOS_mapa2.bmp");
+    hBmpIslaSec3Mapa2 = CargarImagen("assets/mundo/islasecundaria_TRES_mapa2.bmp");
+    hBmpIslaSec4Mapa2 = CargarImagen("assets/mundo/islasecundaria_CUATRO_mapa2.bmp");
+
+    // Mapa 3 - CONTINENTE (SI EXISTEN)
+    hBmpIslaGrandeMapa3 = CargarImagen("assets/mundo/Isla_grande_mapa3.bmp");
+    hBmpIslaSec1Mapa3 = CargarImagen("assets/mundo/islasecundaria_UNO_mapa3.bmp");
+    hBmpIslaSec2Mapa3 = CargarImagen("assets/mundo/islasecundaria_DOS_mapa3.bmp");
+    hBmpIslaSec3Mapa3 = CargarImagen("assets/mundo/islasecundaria_TRES_mapa3.bmp");
+    hBmpIslaSec4Mapa3 = CargarImagen("assets/mundo/islasecundaria_CUATRO_mapa3.bmp");
+
     hBmpArbolChicoMapa2 = CargarImagen("assets/mundo/Arbol_islaUno_mapa2.bmp");
     hBmpArbolGrandeMapa2 = CargarImagen("assets/mundo/Arbolgrande_islaUno_mapa2.bmp");
-    hBmpIslaGrandeMapa3 = CargarImagen("assets/mundo/Isla_grande_mapa3.bmp");
     hBmpArbolChicoMapa3 = CargarImagen("assets/mundo/Arbol_islaUno_mapa3.bmp");
     hBmpArbolGrandeMapa3 = CargarImagen("assets/mundo/Arbolgrande_islaUno_mapa3.bmp");
 
