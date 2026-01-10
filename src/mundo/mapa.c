@@ -1349,7 +1349,6 @@ void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FIL
 }
 
 // --- 9. MENÚ Y UI GENERAL ---
-
 void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
 {
     RECT rect;
@@ -1357,7 +1356,7 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
     int ancho = rect.right;
     int alto = rect.bottom;
 
-    // 1. DIBUJAR FONDO
+    // 1. DIBUJAR FONDO (sin cambios)
     if (hBmpFondoMenu)
     {
         BITMAP bm;
@@ -1397,29 +1396,30 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
     }
 
     // 3. BOTONES PRINCIPALES (Centrados verticalmente)
-    // Calculamos el centro vertical para la fila de 3 botones
     int centroY = alto / 2;               // Centro de la pantalla
-    int startY = centroY - (btnAlto / 2); // Y donde empiezan los botones
+    int startY = centroY - (btnAlto / 2); // Y donde empiezan PARTIDAS e INSTRUCCIONES
 
     // --- BOTÓN "PARTIDAS" (Izquierda) ---
     int partidasX = (ancho / 2) - btnAncho - separacion;
     HBITMAP imgPartidas = (hBmpBtnPartidas) ? hBmpBtnPartidas : hBmpBoton;
     DibujarImagen(hdc, imgPartidas, partidasX, startY, btnAncho, btnAlto);
 
-    // --- BOTÓN "JUGAR" (Centro) ---
+    // --- BOTÓN "JUGAR" (Centro - 150px MÁS ABAJO que los otros) ---
     int jugarX = (ancho - btnAncho) / 2;
+    int jugarY = startY + 230; // ← 150 PÍXELES MÁS ABAJO
     HBITMAP imgJugar = (hBmpBtnJugar) ? hBmpBtnJugar : hBmpBoton;
-    DibujarImagen(hdc, imgJugar, jugarX, startY, btnAncho, btnAlto);
+    DibujarImagen(hdc, imgJugar, jugarX, jugarY, btnAncho, btnAlto);
 
     // --- BOTÓN "INSTRUCCIONES" (Derecha) ---
     int instruccionesX = (ancho / 2) + separacion;
     HBITMAP imgInstr = (hBmpBtnInstrucciones) ? hBmpBtnInstrucciones : hBmpBoton;
     DibujarImagen(hdc, imgInstr, instruccionesX, startY, btnAncho, btnAlto);
 
-    // 4. BOTÓN "SALIR" (Esquina inferior derecha)
-    int margen = 30;
-    int salirX = ancho - btnAncho - margen;
-    int salirY = alto - btnAlto - margen;
+    // 4. BOTÓN "SALIR" (MÁS ABAJO y MÁS A LA DERECHA)
+    int margenHorizontal = 0;  // ← MÁS A LA DERECHA (antes 30)
+    int margenVertical = 0;    // ← MÁS ABAJO (antes 30)
+    int salirX = ancho - btnAncho - margenHorizontal;
+    int salirY = alto - btnAlto - margenVertical;
     HBITMAP imgSalir = (hBmpBtnSalir) ? hBmpBtnSalir : hBmpBoton;
     DibujarImagen(hdc, imgSalir, salirX, salirY, btnAncho, btnAlto);
 
@@ -1445,12 +1445,12 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
         int txtPY = startY + (btnAlto - sizePartidas.cy) / 2;
         TextOut(hdc, txtPX, txtPY, txtPartidas, strlen(txtPartidas));
 
-        // Botón Jugar
+        // Botón Jugar (AJUSTAR coordenada Y del texto)
         const char *txtJugar = "JUGAR";
         SIZE sizeJugar;
         GetTextExtentPoint32(hdc, txtJugar, strlen(txtJugar), &sizeJugar);
         int txtJX = jugarX + (btnAncho - sizeJugar.cx) / 2;
-        int txtJY = startY + (btnAlto - sizeJugar.cy) / 2;
+        int txtJY = jugarY + (btnAlto - sizeJugar.cy) / 2; // ← USAR jugarY
         TextOut(hdc, txtJX, txtJY, txtJugar, strlen(txtJugar));
 
         // Botón Instrucciones
@@ -1461,12 +1461,12 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
         int txtIY = startY + (btnAlto - sizeInst.cy) / 2;
         TextOut(hdc, txtIX, txtIY, txtInst, strlen(txtInst));
 
-        // Botón Salir
+        // Botón Salir (AJUSTAR coordenadas del texto)
         const char *txtSalir = "SALIR";
         SIZE sizeSalir;
         GetTextExtentPoint32(hdc, txtSalir, strlen(txtSalir), &sizeSalir);
         int txtSX = salirX + (btnAncho - sizeSalir.cx) / 2;
-        int txtSY = salirY + (btnAlto - sizeSalir.cy) / 2;
+        int txtSY = salirY + (btnAlto - sizeSalir.cy) / 2; // ← USAR salirY
         TextOut(hdc, txtSX, txtSY, txtSalir, strlen(txtSalir));
 
         SelectObject(hdc, hOldFont);
@@ -1488,13 +1488,16 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
     int ancho = rc.right;
     int alto = rc.bottom;
 
-    // Configuración de botones (debe coincidir con dibujarMenuConSprites)
+    // Configuración de botones (DEBE COINCIDIR con dibujarMenuConSprites)
     int btnAncho = 500;
     int btnAlto = 200;
-    int separacion = 50;
+    int separacion = 200; // ← IMPORTANTE: usar 200 como en dibujar
     int centroY = alto / 2;
     int startY = centroY - (btnAlto / 2);
-    int margen = 30;
+    
+    // Márgenes para SALIR (DEBE COINCIDIR)
+    int margenHorizontal = 0;  // ← Mismo que en dibujar
+    int margenVertical = 0;    // ← Mismo que en dibujar
 
     // --- BOTÓN "PARTIDAS" (Izquierda) ---
     int partidasX = (ancho / 2) - btnAncho - separacion;
@@ -1504,9 +1507,10 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
         return;
     }
 
-    // --- BOTÓN "JUGAR" (Centro) ---
+    // --- BOTÓN "JUGAR" (Centro - 150px más abajo) ---
     int jugarX = (ancho - btnAncho) / 2;
-    if (puntoEnRect(x, y, jugarX, startY, btnAncho, btnAlto))
+    int jugarY = startY + 230; // ← MISMO VALOR que en dibujar
+    if (puntoEnRect(x, y, jugarX, jugarY, btnAncho, btnAlto))
     {
         estado->estadoActual = ESTADO_SELECCION_MAPA;
         estado->opcionSeleccionada = 0;
@@ -1531,9 +1535,9 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
         return;
     }
 
-    // --- BOTÓN "SALIR" (Esquina inferior derecha) ---
-    int salirX = ancho - btnAncho - margen;
-    int salirY = alto - btnAlto - margen;
+    // --- BOTÓN "SALIR" (MÁS ABAJO y MÁS A LA DERECHA) ---
+    int salirX = ancho - btnAncho - margenHorizontal;
+    int salirY = alto - btnAlto - margenVertical;
 
     if (puntoEnRect(x, y, salirX, salirY, btnAncho, btnAlto))
     {
