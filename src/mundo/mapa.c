@@ -184,30 +184,10 @@ void generarColisionDeMapaCompleto(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int m
     }
 }
 
-void configurarNieblaInicial(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
-    // 1. Primero, ponemos TODO el mundo como VISIBLE (1)
+void inicializarNieblaTotal() {
     for (int y = 0; y < MUNDO_FILAS; y++) {
         for (int x = 0; x < MUNDO_COLUMNAS; x++) {
-            neblina[y][x] = 1;
-        }
-    }
-
-    // 2. Ahora, ocultamos SOLO la Isla Principal (Índice 0)
-    // Usamos las coordenadas de misIslas[0] que definimos en inicializarIslas
-    int inicioX = misIslas[0].x / TAMANO_CELDA_BASE;
-    int inicioY = misIslas[0].y / TAMANO_CELDA_BASE;
-    int finX = (misIslas[0].x + misIslas[0].ancho) / TAMANO_CELDA_BASE;
-    int finY = (misIslas[0].y + misIslas[0].alto) / TAMANO_CELDA_BASE;
-
-    for (int y = inicioY; y < finY; y++) {
-        for (int x = inicioX; x < finX; x++) {
-            // CONDICIÓN CLAVE: Solo ocultamos si es TIERRA (mapa[y][x] == 1)
-            // Si es agua dentro del cuadro de la isla, se deja visible.
-            if (y >= 0 && y < MUNDO_FILAS && x >= 0 && x < MUNDO_COLUMNAS) {
-                if (mapa[y][x] == 1) { 
-                    neblina[y][x] = 0; // 0 = Oculto (Gris)
-                }
-            }
+            neblina[y][x] = 0; // <--- ¡AQUÍ ESTÁ EL CAMBIO! Todo empieza oculto
         }
     }
 }
@@ -216,7 +196,7 @@ void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId)
 {
     inicializarIslas(mapaId);
     generarColisionDeMapaCompleto(mapa, mapaId);
-    configurarNieblaInicial(mapa);
+    inicializarNieblaTotal(); // <--- AGREGAR ESTO AL PRINCIPIO
 }
 
 int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
@@ -463,21 +443,22 @@ void dibujarEstablo(HDC hdc, Camera cam)
 // --- 5. LÓGICA DE JUEGO GENERAL ---
 
 void descubrirMapa(float centroX, float centroY, float radio) {
-    int radioCeldas = (int)(radio / TAMANO_CELDA_BASE) + 1;
+    int radioCeldas = (int)(radio / TAMANO_CELDA_BASE) + 2;
     int cx = (int)(centroX / TAMANO_CELDA_BASE);
     int cy = (int)(centroY / TAMANO_CELDA_BASE);
 
-    for (int y = cy - radioCeldas; y <= cy + radioCeldas; y++) {
-        for (int x = cx - radioCeldas; x <= cx + radioCeldas; x++) {
-            if (y >= 0 && y < MUNDO_FILAS && x >= 0 && x < MUNDO_COLUMNAS) {
-                // Si está oculto (0), lo hacemos visible (1)
-                if (neblina[y][x] == 0) {
-                     // Calcular distancia real para hacer un círculo
-                    float dx = (x * TAMANO_CELDA_BASE) + 8 - centroX;
-                    float dy = (y * TAMANO_CELDA_BASE) + 8 - centroY;
-                    if (sqrt(dx*dx + dy*dy) < radio) {
-                        neblina[y][x] = 1;
-                    }
+    int minX = max(0, cx - radioCeldas);
+    int maxX = min(MUNDO_COLUMNAS - 1, cx + radioCeldas);
+    int minY = max(0, cy - radioCeldas);
+    int maxY = min(MUNDO_FILAS - 1, cy + radioCeldas);
+
+    for (int y = minY; y <= maxY; y++) {
+        for (int x = minX; x <= maxX; x++) {
+            if (neblina[y][x] == 0) { // Si está oculto
+                float dx = (x * TAMANO_CELDA_BASE) + 8 - centroX;
+                float dy = (y * TAMANO_CELDA_BASE) + 8 - centroY;
+                if (dx*dx + dy*dy < radio*radio) {
+                    neblina[y][x] = 1; // ¡DESCUBIERTO!
                 }
             }
         }
@@ -1775,6 +1756,102 @@ void procesarEnterMenu(HWND hwnd, EstadoJuego *estado)
     }
 }
 
+void dibujarMiniMapa(HDC hdc, Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int anchoPantalla, int altoPantalla) {
+    // 1. Configuración
+    int tamMapa = 150;
+    int margen = 20;
+    int bordeGrosor = 4; // Grosor del marco negro
+    
+    // Posición
+    int xBase = anchoPantalla - tamMapa - margen;
+    int yBase = altoPantalla - tamMapa - margen;
+
+    // 2. DIBUJAR MARCO NEGRO (FONDO)
+    // Dibujamos un rectángulo negro más grande primero
+    RECT rMarco = {
+        xBase - bordeGrosor, 
+        yBase - bordeGrosor, 
+        xBase + tamMapa + bordeGrosor, 
+        yBase + tamMapa + bordeGrosor
+    };
+    HBRUSH brochaNegra = CreateSolidBrush(RGB(0, 0, 0));
+    FillRect(hdc, &rMarco, brochaNegra);
+    DeleteObject(brochaNegra);
+
+    // 3. FONDO DEL MAPA (Interior color crema)
+    HBRUSH fondoMapa = CreateSolidBrush(RGB(240, 230, 180)); 
+    RECT rMapa = {xBase, yBase, xBase + tamMapa, yBase + tamMapa};
+    FillRect(hdc, &rMapa, fondoMapa);
+    DeleteObject(fondoMapa);
+
+    // 4. TERRENO EXPLORADO
+    float escalaX = (float)tamMapa / MUNDO_COLUMNAS;
+    float escalaY = (float)tamMapa / MUNDO_FILAS;
+
+    for (int y = 0; y < MUNDO_FILAS; y += 2) { // Optimizamos saltando de 2 en 2 píxeles
+        for (int x = 0; x < MUNDO_COLUMNAS; x += 2) {
+            
+            // Solo si está explorado
+            if (neblina[y][x] == 1) {
+                int px = xBase + (int)(x * escalaX);
+                int py = yBase + (int)(y * escalaY);
+                
+                COLORREF color;
+                if (mapa[y][x] == 1) color = RGB(50, 150, 50); // Tierra (Verde)
+                else color = RGB(60, 120, 200); // Agua (Azul)
+
+                SetPixel(hdc, px, py, color);
+                // Pintamos 4 pixeles para que se vea sólido (bloque 2x2)
+                SetPixel(hdc, px+1, py, color);
+                SetPixel(hdc, px, py+1, color);
+                SetPixel(hdc, px+1, py+1, color);
+            }
+        }
+    }
+
+    // 5. TEXTOS Y PUNTOS CARDINALES
+    SetBkMode(hdc, TRANSPARENT);
+    SetTextColor(hdc, RGB(0, 0, 0)); // Letras Negras
+    // Dibujamos N, S, E, O dentro del marco o justo afuera (aquí dentro para limpieza)
+    TextOut(hdc, xBase + (tamMapa/2) - 4, yBase + 2, "N", 1); 
+    TextOut(hdc, xBase + (tamMapa/2) - 4, yBase + tamMapa - 14, "S", 1); 
+    TextOut(hdc, xBase + tamMapa - 12, yBase + (tamMapa/2) - 8, "E", 1); 
+    TextOut(hdc, xBase + 4, yBase + (tamMapa/2) - 8, "O", 1); 
+
+    // 6. JUGADOR (Punto Rojo)
+    int jX = xBase + (int)((j->x / TAMANO_CELDA_BASE) * escalaX);
+    int jY = yBase + (int)((j->y / TAMANO_CELDA_BASE) * escalaY);
+
+    // Validar que el punto no se salga del cuadrito
+    if (jX < xBase) jX = xBase;
+    if (jX > xBase + tamMapa) jX = xBase + tamMapa;
+    if (jY < yBase) jY = yBase;
+    if (jY > yBase + tamMapa) jY = yBase + tamMapa;
+
+    HBRUSH puntoRojo = CreateSolidBrush(RGB(255, 0, 0));
+    RECT rJug = {jX - 3, jY - 3, jX + 4, jY + 4}; // Punto un poco más grande
+    FillRect(hdc, &rJug, puntoRojo);
+    DeleteObject(puntoRojo);
+
+    // 7. FLECHA DE DIRECCIÓN (Hacia donde mira)
+    HPEN plumaFlecha = CreatePen(PS_SOLID, 2, RGB(200, 0, 0));
+    HGDIOBJ oldPen = SelectObject(hdc, plumaFlecha);
+    
+    int len = 10; 
+    int endX = jX, endY = jY;
+
+    if (j->direccion == DIR_ARRIBA)    endY -= len;
+    else if (j->direccion == DIR_ABAJO)     endY += len;
+    else if (j->direccion == DIR_IZQUIERDA) endX -= len;
+    else if (j->direccion == DIR_DERECHA)   endX += len;
+
+    MoveToEx(hdc, jX, jY, NULL);
+    LineTo(hdc, endX, endY);
+
+    SelectObject(hdc, oldPen);
+    DeleteObject(plumaFlecha);
+}
+
 // --- 10. RENDERIZADO FINAL ---
 
 void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda, int mapaId)
@@ -1841,18 +1918,16 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
     dibujarJugador(hdc, &miJugador, cam);
 
     // ---------------------------------------------------------
-    // 5. CAPA SUPERIOR: NIEBLA DE GUERRA (¡AQUÍ ES EL CAMBIO!)
+    // 5. CAPA SUPERIOR: NIEBLA DE GUERRA
     // ---------------------------------------------------------
     // Al dibujarla al final, tapará todo lo anterior (vacas, arboles, etc)
     // donde neblina == 0.
-    
-    HBRUSH brochaNiebla = CreateSolidBrush(RGB(220, 220, 230)); // Gris/Blanco nube
-    HPEN sinBorde = CreatePen(PS_NULL, 0, 0);
-    
-    oldBrush = SelectObject(hdc, brochaNiebla);
-    oldPen = SelectObject(hdc, sinBorde);
 
-    // Límites de cámara para optimizar
+    HBRUSH brochaNiebla = CreateSolidBrush(RGB(220, 220, 230)); // Gris nube
+    HPEN sinBorde = CreatePen(PS_NULL, 0, 0);
+	oldBrush = SelectObject(hdc, brochaNiebla); // Reutilizamos la variable existente
+	oldPen = SelectObject(hdc, sinBorde);       // Reutilizamos la variable existente
+    // Optimización: Solo recorrer lo que ve la cámara
     int inicioCol = max(0, (int)(cam.x / TAMANO_CELDA_BASE) - 2);
     int inicioFila = max(0, (int)(cam.y / TAMANO_CELDA_BASE) - 2);
     int celdasAncho = (int)(ancho / (TAMANO_CELDA_BASE * cam.zoom)) + 4;
@@ -1862,16 +1937,16 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
 
     for (int f = inicioFila; f < finFila; f++) {
         for (int c = inicioCol; c < finCol; c++) {
-            
-            // Si la celda está OCULTA (0)
+            // SI ESTÁ OCULTO (0), DIBUJAR NUBE
             if (neblina[f][c] == 0) {
                 int x = (int)(((c * TAMANO_CELDA_BASE) - cam.x) * cam.zoom);
                 int y = (int)(((f * TAMANO_CELDA_BASE) - cam.y) * cam.zoom);
                 int celdaTam = (int)(TAMANO_CELDA_BASE * cam.zoom);
                 
-                // Dibujamos "nube" un poco más grande para que se solapen
+                // Dibujar círculo expandido para efecto "nube esponjosa"
                 int expansion = celdaTam / 2; 
-                Ellipse(hdc, x - expansion, y - expansion, x + celdaTam + expansion, y + celdaTam + expansion);
+                Ellipse(hdc, x - expansion, y - expansion, 
+                             x + celdaTam + expansion, y + celdaTam + expansion);
             }
         }
     }
@@ -1882,7 +1957,10 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
     // ---------------------------------------------------------
     // 6. CAPA INTERFAZ: HUD (Siempre visible sobre la niebla)
     // ---------------------------------------------------------
-    dibujarHUD(hdc, &miJugador, ancho, alto);
+    if (miJugador.tieneMapa) {
+        dibujarMiniMapa(hdc, &miJugador, mapa, ancho, alto);
+    }
+	dibujarHUD(hdc, &miJugador, ancho, alto);
     
     // Textos flotantes (Números de daño, recursos, etc.)
     for (int i = 0; i < MAX_TEXTOS; i++) {

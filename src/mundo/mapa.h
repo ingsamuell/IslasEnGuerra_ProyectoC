@@ -9,6 +9,7 @@
 void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId);
 void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId);
 void moverJugador(Jugador *jugador, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy);
+void dibujarMiniMapa(HDC hdc, Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int anchoPantalla, int altoPantalla);
 
 // IMPORTANTE: EsSuelo ahora recibe el mapa para la colisión precisa
 int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
@@ -64,7 +65,7 @@ void dibujarTiendasEnIslas(HDC hdc, Camera cam, int ancho, int alto, int frameTi
 void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto);
 void dibujarPrecio(HDC hdc, int x, int y, const char* costo1, const char* costo2, BOOL alcanzable);
 void dibujarItemRejilla(HDC hdc, HBITMAP icono, int cantidad, int maximo, int x, int y, const char *nombre);
-void configurarNieblaInicial(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
+void inicializarNieblaTotal();
 void descubrirMapa(float centroX, float centroY, float radio);
 
 // --- LÓGICA DE RECLUTAMIENTO ---
