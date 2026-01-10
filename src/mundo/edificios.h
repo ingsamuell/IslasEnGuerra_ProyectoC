@@ -18,5 +18,6 @@ void inicializarEdificios();
 void dibujarEdificio(HDC hdc, int x, int y, int tipoTamano, int esEnemigo, int mapaID, Camera *cam);
 void dibujarFantasmaConstruccion(HDC hdc, Jugador *j, int mx, int my, int mapaID, Camera *cam);
 void intentarColocarEdificio(Jugador *j, int mx, int my, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
+void dibujarTodosLosEdificios(HDC hdc, int mapaID, Camera *cam);
 void actualizarEdificios(float deltaTiempo);
 #endif

@@ -225,6 +225,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         {
             // --- CAPA 1: MUNDO (Fondo) ---
             dibujarMapaConZoom(hdcMem, mapaMundo, miCamara, ancho, alto, estadoJuego.frameTienda, estadoJuego.mapaSeleccionado);
+            dibujarTodosLosEdificios(hdcMem, estadoJuego.mapaSeleccionado, &miCamara);
             dibujarTesoros(hdcMem, miCamara, ancho, alto);
             dibujarMinas(hdcMem, miCamara, ancho, alto);
             dibujarEstablo(hdcMem, miCamara);
@@ -254,6 +255,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             
 			int mundoMouseX = (int)(miCamara.x + (estadoJuego.puntoMouse.x / miCamara.zoom));
 int mundoMouseY = (int)(miCamara.y + (estadoJuego.puntoMouse.y / miCamara.zoom));
+
 
 if (miJugador.edificioSeleccionado > 0) {
     // Pasamos &miCamara al final como pide tu edificios.c
