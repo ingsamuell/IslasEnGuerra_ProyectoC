@@ -510,6 +510,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 0;
 
     CargarRecursos();
+    inicializarEdificios(); //
 
     // Verificación de archivos (DEBUG)
     int vacasFaltan = 0;

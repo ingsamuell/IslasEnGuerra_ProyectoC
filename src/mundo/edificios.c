@@ -44,38 +44,37 @@ void inicializarEdificios() {
 // 2. DIBUJAR UN EDIFICIO INDIVIDUAL
 // -------------------------------------------------------------
 void dibujarEdificio(HDC hdc, int x, int y, int tipoTamano, int esEnemigo, int mapaID, Camera *cam) {
+    // 1. Selección de Sprite (Igual que antes)
     if (mapaID < 0) mapaID = 0;
     if (mapaID > 2) mapaID = 2;
 
     HBITMAP bmpADibujar = NULL;
-
-    // NOTA: Asegúrate de que estos arrays existan en recursos.h/recursos.c
-    // Si no, usa hBmpCastilloJugador temporalmente para probar.
     if (esEnemigo) {
-        // bmpADibujar = hBmpEdificioEnemigo[tipoTamano]; // Ejemplo
-        bmpADibujar = hBmpCastilloJugador; // Placeholder por si acaso
+        if (tipoTamano == 1) bmpADibujar = hBmpEdificioPeqEnemigo[mapaID];
+        else if (tipoTamano == 2) bmpADibujar = hBmpEdificioMedEnemigo[mapaID];
+        else if (tipoTamano == 3) bmpADibujar = hBmpEdificioGrandeEnemigo[mapaID];
     } else {
-        // Lógica para seleccionar sprite según tamaño
-        if (tipoTamano == 1) bmpADibujar = hBmpCastilloJugador; // Cambiar por hBmpEdificioPeq
-        else if (tipoTamano == 2) bmpADibujar = hBmpCastilloJugador;
-        else if (tipoTamano == 3) bmpADibujar = hBmpCastilloJugador;
+        if (tipoTamano == 1) bmpADibujar = hBmpEdificioPeq[mapaID];
+        else if (tipoTamano == 2) bmpADibujar = hBmpEdificioMed[mapaID];
+        else if (tipoTamano == 3) bmpADibujar = hBmpEdificioGrande[mapaID];
     }
 
     if (bmpADibujar) {
-        // 1. Definir tamaño base según tipo
+        // 2. TAMAÑO CON ZOOM
         int anchoBase = 64; int altoBase = 64;
         if (tipoTamano == 2) { anchoBase = 96; altoBase = 96; }
         if (tipoTamano == 3) { anchoBase = 128; altoBase = 128; }
 
-        // Multiplicamos por el zoom de la cámara
-        int anchoVisual = (int)(anchoBase * cam->zoom);
-        int altoVisual = (int)(altoBase * cam->zoom);
+        int anchoVisual = anchoBase * cam->zoom;
+        int altoVisual = altoBase * cam->zoom;
 
-        // 2. Aplicar Zoom y Desplazamiento a la Posición
-        int drawX = (int)((x - cam->x) * cam->zoom);
-        int drawY = (int)((y - cam->y) * cam->zoom);
+        // 3. POSICIÓN CON CÁMARA (Mundo -> Pantalla)
+        // Restamos la cámara y multiplicamos por zoom
+        int pantallaX = (x - cam->x) * cam->zoom;
+        int pantallaY = (y - cam->y) * cam->zoom;
         
-        DibujarImagen(hdc, bmpADibujar, drawX, drawY, anchoVisual, altoVisual);
+        // 4. Dibujar
+        DibujarImagen(hdc, bmpADibujar, pantallaX, pantallaY, anchoVisual, altoVisual);
     }
 }
 
@@ -83,9 +82,9 @@ void dibujarEdificio(HDC hdc, int x, int y, int tipoTamano, int esEnemigo, int m
 // 3. MODO FANTASMA (LOGICA DE CONSTRUCCIÓN)
 // -------------------------------------------------------------
 void dibujarFantasmaConstruccion(HDC hdc, Jugador *j, int mx, int my, int mapaID, Camera *cam) {
-    int tamBase = 64; 
-    if (j->edificioSeleccionado == 2) tamBase = 96;
-    if (j->edificioSeleccionado == 3) tamBase = 128;
+    int tamBase = 128; 
+    if (j->edificioSeleccionado == 2) tamBase = 256;
+    if (j->edificioSeleccionado == 3) tamBase = 512;
 
     int esValido = 1;
     COLORREF colorEstado = RGB(0, 255, 0); // Verde
@@ -135,9 +134,9 @@ void intentarColocarEdificio(Jugador *j, int mx, int my, char mapa[MUNDO_FILAS][
     if (j->edificioSeleccionado == 0) return;
 
     // 1. Recalcular Datos
-    int tam = 64; 
-    if (j->edificioSeleccionado == 2) tam = 96;
-    if (j->edificioSeleccionado == 3) tam = 128;
+    int tam = 128; 
+    if (j->edificioSeleccionado == 2) tam = 256;
+    if (j->edificioSeleccionado == 3) tam = 512;
 
     // Centrar en el mouse (opcional, ajusta según prefieras esquina o centro)
     int x = mx; // Usamos la esquina superior izquierda tal cual viene del mouse
@@ -253,41 +252,49 @@ void actualizarEdificios(float deltaTiempo) {
 
 // --- CORRECCIÓN: Agregar Camera *cam como parámetro ---
 void dibujarTodosLosEdificios(HDC hdc, int mapaID, Camera *cam) {
-    // 1. Dibujar Enemigos
+    // 1. DIBUJAR ENEMIGOS
     for (int i = 0; i < MAX_EDIFICIOS_ENEMIGOS; i++) {
         if (edificiosEnemigos[i].activo) {
-            dibujarEdificio(hdc, (int)edificiosEnemigos[i].x, (int)edificiosEnemigos[i].y, edificiosEnemigos[i].tipo, 1, mapaID, cam);
+            dibujarEdificio(hdc, (int)edificiosEnemigos[i].x, (int)edificiosEnemigos[i].y, 
+                            edificiosEnemigos[i].tipo, 1, mapaID, cam);
         }
     }
 
-    // 2. Dibujar Jugador
+    // 2. DIBUJAR JUGADOR
     for (int i = 0; i < MAX_EDIFICIOS_JUGADOR; i++) {
         if (misEdificios[i].activo) {
-            // Dibujar Sprite
+            
+            // A) Dibujar el Edificio (Pasando la cámara)
             dibujarEdificio(hdc, (int)misEdificios[i].x, (int)misEdificios[i].y, 
-                misEdificios[i].tipo, 0, mapaID, cam);
+                            misEdificios[i].tipo, 0, mapaID, cam);
 
-            // Dibujar Barra de Construcción
+            // B) Dibujar Barra de Construcción (Ajustada a la cámara)
             if (misEdificios[i].enConstruccion) {
-                int bx = (int)((misEdificios[i].x - cam->x) * cam->zoom);
-                int by = (int)((misEdificios[i].y - cam->y) * cam->zoom) - 10;
+                // Calculamos posición en PANTALLA
+                int bx = ((int)misEdificios[i].x - cam->x) * cam->zoom;
+                int by = ((int)misEdificios[i].y - cam->y) * cam->zoom - 10;
                 
+                // Calculamos ancho visual según zoom
                 int anchoBase = 64;
-                if(misEdificios[i].tipo == 2) anchoBase = 96;
-                if(misEdificios[i].tipo == 3) anchoBase = 128;
-                
-                int ancho = (int)(anchoBase * cam->zoom);
+                if (misEdificios[i].tipo == 2) anchoBase = 96;
+                if (misEdificios[i].tipo == 3) anchoBase = 128;
+                int anchoVisual = anchoBase * cam->zoom;
+
                 float pct = misEdificios[i].tiempoProgreso / misEdificios[i].tiempoTotal;
-                
+                if (pct > 1.0f) pct = 1.0f;
+
                 // Fondo Negro
-                RECT rBg = {bx, by, bx + ancho, by + 5};
-                FillRect(hdc, &rBg, (HBRUSH)GetStockObject(BLACK_BRUSH));
+                RECT rBg = {bx, by, bx + anchoVisual, by + (6 * cam->zoom)};
+                HBRUSH brNegro = (HBRUSH)GetStockObject(BLACK_BRUSH);
+                FillRect(hdc, &rBg, brNegro);
                 
                 // Relleno Amarillo
-                RECT rFill = {bx, by, bx + (int)(ancho * pct), by + 5};
-                HBRUSH brAm = CreateSolidBrush(RGB(255, 255, 0));
-                FillRect(hdc, &rFill, brAm);
-                DeleteObject(brAm);
+                if (pct > 0) {
+                    RECT rFill = {bx + 1, by + 1, bx + (int)(anchoVisual * pct), by + (6 * cam->zoom) - 1};
+                    HBRUSH brAm = CreateSolidBrush(RGB(255, 215, 0));
+                    FillRect(hdc, &rFill, brAm);
+                    DeleteObject(brAm);
+                }
             }
         }
     }
