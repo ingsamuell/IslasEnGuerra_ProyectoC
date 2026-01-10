@@ -165,6 +165,7 @@ typedef struct {
     int herramientaActiva; // Usar constantes HERRAMIENTA_NADA, etc.
     int estadoBarco;       // 0=Pie, 1=Bote, 2=Barco
     int timerPesca;
+    BOOL tieneMapa;
 
     // Contadores de Unidades (RTS)
     int cantMineros;

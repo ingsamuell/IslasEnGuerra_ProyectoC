@@ -266,35 +266,52 @@ void inicializarTesoros() {
 
 void abrirTesoro(Jugador *j) {
     for (int i = 0; i < MAX_TESOROS; i++) {
+        // 1. Saltamos si no está activo o ya fue saqueado (estado 2 suele ser vacío)
         if (!misTesoros[i].activa || misTesoros[i].estado == 2) continue;
 
-        if (abs((j->x + 16) - (misTesoros[i].x + 16)) < 60 && 
-            abs((j->y + 16) - (misTesoros[i].y + 16)) < 60) {
+        // 2. CALCULAMOS LA DISTANCIA (Importante declararla aquí)
+        float dx = j->x - misTesoros[i].x;
+        float dy = j->y - misTesoros[i].y;
+        float dist = sqrt(dx*dx + dy*dy);
+
+        // Si estamos cerca y el tesoro está cerrado
+        if (dist < 50 && misTesoros[i].estado == 0) {
+            misTesoros[i].estado = 1; // Abrir cofre
             
-            if (misTesoros[i].estado == 0) { misTesoros[i].estado = 1; return; }
-            if (misTesoros[i].estado == 1) {
-                int oro = 30 + (rand() % 11);
-                int antOro = j->oro;
-                agregarRecurso(&j->oro, oro, j->nivelMochila); 
-                int ganOro = j->oro - antOro;
+            // Guardamos coordenadas para los textos (para que salgan sobre el cofre)
+            int tx = misTesoros[i].x;
+            int ty = misTesoros[i].y;
 
-                if (ganOro > 0) crearTextoFlotante(misTesoros[i].x, misTesoros[i].y, "Oro", ganOro, RGB(255, 215, 0));
-                else crearTextoFlotante(j->x, j->y - 40, "Bolsa de Oro Llena!", 0, RGB(255, 50, 50));
-
-                if (misTesoros[i].tipo == 1) {
-                    int hierro = 20 + (rand() % 10);
-                    int antHierro = j->hierro;
-                    agregarRecurso(&j->hierro, hierro, j->nivelMochila);
-                    int ganHierro = j->hierro - antHierro;
-                    if (ganHierro > 0) crearTextoFlotante(misTesoros[i].x, misTesoros[i].y - 25, "Hierro", ganHierro, RGB(192, 192, 192));
-                }
-                misTesoros[i].estado = 2; 
-                return;
+            if (misTesoros[i].tipo == 0) {
+                // ... Tu código para tesoro normal ...
+                int oroSolo = 50 + (rand() % 50);
+                j->oro += oroSolo;
+                crearTextoFlotante(tx, ty, "+Oro", 0, RGB(255, 215, 0));
             }
+            else { // CASO 1: JOYAS Y MAPA
+                int oroGanado = 50 + (rand() % 10);
+                int hierroGanado = 10 + (rand() % 10);
+                
+                j->oro += oroGanado;
+                j->hierro += hierroGanado;
+                
+                crearTextoFlotante(tx, ty, "Joyas encontradas!", 0, RGB(255, 0, 255));
+                crearTextoFlotante(tx, ty - 25, "+Oro y Hierro", 0, RGB(255, 215, 0));
+
+                // --- DESBLOQUEAR MINIMAPA ---
+                // Usamos la variable del jugador que definimos antes
+                if (!j->tieneMapa) {
+                    j->tieneMapa = TRUE;
+                    // Texto en un color verde brillante
+                    crearTextoFlotante(tx, ty - 50, "MINIMAPA OBTENIDO!", 0, RGB(50, 255, 50));
+                }
+            }
+            
+            // Marcar tesoro como saqueado para que no se pueda volver a abrir
+            misTesoros[i].estado = 2; 
         }
     }
 }
-
 void dibujarTesoros(HDC hdc, Camera cam, int ancho, int alto) {
     for (int i = 0; i < MAX_TESOROS; i++) {
         if (!misTesoros[i].activa) continue;
