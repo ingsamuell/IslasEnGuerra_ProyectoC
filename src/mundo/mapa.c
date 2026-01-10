@@ -2,6 +2,7 @@
 #include "mapa.h"
 #include "fauna.h"
 #include "naturaleza.h"
+#include "edificios.h"
 #include "../global.h"
 #include "../recursos/recursos.h"
 #include "../jugador/jugador.h"
@@ -17,11 +18,10 @@ Particula chispas[MAX_PARTICULAS];
 Isla misIslas[MAX_ISLAS];
 TextoFlotante listaTextos[MAX_TEXTOS] = {0};
 char neblina[MUNDO_FILAS][MUNDO_COLUMNAS];
-Edificio misEdificios[MAX_EDIFICIOS_JUGADOR];
-Edificio edificiosEnemigos[MAX_EDIFICIOS_ENEMIGOS];
-
+char mapa[MUNDO_FILAS][MUNDO_COLUMNAS];
 // Referencias externas necesarias
 extern Jugador miJugador;
+
 
 #define MARGEN_ESTABLO 100
 
@@ -1108,29 +1108,3 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
     }
 }
 
-void inicializarEdificios() {
-    // 1. Limpiar edificios del jugador (todos inactivos al inicio)
-    for (int i = 0; i < MAX_EDIFICIOS_JUGADOR; i++) {
-        misEdificios[i].activo = 0;
-        misEdificios[i].enConstruccion = 0;
-        misEdificios[i].esEnemigo = 0;
-        misEdificios[i].tipo = i + 1; // 1, 2, 3 preasignados por slot
-    }
-
-    // 2. Configurar edificios enemigos (Ya activos en las islas)
-    // Coordenadas aproximadas de las 4 islas (¡AJUSTA ESTAS COORDENADAS A TUS ISLAS!)
-    // Isla 1: Arriba-Izquierda, Isla 2: Arriba-Derecha, etc.
-    float coordsX[4] = {400, 2600, 400, 2600}; 
-    float coordsY[4] = {400, 400, 2600, 2600};
-
-    for (int i = 0; i < MAX_EDIFICIOS_ENEMIGOS; i++) {
-        edificiosEnemigos[i].activo = 1;      // Ya existen
-        edificiosEnemigos[i].enConstruccion = 0; // Ya construidos
-        edificiosEnemigos[i].esEnemigo = 1;
-        edificiosEnemigos[i].tipo = 3;        // Digamos que son Grandes (Bases)
-        edificiosEnemigos[i].x = coordsX[i];
-        edificiosEnemigos[i].y = coordsY[i];
-        edificiosEnemigos[i].vidaMax = 2000;
-        edificiosEnemigos[i].vidaActual = 2000;
-    }
-}

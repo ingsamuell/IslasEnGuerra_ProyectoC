@@ -11,7 +11,8 @@ SRC = src/main.c \
       src/mundo/fauna.c \
       src/mundo/naturaleza.c \
       src/unidades/unidades.c \
-      src/sistema/tienda.c
+      src/sistema/tienda.c \
+      src/mundo/edificios.c
 
 # 3. Nombre del ejecutable final
 TARGET = IslasEnGuerra

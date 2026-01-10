@@ -10,6 +10,7 @@
 #include "jugador/jugador.h"
 #include "unidades/unidades.h"
 #include "sistema/tienda.h"
+#include "mundo/edificios.h"
 
 /* ========== VARIABLES GLOBALES ========== */
 char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
@@ -48,11 +49,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
         if (estadoJuego.estadoActual == ESTADO_PARTIDA)
         {
-            // --- DETECTAR SI EL CLIC ES EN LA INTERFAZ DE LA TIENDA ---
+            // --- 1. DETECTAR SI EL CLIC ES EN LA INTERFAZ DE LA TIENDA ---
             BOOL clicEnTienda = FALSE;
+            
             if (miJugador.tiendaAbierta)
             {
-                // Calculamos el área de la tienda (Mismos valores que en dibujarTiendaInteractiva)
+                // Calculamos el área de la tienda
                 RECT rcClient; GetClientRect(hwnd, &rcClient);
                 int anchoW = 340;
                 int tx = rcClient.right - anchoW - 20;
@@ -63,28 +65,38 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 {
                     clicEnTienda = TRUE;
                     procesarClickMochilaTienda(mx, my, FALSE, &miJugador, hwnd);
-                    // No hacemos return aquí, solo marcamos que fue en tienda
+                    // Importante: Al ser clic en UI, no hacemos nada más en el mapa
                 }
             }
 
-            // --- SELECCIÓN DE UNIDADES (RTS) ---
-            // Solo iniciamos selección si NO hicimos clic en la tienda
+            // Si el clic NO fue en la tienda, interactuamos con el mundo
             if (!clicEnTienda)
             {
-                seleccionando = TRUE;
-                inicioSel.x = mx;
-                inicioSel.y = my;
-                finSel.x = mx;
-                finSel.y = my;
-
-                // Si no usas SHIFT, limpiar selección previa
-                if (!(wParam & MK_SHIFT))
+                // --- 2. MODO CONSTRUCCIÓN (NUEVO) ---
+                // Si tenemos un edificio seleccionado (Fantasma verde), intentamos colocarlo
+                if (miJugador.edificioSeleccionado > 0) 
                 {
-                    for (int i = 0; i < MAX_UNIDADES; i++) unidades[i].seleccionado = 0;
+                    intentarColocarEdificio(&miJugador, mx, my, estadoJuego.mapaSeleccionado);
+                }
+                // --- 3. SELECCIÓN DE UNIDADES (RTS) ---
+                // Si no estamos construyendo, entonces seleccionamos tropas
+                else 
+                {
+                    seleccionando = TRUE;
+                    inicioSel.x = mx;
+                    inicioSel.y = my;
+                    finSel.x = mx;
+                    finSel.y = my;
+
+                    // Si no usas SHIFT, limpiar selección previa
+                    if (!(wParam & MK_SHIFT))
+                    {
+                        for (int i = 0; i < MAX_UNIDADES; i++) unidades[i].seleccionado = 0;
+                    }
                 }
             }
         }
-        // ... (resto de menús igual) ...
+        // --- OTROS ESTADOS DEL JUEGO ---
         else if (estadoJuego.estadoActual == ESTADO_MENU) 
             procesarClickMenu(mx, my, hwnd, &estadoJuego);
         else if (estadoJuego.estadoActual == ESTADO_SELECCION_MAPA) 
@@ -512,7 +524,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 // --- B) FAUNA Y SISTEMAS ---
                 actualizarVacas();                    // Movimiento de animales
                 actualizarLogicaSistema(&miJugador);  // Tiburones, Pesca, etc.
-                actualizarRegeneracionRecursos();     // Respawn de árboles/minas/vacas
+                actualizarRegeneracionRecursos();// Respawn de árboles/minas/vacas
+                actualizarEdificios(0.016f);     
 
                 // --- C) ANIMACIONES AMBIENTALES ---
                 static int timerGato = 0;
