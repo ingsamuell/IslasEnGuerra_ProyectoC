@@ -110,6 +110,25 @@ extern HBITMAP hBmpIslaSec4Mapa3;
 extern HBITMAP hBmpArbolChicoMapa3;
 extern HBITMAP hBmpArbolGrandeMapa3;
 
+// ====================================================
+// NUEVAS: ISLAS ENEMIGAS (3 por mapa × 3 mapas = 9 imágenes)
+// ====================================================
+
+// Mapa 1 (ISLAS DEL MAR)
+extern HBITMAP hBmpIslaEnemigaGrandeMapa1;
+extern HBITMAP hBmpIslaEnemigaSec1Mapa1;
+extern HBITMAP hBmpIslaEnemigaSec2Mapa1;
+
+// Mapa 2 (ARCHIPIÉLAGO)
+extern HBITMAP hBmpIslaEnemigaGrandeMapa2;
+extern HBITMAP hBmpIslaEnemigaSec1Mapa2;
+extern HBITMAP hBmpIslaEnemigaSec2Mapa2;
+
+// Mapa 3 (CONTINENTE)
+extern HBITMAP hBmpIslaEnemigaGrandeMapa3;
+extern HBITMAP hBmpIslaEnemigaSec1Mapa3;
+extern HBITMAP hBmpIslaEnemigaSec2Mapa3;
+
 // Objetos Generales
 extern HBITMAP hBmpCastilloJugador;
 extern HBITMAP hBmpRoca;

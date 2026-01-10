@@ -100,6 +100,25 @@ HBITMAP hBmpVaca[8] = {NULL};
 HBITMAP hBmpVacaMuerta = NULL;
 HBITMAP hBmpTiburonAnim[2][4] = { {NULL} };
 
+// ====================================================
+// NUEVAS VARIABLES: ISLAS ENEMIGAS
+// ====================================================
+
+// Mapa 1
+HBITMAP hBmpIslaEnemigaGrandeMapa1 = NULL;
+HBITMAP hBmpIslaEnemigaSec1Mapa1 = NULL;
+HBITMAP hBmpIslaEnemigaSec2Mapa1 = NULL;
+
+// Mapa 2
+HBITMAP hBmpIslaEnemigaGrandeMapa2 = NULL;
+HBITMAP hBmpIslaEnemigaSec1Mapa2 = NULL;
+HBITMAP hBmpIslaEnemigaSec2Mapa2 = NULL;
+
+// Mapa 3
+HBITMAP hBmpIslaEnemigaGrandeMapa3 = NULL;
+HBITMAP hBmpIslaEnemigaSec1Mapa3 = NULL;
+HBITMAP hBmpIslaEnemigaSec2Mapa3 = NULL;
+
 // Items (Iconos)
 HBITMAP hBmpIconoMadera = NULL;
 HBITMAP hBmpIconoPiedra = NULL;
@@ -272,6 +291,25 @@ void CargarRecursos()
     hBmpArbolGrandeMapa2 = CargarImagen("assets/mundo/Arbolgrande_islaUno_mapa2.bmp");
     hBmpArbolChicoMapa3 = CargarImagen("assets/mundo/Arbol_islaUno_mapa3.bmp");
     hBmpArbolGrandeMapa3 = CargarImagen("assets/mundo/Arbolgrande_islaUno_mapa3.bmp");
+
+// ====================================================
+// CARGAR ISLAS ENEMIGAS (3 por mapa × 3 mapas = 9 imágenes)
+// ====================================================
+
+// Mapa 1 (ISLAS DEL MAR)
+hBmpIslaEnemigaGrandeMapa1 = CargarImagen("assets/mundo/Isla_enemiga_grande_mapa1.bmp");
+hBmpIslaEnemigaSec1Mapa1 = CargarImagen("assets/mundo/islasecundaria_enemiga1_mapa1.bmp");
+hBmpIslaEnemigaSec2Mapa1 = CargarImagen("assets/mundo/islasecundaria_enemiga2_mapa1.bmp");
+
+// Mapa 2 (ARCHIPIÉLAGO)
+hBmpIslaEnemigaGrandeMapa2 = CargarImagen("assets/mundo/Isla_enemiga_grande_mapa2.bmp");
+hBmpIslaEnemigaSec1Mapa2 = CargarImagen("assets/mundo/islasecundaria_enemiga1_mapa2.bmp");
+hBmpIslaEnemigaSec2Mapa2 = CargarImagen("assets/mundo/islasecundaria_enemiga2_mapa2.bmp");
+
+// Mapa 3 (CONTINENTE)
+hBmpIslaEnemigaGrandeMapa3 = CargarImagen("assets/mundo/Isla_enemiga_grande_mapa3.bmp");
+hBmpIslaEnemigaSec1Mapa3 = CargarImagen("assets/mundo/islasecundaria_enemiga1_mapa3.bmp");
+hBmpIslaEnemigaSec2Mapa3 = CargarImagen("assets/mundo/islasecundaria_enemiga2_mapa3.bmp");
 
     // Tesoros
     hBmpTesoroCerrado = CargarImagen("assets/mundo/tesoro-pixilart.bmp");
@@ -449,6 +487,19 @@ void LiberarRecursos() {
     if (hBmpArbolGrandeMapa2) DeleteObject(hBmpArbolGrandeMapa2);
     if (hBmpArbolChicoMapa3) DeleteObject(hBmpArbolChicoMapa3);
     if (hBmpArbolGrandeMapa3) DeleteObject(hBmpArbolGrandeMapa3);
+
+     // --- 1. LIBERAR ISLAS ENEMIGAS (NUEVO) ---
+    if (hBmpIslaEnemigaGrandeMapa1) DeleteObject(hBmpIslaEnemigaGrandeMapa1);
+    if (hBmpIslaEnemigaSec1Mapa1) DeleteObject(hBmpIslaEnemigaSec1Mapa1);
+    if (hBmpIslaEnemigaSec2Mapa1) DeleteObject(hBmpIslaEnemigaSec2Mapa1);
+    
+    if (hBmpIslaEnemigaGrandeMapa2) DeleteObject(hBmpIslaEnemigaGrandeMapa2);
+    if (hBmpIslaEnemigaSec1Mapa2) DeleteObject(hBmpIslaEnemigaSec1Mapa2);
+    if (hBmpIslaEnemigaSec2Mapa2) DeleteObject(hBmpIslaEnemigaSec2Mapa2);
+    
+    if (hBmpIslaEnemigaGrandeMapa3) DeleteObject(hBmpIslaEnemigaGrandeMapa3);
+    if (hBmpIslaEnemigaSec1Mapa3) DeleteObject(hBmpIslaEnemigaSec1Mapa3);
+    if (hBmpIslaEnemigaSec2Mapa3) DeleteObject(hBmpIslaEnemigaSec2Mapa3);
 
     // --- 6. ARRAYS DE ANIMACIÓN (JUGADOR Y NPCs) ---
     if (hBmpJugador) DeleteObject(hBmpJugador); // Imagen estática

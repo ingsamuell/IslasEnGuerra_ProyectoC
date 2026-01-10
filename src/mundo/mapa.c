@@ -29,53 +29,62 @@ extern Jugador miJugador;
 
 HBITMAP obtenerImagenIsla(int indiceIsla, int mapaId)
 {
-    switch (mapaId)
-    {
-    case 0: // MAPA 1
-        switch (indiceIsla)
-        {
-        case 0:
-            return hBmpIslaGrande;
-        case 1:
-            return hBmpIslaSec2;
-        case 2:
-            return hBmpIslaSec4;
-        case 3:
-            return hBmpIslaSec1;
-        case 4:
-            return hBmpIslaSec3;
+    // ISLAS ENEMIGAS (índices 5, 6, 7)
+    if (indiceIsla >= 5 && indiceIsla < MAX_ISLAS) {
+        switch (mapaId) {
+            case 0: // MAPA 1 (ISLAS DEL MAR)
+                switch (indiceIsla) {
+                    case 5: return hBmpIslaEnemigaGrandeMapa1;   // Grande Inf Der
+                    case 6: return hBmpIslaEnemigaSec1Mapa1;     // Sec Sup Izq
+                    case 7: return hBmpIslaEnemigaSec2Mapa1;     // Sec Sup Der
+                }
+                break;
+            case 1: // MAPA 2 (ARCHIPIÉLAGO)
+                switch (indiceIsla) {
+                    case 5: return hBmpIslaEnemigaGrandeMapa2;   // Grande Inf Der
+                    case 6: return hBmpIslaEnemigaSec1Mapa2;     // Sec Sup Izq
+                    case 7: return hBmpIslaEnemigaSec2Mapa2;     // Sec Sup Der
+                }
+                break;
+            case 2: // MAPA 3 (CONTINENTE)
+                switch (indiceIsla) {
+                    case 5: return hBmpIslaEnemigaGrandeMapa3;   // Grande Inf Der
+                    case 6: return hBmpIslaEnemigaSec1Mapa3;     // Sec Sup Izq
+                    case 7: return hBmpIslaEnemigaSec2Mapa3;     // Sec Sup Der
+                }
+                break;
         }
-        break;
-    case 1: // MAPA 2
-        switch (indiceIsla)
-        {
-        case 0:
-            return hBmpIslaGrandeMapa2;
-        case 1:
-            return hBmpIslaSec2Mapa2;
-        case 2:
-            return hBmpIslaSec4Mapa2;
-        case 3:
-            return hBmpIslaSec1Mapa2;
-        case 4:
-            return hBmpIslaSec3Mapa2;
-        }
-        break;
-    case 2: // MAPA 3
-        switch (indiceIsla)
-        {
-        case 0:
-            return hBmpIslaGrandeMapa3;
-        case 1:
-            return hBmpIslaSec2Mapa3;
-        case 2:
-            return hBmpIslaSec4Mapa3;
-        case 3:
-            return hBmpIslaSec1Mapa3;
-        case 4:
-            return hBmpIslaSec3Mapa3;
-        }
-        break;
+    }
+    
+    // ISLAS DEL JUGADOR (índices 0-4)
+    switch (mapaId) {
+        case 0: // MAPA 1
+            switch (indiceIsla) {
+                case 0: return hBmpIslaGrande;
+                case 1: return hBmpIslaSec2;
+                case 2: return hBmpIslaSec4;
+                case 3: return hBmpIslaSec1;
+                case 4: return hBmpIslaSec3;
+            }
+            break;
+        case 1: // MAPA 2
+            switch (indiceIsla) {
+                case 0: return hBmpIslaGrandeMapa2;
+                case 1: return hBmpIslaSec2Mapa2;
+                case 2: return hBmpIslaSec4Mapa2;
+                case 3: return hBmpIslaSec1Mapa2;
+                case 4: return hBmpIslaSec3Mapa2;
+            }
+            break;
+        case 2: // MAPA 3
+            switch (indiceIsla) {
+                case 0: return hBmpIslaGrandeMapa3;
+                case 1: return hBmpIslaSec2Mapa3;
+                case 2: return hBmpIslaSec4Mapa3;
+                case 3: return hBmpIslaSec1Mapa3;
+                case 4: return hBmpIslaSec3Mapa3;
+            }
+            break;
     }
     return NULL;
 }
@@ -85,40 +94,78 @@ void inicializarIslas(int mapaId)
     for (int i = 0; i < MAX_ISLAS; i++)
         misIslas[i].activa = 0;
 
-    // ISLA CENTRAL (Grande)
+    // ====================================================
+    // ISLAS DEL JUGADOR (5 islas originales - CENTRO/NORTE)
+    // ====================================================
+
+    // ISLA CENTRAL (Grande) - BASE DEL JUGADOR
     misIslas[0].activa = 1;
     misIslas[0].x = 1100;
     misIslas[0].y = 1100;
     misIslas[0].ancho = 1000;
     misIslas[0].alto = 1000;
+    misIslas[0].esEnemiga = 0;
 
-    // ISLA NORTE
+    // ISLA NORTE - RECURSOS DEL JUGADOR
     misIslas[1].activa = 1;
     misIslas[1].x = 1250;
     misIslas[1].y = 200;
     misIslas[1].ancho = 700;
     misIslas[1].alto = 700;
+    misIslas[1].esEnemiga = 0;
 
-    // ISLA SUR
+    // ISLA SUR - RECURSOS DEL JUGADOR
     misIslas[2].activa = 1;
     misIslas[2].x = 1350;
     misIslas[2].y = 2300;
     misIslas[2].ancho = 500;
     misIslas[2].alto = 500;
+    misIslas[2].esEnemiga = 0;
 
-    // ISLA OESTE
+    // ISLA OESTE - RECURSOS DEL JUGADOR
     misIslas[3].activa = 1;
     misIslas[3].x = 580;
     misIslas[3].y = 1475;
     misIslas[3].ancho = 320;
     misIslas[3].alto = 250;
+    misIslas[3].esEnemiga = 0;
 
-    // ISLA ESTE
+    // ISLA ESTE - RECURSOS DEL JUGADOR
     misIslas[4].activa = 1;
     misIslas[4].x = 2300;
     misIslas[4].y = 1400;
     misIslas[4].ancho = 400;
     misIslas[4].alto = 400;
+    misIslas[4].esEnemiga = 0;
+
+    // ====================================================
+    // ISLAS ENEMIGAS (3 nuevas - ESQUINAS/EXTREMOS)
+    // ====================================================
+
+    // 1. ISLA ENEMIGA GRANDE (Esquina INFERIOR DERECHA)
+    // Donde estaba el edificio enemigo solitario
+    misIslas[5].activa = 1;
+    misIslas[5].x = 2600;    // Esquina derecha
+    misIslas[5].y = 2600;    // Esquina inferior
+    misIslas[5].ancho = 900;
+    misIslas[5].alto = 900;
+    misIslas[5].esEnemiga = 1;
+
+    // 2. ISLA ENEMIGA 2 (Esquina SUPERIOR IZQUIERDA)
+    misIslas[6].activa = 1;
+    misIslas[6].x = 100;     // Esquina izquierda
+    misIslas[6].y = 100;     // Esquina superior
+    misIslas[6].ancho = 500; // Tamaño de isla secundaria
+    misIslas[6].alto = 500;
+    misIslas[6].esEnemiga = 1;
+
+    // 3. ISLA ENEMIGA 3 (Esquina SUPERIOR DERECHA)
+    misIslas[7].activa = 1;
+    misIslas[7].x = 2800;    // Esquina derecha
+    misIslas[7].y = 100;     // Esquina superior
+    misIslas[7].ancho = 400; // Tamaño de isla secundaria
+    misIslas[7].alto = 400;
+    misIslas[7].esEnemiga = 1;
 }
 
 // --- 2. SISTEMA DE FÍSICA Y COLISIONES (ESCÁNER) ---
@@ -1013,14 +1060,35 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
     // ---------------------------------------------------------
     // 2. CAPA SUELO: ISLAS
     // ---------------------------------------------------------
-    for (int i = 0; i < MAX_ISLAS; i++) {
+        for (int i = 0; i < MAX_ISLAS; i++) {
         if (!misIslas[i].activa) continue;
         int sx = (misIslas[i].x - cam.x) * cam.zoom;
         int sy = (misIslas[i].y - cam.y) * cam.zoom;
-        if (sx + (misIslas[i].ancho * cam.zoom) < 0 || sx > ancho) continue; // Optimización
+        if (sx + (misIslas[i].ancho * cam.zoom) < 0 || sx > ancho) continue;
 
         HBITMAP img = obtenerImagenIsla(i, mapaId);
-        if (img) DibujarImagen(hdc, img, sx, sy, misIslas[i].ancho * cam.zoom, misIslas[i].alto * cam.zoom);
+        if (img) {
+            DibujarImagen(hdc, img, sx, sy, 
+                         misIslas[i].ancho * cam.zoom, 
+                         misIslas[i].alto * cam.zoom);
+            
+            // Opcional: Dibujar overlay rojo para islas enemigas
+            if (misIslas[i].esEnemiga) {
+                HBRUSH hRedOverlay = CreateSolidBrush(RGB(255, 0, 0));
+                HBRUSH hOldBrush = SelectObject(hdc, hRedOverlay);
+                SetBkMode(hdc, TRANSPARENT);
+                
+                // Modo de mezcla para semi-transparencia
+                BLENDFUNCTION blend = {AC_SRC_OVER, 0, 128, AC_SRC_ALPHA};
+                AlphaBlend(hdc, sx, sy, 
+                          misIslas[i].ancho * cam.zoom, 
+                          misIslas[i].alto * cam.zoom,
+                          hdc, 0, 0, 1, 1, blend);
+                
+                SelectObject(hdc, hOldBrush);
+                DeleteObject(hRedOverlay);
+            }
+        }
     }
 
     // ---------------------------------------------------------

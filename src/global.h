@@ -27,7 +27,7 @@
 #define TOTAL_MAPAS 3
 
 // --- CONSTANTES DE ISLAS ---
-#define MAX_ISLAS 5
+#define MAX_ISLAS 8
 
 // Definimos direcciones para usar nombres en lugar de números
 #define DIR_ABAJO     0
@@ -139,6 +139,7 @@ typedef struct {
     int alto;       // Alto de la imagen
     int margen;     // Borde de agua
     int activa;     // 1 = Existe
+    int esEnemiga;  // 1 = Isla Enemiga, 0 = Isla del Jugador (NUEVO)
 } Isla;
 
 typedef struct {
