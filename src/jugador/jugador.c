@@ -432,11 +432,24 @@ void actualizarCamara(Camera *cam, Jugador j) {
     cam->x = j.x - (anchoPantalla / 2 / cam->zoom);
     cam->y = j.y - (altoPantalla / 2 / cam->zoom);
     
-    // Límites (0,0)
-    if (cam->x < 0) cam->x = 0;
-    if (cam->y < 0) cam->y = 0;
+    // --- NUEVO: Permitir que la cámara se mueva en agua profunda ---
+    // En el SUR-ESTE ya funciona porque hay agua profunda
+    // En el NOR-OESTE necesitamos permitirlo también
+    
+    // Mínimos: permitir valores NEGATIVOS (mostrar "mar infinito")
+    int minX = -700;  // 500px de "mar infinito" al noroeste
+    int minY = -700;  // 500px de "mar infinito" al noroeste
+    
+    if (cam->x < minX) cam->x = minX;
+    if (cam->y < minY) cam->y = minY;
+    
+    // Máximos: ya funcionan bien (hay agua profunda al sureste)
+    int maxX = MUNDO_ANCHO - (anchoPantalla / cam->zoom) + 700;
+    int maxY = MUNDO_ALTO - (altoPantalla / cam->zoom) + 700;
+    
+    if (cam->x > maxX) cam->x = maxX;
+    if (cam->y > maxY) cam->y = maxY;
 }
-
 void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     // Coordenadas EXACTAS del muelle principal
     #define MUELLE_X 2050
