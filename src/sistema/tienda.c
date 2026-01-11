@@ -326,6 +326,30 @@ if (my >= ty && my <= ty + 40)
                 crearTextoFlotante(msgX, msgY, "Bote Adquirido!", 0, RGB(0, 255, 255));
             }
         }
+        else if (my >= startY + 320 && my <= startY + 380)
+        { // Armadura de Placas (Requiere Nivel 3)
+            if (j->nivel < 3) { crearTextoFlotante(msgX, msgY, "Req. Nivel 3", 0, RGB(255, 50, 50)); return; }
+            if (j->tieneArmadura) return; // Ya la tienes
+
+            BOOL falta = FALSE;
+            // Costo: 200 Oro + 50 Hierro
+            if (j->hierro < 50) { sprintf(msg, "Faltan %d Hie", 50 - j->hierro); crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+            if (j->oro < 200) { sprintf(msg, "Faltan %d Oro", 200 - j->oro); crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
+            
+            if (!falta) {
+                j->oro -= 200;
+                j->hierro -= 50;
+                
+                j->tieneArmadura = TRUE;    // Habilita el uso
+                j->armaduraActual = 100;    // Rellena la barra de escudo visualmente
+                j->armaduraEquipada = TRUE; // Se la pone automáticamente al comprar
+                j->herramientaActiva = HERRAMIENTA_NADA; // Quita herramientas de la mano
+                
+                ganarExperiencia(j, 40);
+                crearTextoFlotante(msgX, msgY, "Armadura Equipada!", 0, RGB(0, 255, 0));
+                PlaySound("SystemAsterisk", NULL, SND_ASYNC);
+            }
+        }
         InvalidateRect(hwnd, NULL, FALSE);
     }
 
@@ -598,6 +622,26 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
         {
             SetTextColor(hdc, RGB(255, 215, 0));
             TextOut(hdc, startX + 50, iy + 20, "50 O + 30 M", 11);
+        }
+        SetTextColor(hdc, RGB(255, 255, 255));
+
+        // Armadura
+        iy += 80;
+        // Usamos el icono de inventario si existe, si no, el de armadura normal
+        HBITMAP iconoArm = (hBmpIconoArmaduraInv) ? hBmpIconoArmaduraInv : hBmpIconoPiedra; 
+        DibujarImagen(hdc, iconoArm, startX, iy, 40, 40);
+        
+        TextOut(hdc, startX + 50, iy, "Armadura Pesada", 15);
+        
+        if (j->tieneArmadura)
+        {
+            SetTextColor(hdc, RGB(0, 255, 0));
+            TextOut(hdc, startX + 50, iy + 20, "EN PROPIEDAD", 12);
+        }
+        else
+        {
+            SetTextColor(hdc, RGB(255, 215, 0));
+            TextOut(hdc, startX + 50, iy + 20, "200 O + 50 Hie", 14);
         }
         SetTextColor(hdc, RGB(255, 255, 255));
     }
