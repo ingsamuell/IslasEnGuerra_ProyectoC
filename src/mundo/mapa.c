@@ -233,7 +233,46 @@ void generarColisionDeMapaCompleto(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int m
         }
     }
 }
+void dibujarInterfazGuerra(HDC hdc, int ancho) {
+    int enemigosVivos = 0;
+    int soldadosVivos = 0;
 
+    // Contar unidades
+    for (int i = 0; i < MAX_UNIDADES; i++) {
+        if (unidades[i].activa) {
+            if (unidades[i].bando == BANDO_ENEMIGO) enemigosVivos++;
+            if (unidades[i].tipo == TIPO_SOLDADO && unidades[i].bando == BANDO_ALIADO) soldadosVivos++;
+        }
+    }
+
+    // Solo dibujar si hay enemigos (Modo Batalla)
+    if (enemigosVivos > 0) {
+        // Fondo Rojo Superior
+        RECT r = {0, 0, ancho, 40};
+        HBRUSH brochaAlerta = CreateSolidBrush(RGB(150, 0, 0));
+        FillRect(hdc, &r, brochaAlerta);
+        DeleteObject(brochaAlerta);
+
+        // Texto "MODO BATALLA"
+        SetBkMode(hdc, TRANSPARENT);
+        SetTextColor(hdc, RGB(255, 255, 0)); // Amarillo
+        
+        char texto[128];
+        sprintf(texto, " MODO BATALLA !!!   Enemigos: %d   |   Tus Soldados: %d", enemigosVivos, soldadosVivos);
+        
+        // Centrar texto (aprox)
+        TextOut(hdc, (ancho / 2) - 150, 10, texto, strlen(texto));
+        
+        // Borde parpadeante (opcional)
+        static int flash = 0; flash++;
+        if ((flash / 10) % 2 == 0) {
+            HPEN hPen = CreatePen(PS_SOLID, 3, RGB(255, 0, 0));
+            HGDIOBJ old = SelectObject(hdc, hPen);
+            MoveToEx(hdc, 0, 38, NULL); LineTo(hdc, ancho, 38);
+            SelectObject(hdc, old); DeleteObject(hPen);
+        }
+    }
+}
 void inicializarNieblaTotal() {
     for (int y = 0; y < MUNDO_FILAS; y++) {
         for (int x = 0; x < MUNDO_COLUMNAS; x++) {
@@ -877,9 +916,6 @@ void procesarClickSeleccionMapa(int x, int y, HWND hwnd, EstadoJuego *estado)
             {
                 estado->opcionSeleccionada = i;
 
-                // Sonido de selección (Opcional, usa sonido de sistema por defecto)
-                PlaySound("SystemSelect", NULL, SND_ASYNC);
-
                 // Forzar redibujado inmediato para ver el marco dorado
                 InvalidateRect(hwnd, NULL, FALSE);
             }
@@ -898,8 +934,6 @@ void procesarEnterMenu(HWND hwnd, EstadoJuego *estado)
     switch (estado->opcionSeleccionada)
     {
     case 0: // JUGAR
-        // Sonido de inicio
-        PlaySound("SystemStart", NULL, SND_ASYNC);
 
         // Cambiar de estado
         estado->estadoActual = ESTADO_SELECCION_MAPA;
@@ -1179,5 +1213,6 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
              TextOut(hdc, tx, ty, listaTextos[i].texto, strlen(listaTextos[i].texto));
         }
     }
+    dibujarInterfazGuerra(hdc, ancho);
 }
 

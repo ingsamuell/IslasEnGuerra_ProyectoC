@@ -48,6 +48,8 @@ HBITMAP hBmpMineroAnim[4][3];
 HBITMAP hBmpLenadorAnim[4][3];
 HBITMAP hBmpCazadorAnim[4][3];
 HBITMAP hBmpSoldadoAnim[4][3];
+HBITMAP hBmpPirataAnim[4][3];
+HBITMAP hBmpMagoAnim[4][3];
 
 // Tienda y Varios
 HBITMAP hBmpTienda[2] = {NULL, NULL};
@@ -157,6 +159,25 @@ HBITMAP CargarImagen(const char *ruta)
     return hBmp;
 }
 
+void CargarSetEnemigo(HBITMAP destino[4][3], char *prefijo) {
+    char *nombresDir[4] = {"base", "espalda", "izquierda", "derecha"}; // Orden: Abajo, Arriba, Izq, Der
+    char ruta[128];
+
+    for (int d = 0; d < 4; d++) {
+        // Frame 0: Quieto (ej. "Mago-base.bmp")
+        sprintf(ruta, "assets/enemigos/%s-%s.bmp", prefijo, nombresDir[d]);
+        destino[d][0] = CargarImagen(ruta);
+
+        // Frame 1: Pie derecho (ej. "Mago-base-1.bmp")
+        sprintf(ruta, "assets/enemigos/%s-%s-1.bmp", prefijo, nombresDir[d]);
+        destino[d][1] = CargarImagen(ruta);
+
+        // Frame 2: Pie izquierdo (ej. "Mago-base-2.bmp")
+        sprintf(ruta, "assets/enemigos/%s-%s-2.bmp", prefijo, nombresDir[d]);
+        destino[d][2] = CargarImagen(ruta);
+    }
+}
+
 // Carga automática para NPCs (y Jugador con herramientas si sigue patrón)
 void CargarSetUnidad(HBITMAP destino[4][3], char *herramienta)
 {
@@ -183,15 +204,13 @@ void CargarSetUnidad(HBITMAP destino[4][3], char *herramienta)
 
 void CargarRecursos()
 {
+	
     // 1. MENÚ
     hBmpFondoMenu = CargarImagen("assets/ui/fondo_menu.bmp");
     hBmpBtnJugar = CargarImagen("assets/ui/btn_jugar.bmp");
     hBmpBtnPartidas = CargarImagen("assets/ui/btn_partidas.bmp");
     hBmpBtnInstrucciones = CargarImagen("assets/ui/btn_instrucciones.bmp");
     hBmpBtnSalir = CargarImagen("assets/ui/btn_salir.bmp");
-    hBmpBoton = CargarImagen("assets/ui/boton.bmp");
-    hBmpBotonSel = CargarImagen("assets/ui/boton_sel.bmp");
-    hBmpTitulo = CargarImagen("assets/ui/titulo.bmp");
     hBmpInvCerrado = CargarImagen("assets/ui/boton_inv_cerrado.bmp");
     hBmpInvAbierto = CargarImagen("assets/ui/boton_inv_abierto.bmp");
 
@@ -266,7 +285,6 @@ void CargarRecursos()
     hBmpIslaSec2 = CargarImagen("assets/mundo/islasecundaria_DOS.bmp");
     hBmpIslaSec3 = CargarImagen("assets/mundo/islasecundaria_TRES.bmp");
     hBmpIslaSec4 = CargarImagen("assets/mundo/islasecundaria_CUATRO.bmp");
-    hBmpCastilloJugador = CargarImagen("assets/mundo/Castillo_jugador.bmp");
     hBmpTienda[0] = CargarImagen("assets/mundo/tienda-de-ventas-pixilart.bmp");
     hBmpTienda[1] = CargarImagen("assets/mundo/tienda-de-ventas-pixilart-movimiento.bmp");
     hBmpHierroPicar = CargarImagen("assets/mundo/Hierro-picar.bmp");
@@ -383,6 +401,11 @@ hBmpIslaEnemigaSec2Mapa3 = CargarImagen("assets/mundo/islasecundaria_enemiga2_ma
     hBmpEscudo0 = CargarImagen("assets/ui/escudo_0.bmp");
     hBmpBarraXPVacia = CargarImagen("assets/ui/barra_xp_vacia.bmp");
     hBmpBarraXPLlena = CargarImagen("assets/ui/barra_xp_llena.bmp");
+    // --- 8. CARGAR ENEMIGOS ---
+
+	CargarSetEnemigo(hBmpMagoAnim, "Mago");
+	CargarSetEnemigo(hBmpPirataAnim, "pirata");
+    
 }
 
 void LiberarRecursos() {
@@ -544,6 +567,19 @@ void LiberarRecursos() {
     if (hBmpBarco[0]) DeleteObject(hBmpBarco[0]);
     if (hBmpBarco[1]) DeleteObject(hBmpBarco[1]);
     if (hBmpMuelle) DeleteObject(hBmpMuelle);
+    // --- LIBERAR ENEMIGOS (PIRATA Y MAGO) ---
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 3; j++) {
+            if (hBmpPirataAnim[i][j]) {
+                DeleteObject(hBmpPirataAnim[i][j]);
+                hBmpPirataAnim[i][j] = NULL; // Buena práctica
+            }
+            if (hBmpMagoAnim[i][j]) {
+                DeleteObject(hBmpMagoAnim[i][j]);
+                hBmpMagoAnim[i][j] = NULL;
+            }
+        }
+    }
 }
 
 void DibujarImagen(HDC hdcDestino, HBITMAP hBitmap, int x, int y, int ancho, int alto)

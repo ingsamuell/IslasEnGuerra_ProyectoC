@@ -36,6 +36,8 @@ extern HBITMAP hBmpMineroAnim[4][3];  // NPC Minero
 extern HBITMAP hBmpLenadorAnim[4][3]; // NPC Leñador
 extern HBITMAP hBmpCazadorAnim[4][3]; // NPC Cazador
 extern HBITMAP hBmpSoldadoAnim[4][3]; // NPC Soldado
+extern HBITMAP hBmpPirataAnim[4][3];
+extern HBITMAP hBmpMagoAnim[4][3];
 
 // OTRAS ENTIDADES
 extern HBITMAP hBmpVaca[8];

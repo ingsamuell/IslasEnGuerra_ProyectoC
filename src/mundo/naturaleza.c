@@ -112,7 +112,7 @@ void talarArbol(Jugador *j) {
                 // =========================================================
                 // La XP se gana incluso si la mochila está llena, porque el trabajo se hizo.
                 ganarExperiencia(j, XP_ARBOL); 
-                crearTextoFlotante(misArboles[i].x, misArboles[i].y - 40, "+5 XP", 0, RGB(0, 255, 255)); // Texto Cyan
+                crearTextoFlotante(misArboles[i].x, misArboles[i].y - 40, "+15 XP", 0, RGB(0, 255, 255)); // Texto Cyan
                 // =========================================================
 
                 if (ganMad == 0 && ganHoj == 0) {
@@ -207,7 +207,7 @@ void picarMina(Jugador *j) {
                 // CASO 1: PIEDRA
                 if (misMinas[i].tipo == 0) { 
                     int ant = j->piedra;
-                    agregarRecurso(&j->piedra, 5, j->nivelMochila);
+                    agregarRecurso(&j->piedra, 10, j->nivelMochila);
                     int gan = j->piedra - ant;
                     
                     if (gan > 0) crearTextoFlotante(misMinas[i].x, misMinas[i].y, "Piedra", gan, RGB(150, 150, 150));
@@ -220,7 +220,7 @@ void picarMina(Jugador *j) {
                 // CASO 2: HIERRO
                 else { 
                     int ant = j->hierro;
-                    agregarRecurso(&j->hierro, 3, j->nivelMochila);
+                    agregarRecurso(&j->hierro, 15, j->nivelMochila);
                     int gan = j->hierro - ant;
                     
                     if (gan > 0) crearTextoFlotante(misMinas[i].x, misMinas[i].y, "Hierro", gan, RGB(192, 192, 192));

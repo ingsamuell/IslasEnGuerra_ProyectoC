@@ -82,9 +82,9 @@ void dibujarEdificio(HDC hdc, int x, int y, int tipoTamano, int esEnemigo, int m
 // 3. MODO FANTASMA (LOGICA DE CONSTRUCCIÓN)
 // -------------------------------------------------------------
 void dibujarFantasmaConstruccion(HDC hdc, Jugador *j, int mx, int my, int mapaID, Camera *cam) {
-    int tamBase = 128; 
-    if (j->edificioSeleccionado == 2) tamBase = 256;
-    if (j->edificioSeleccionado == 3) tamBase = 512;
+    int tamBase = 64; 
+    if (j->edificioSeleccionado == 2) tamBase = 128;
+    if (j->edificioSeleccionado == 3) tamBase = 180;
 
     int esValido = 1;
     COLORREF colorEstado = RGB(0, 255, 0); // Verde

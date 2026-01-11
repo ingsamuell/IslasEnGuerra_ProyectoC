@@ -44,12 +44,12 @@
 #define RADIO_ESTABLO 100 // Tamaño del área del establo
 #define MAX_VACAS 8
 #define VIDA_VACA 100
-#define MAX_ARBOLES 40    // Un buen número para cubrir 5 islas
+#define MAX_ARBOLES 80    // Un buen número para cubrir 5 islas
 #define MAX_TIBURONES 30
 
 // --- TESOROS Y RECURSOS ---
 #define MAX_TESOROS 2
-#define MAX_MINAS 20
+#define MAX_MINAS 30
 #define MAX_PARTICULAS 50
 #define MAX_TEXTOS 20
 
@@ -59,6 +59,10 @@
 #define TIPO_LENADOR 2    // Hacha
 #define TIPO_MINERO  3    // Pico
 #define TIPO_SOLDADO 4    // Armadura
+#define TIPO_ENEMIGO_PIRATA 10
+#define TIPO_ENEMIGO_MAGO   11
+#define BANDO_ALIADO 0
+#define BANDO_ENEMIGO 1
 
 // Estados de la unidad
 #define ESTADO_IDLE      0
@@ -67,14 +71,16 @@
 #define ESTADO_TALANDO   3
 #define ESTADO_MINANDO   4
 #define ESTADO_EN_CUEVA  5
+#define ESTADO_ATACANDO 10
+#define ESTADO_PERSIGUIENDO 11
 
 // Definición de la Cueva
 #define CUEVA_X 1800
 #define CUEVA_Y 1250
-#define TIEMPO_RESPAWN_RECURSOS 1800  // 30 segundos si el juego corre a 60 FPS
+#define TIEMPO_RESPAWN_RECURSOS 1200  // 30 segundos si el juego corre a 60 FPS
 
 // --- SISTEMA DE EXPERIENCIA (NUEVO) ---
-#define XP_ARBOL      5
+#define XP_ARBOL      15
 #define XP_PIEDRA     10
 #define XP_HIERRO     15
 #define XP_RECOLECCION 2
@@ -120,6 +126,7 @@ typedef struct {
     // Movimiento
     int destinoX, destinoY;
     bool moviendo;  // true si se está desplazando
+    int vidaMax;     
     
     // Stats y Visual
     int vida;
@@ -129,6 +136,13 @@ typedef struct {
     int timerTrabajo;     // Para la barra de progreso de caza/mina
     int targetIndex;      // Para saber a qué vaca está siguiendo
     int contadorAnim;     // Para la animación de caminar
+    // --- SISTEMA DE COMBATE (NUEVO) ---
+    int bando;          // 0 = Aliado, 1 = Enemigo
+    int damage;         // Daño por golpe
+    int rangoAtaque;    // Distancia para atacar
+    int cooldownAtaque; // Velocidad de ataque
+    int timerAtaque;    // Contador interno
+    int targetEsJugador;// 1 si ataca al Jugador, 0 si ataca a otra unidad
 } Unidad;
 
 // --- ESTRUCTURA DE ISLA ---

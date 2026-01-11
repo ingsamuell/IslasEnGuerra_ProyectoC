@@ -46,7 +46,7 @@ void ganarExperiencia(Jugador *j, int cantidad) {
         j->vidaActual = j->vidaMax;
 
         // 5. Feedback Visual (Texto dorado)
-        crearTextoFlotante(j->x, j->y - 50, "¡SUBIENDO DE NIVEL!", 0, RGB(255, 215, 0));
+        crearTextoFlotante(j->x, j->y - 50, "SUBIENDO DE NIVEL!", 0, RGB(255, 215, 0));
     }
 }
 

@@ -11,6 +11,7 @@
 #include "unidades/unidades.h"
 #include "sistema/tienda.h"
 #include "mundo/edificios.h"
+#include "unidades/enemigos.h"
 
 /* ========== VARIABLES GLOBALES ========== */
 char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
@@ -555,6 +556,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 actualizarLogicaSistema(&miJugador);  // Tiburones, Pesca, etc.
                 actualizarRegeneracionRecursos();// Respawn de árboles/minas/vacas
                 actualizarEdificios(0.016f);     
+                // 1. Actualizar Invasiones (El Director)
+				actualizarInvasiones(&miJugador);
+				// 2. Actualizar IA de los Enemigos
+				actualizarIAEnemigos(mapaMundo, &miJugador);
+				// 3. IA de Aliados (Tus soldados atacando enemigos)
+				actualizarUnidades(mapaMundo, &miJugador);
 
                 // --- C) ANIMACIONES AMBIENTALES ---
                 static int timerGato = 0;
