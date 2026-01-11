@@ -133,53 +133,98 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
     // Dibujar el icono centrado
     if (iconoMano) DibujarImagen(hdc, iconoMano, boxX + 8, boxY + 8, 32, 32);
 
-    // E. INVENTARIO ABIERTO (Rejilla)
     if (jugador->inventarioAbierto)
     {
-        int px = 90, py = 120;
-        int anchoFondo = 360;
-        int alturaFondo = 300;
+        int px = 90, py = 100; // Subimos un poco el panel
+        int anchoFondo = 460;  // Más ancho para que quepa todo
+        int alturaFondo = 400; // Más alto para las herramientas grandes
 
+        // Fondo y Marco
         HBRUSH fondo = CreateSolidBrush(RGB(30, 30, 35));
         RECT r = {px, py, px + anchoFondo, py + alturaFondo};
         FillRect(hdc, &r, fondo); DeleteObject(fondo);
-        
-        HBRUSH bordeInv = CreateSolidBrush(RGB(255, 255, 255));
+        HBRUSH bordeInv = CreateSolidBrush(RGB(255, 215, 0)); // Dorado
         FrameRect(hdc, &r, bordeInv); DeleteObject(bordeInv);
 
         int startX = px + 20;
-        int startY = py + 40;
+        int startY = py + 30;
         int maxCap = obtenerCapacidadMaxima(jugador->nivelMochila);
+        int colW = 110; // Ancho de columna
+        int rowH = 60;  // Alto de fila
 
-        // Fila 1
+        // --- FILA 1: MATERIALES BÁSICOS ---
         dibujarItemRejilla(hdc, hBmpIconoMadera, jugador->madera, maxCap, startX, startY, "Madera");
-        dibujarItemRejilla(hdc, hBmpIconoPiedra, jugador->piedra, maxCap, startX + 110, startY, "Piedra");
-        dibujarItemRejilla(hdc, hBmpIconoHierro, jugador->hierro, maxCap, startX + 220, startY, "Hierro");
+        dibujarItemRejilla(hdc, hBmpIconoPiedra, jugador->piedra, maxCap, startX + colW, startY, "Piedra");
+        dibujarItemRejilla(hdc, hBmpIconoHierro, jugador->hierro, maxCap, startX + colW*2, startY, "Hierro");
+        dibujarItemRejilla(hdc, hBmpIconoOro, jugador->oro, maxCap, startX + colW*3, startY, "Oro");
 
-        // Fila 2
-        dibujarItemRejilla(hdc, hBmpIconoHoja, jugador->hojas, maxCap, startX, startY + 60, "Hojas");
-        dibujarItemRejilla(hdc, hBmpIconoComida, jugador->comida, maxCap, startX + 110, startY + 60, "Comida");
-        dibujarItemRejilla(hdc, hBmpIconoOro, jugador->oro, maxCap, startX + 220, startY + 60, "Oro");
+        // --- FILA 2: CONSUMIBLES Y PESCA ---
+        dibujarItemRejilla(hdc, hBmpIconoHoja, jugador->hojas, maxCap, startX, startY + rowH, "Hojas");
+        dibujarItemRejilla(hdc, hBmpIconoComida, jugador->comida, maxCap, startX + colW, startY + rowH, "Comida");
+        
+        // ¡AQUÍ ESTÁ TU PESCADO!
+        dibujarItemRejilla(hdc, hBmpIconoPescado, jugador->pescado, maxCap, startX + colW*2, startY + rowH, "Pescado");
 
-        // Fila 3 (Herramientas)
-        if (jugador->nivelMochila >= 2) {
-            if (jugador->tieneHacha) DibujarImagen(hdc, hBmpIconoHacha, startX, startY + 120, 32, 32);
-            else { SetTextColor(hdc, RGB(100,100,100)); TextOut(hdc, startX, startY+130, "Bloq.", 5); }
+        // --- SECCIÓN INFERIOR: HERRAMIENTAS GRANDES ---
+        int toolY = startY + (rowH * 2) + 20;
+        
+        // Título de sección
+        SetTextColor(hdc, RGB(255, 215, 0));
+        TextOut(hdc, startX, toolY - 20, "HERRAMIENTAS EQUIPABLES", 23);
 
-            if (jugador->tienePico) DibujarImagen(hdc, hBmpIconoPico, startX + 110, startY + 120, 32, 32);
-            else { SetTextColor(hdc, RGB(100,100,100)); TextOut(hdc, startX+110, startY+130, "Bloq.", 5); }
+        // Estructura para dibujar herramientas en bucle
+        struct ToolDisplay {
+            HBITMAP bmp;
+            char *nombre;
+            char *tecla;
+            BOOL tiene;
+            int tipoID;
+        };
 
-            if (jugador->tieneEspada) DibujarImagen(hdc, hBmpIconoEspada, startX + 220, startY + 120, 32, 32);
-            else { SetTextColor(hdc, RGB(100,100,100)); TextOut(hdc, startX+220, startY+130, "Bloq.", 5); }
+        struct ToolDisplay tools[] = {
+            {hBmpIconoEspada, "Espada", "[1]", jugador->tieneEspada, HERRAMIENTA_ESPADA},
+            {hBmpIconoPico,   "Pico",   "[2]", jugador->tienePico,   HERRAMIENTA_PICO},
+            {hBmpIconoHacha,  "Hacha",  "[3]", jugador->tieneHacha,  HERRAMIENTA_HACHA},
+            {hBmpIconoCana,   "Cana",   "[--]", jugador->tieneCana,  HERRAMIENTA_CANA} // Sin tecla directa, automático en bote
+        };
+
+        for (int i = 0; i < 4; i++) {
+            int tx = startX + (i * 110);
             
-            SetTextColor(hdc, RGB(150, 150, 150));
-            TextOut(hdc, startX, startY + 160, "Usa 1, 2, 3 para equipar", 24);
-        } else {
-            SetTextColor(hdc, RGB(100, 100, 100));
-            TextOut(hdc, startX, startY + 130, "Nivel 2 para desbloquear armas", 30);
+            // Cuadro de fondo de la herramienta
+            RECT rT = {tx, toolY, tx + 64, toolY + 64};
+            HBRUSH bgT = CreateSolidBrush(tools[i].tiene ? RGB(60, 60, 70) : RGB(20, 20, 20));
+            FillRect(hdc, &rT, bgT); DeleteObject(bgT);
+            
+            // Borde (Verde si está equipada)
+            if (jugador->herramientaActiva == tools[i].tipoID && tools[i].tipoID != 0) {
+                HBRUSH brActiva = CreateSolidBrush(RGB(0, 255, 0));
+                FrameRect(hdc, &rT, brActiva); DeleteObject(brActiva);
+            } else {
+                HBRUSH brNormal = CreateSolidBrush(RGB(100, 100, 100));
+                FrameRect(hdc, &rT, brNormal); DeleteObject(brNormal);
+            }
+
+            // Icono Grande (48x48)
+            if (tools[i].tiene && tools[i].bmp) {
+                DibujarImagen(hdc, tools[i].bmp, tx + 8, toolY + 8, 48, 48);
+                
+                // Texto Nombre
+                SetTextColor(hdc, RGB(255, 255, 255));
+                TextOut(hdc, tx, toolY + 70, tools[i].nombre, strlen(tools[i].nombre));
+                
+                // Texto Tecla (Amarillo)
+                SetTextColor(hdc, RGB(255, 255, 0));
+                TextOut(hdc, tx + 40, toolY + 2, tools[i].tecla, strlen(tools[i].tecla));
+            } else {
+                // Bloqueado
+                SetTextColor(hdc, RGB(80, 80, 80));
+                TextOut(hdc, tx + 10, toolY + 25, "Bloq.", 5);
+            }
         }
         
-        char tNivel[32]; sprintf(tNivel, "Mochila Nivel %d", jugador->nivelMochila);
+        // Info de nivel mochila
+        char tNivel[32]; sprintf(tNivel, "Capacidad: %d items (Nvl %d)", maxCap, jugador->nivelMochila);
         SetTextColor(hdc, RGB(0, 255, 255));
         TextOut(hdc, px + 20, py + alturaFondo - 25, tNivel, strlen(tNivel));
     }

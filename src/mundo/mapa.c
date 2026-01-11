@@ -394,28 +394,33 @@ void descubrirMapa(float centroX, float centroY, float radio) {
 
 void actualizarLogicaSistema(Jugador *j)
 {
-    // Pesca
+    // Pesca (Si está en el bote de pesca)
     if (j->estadoBarco == 1)
     {
         j->timerPesca++;
-        if (j->timerPesca >= 600)
-        { // 10 seg
+        if (j->timerPesca >= 180) // 3 segundos
+        { 
             j->timerPesca = 0;
 
-            // --- CORRECCIÓN LÍMITES ---
-            int ant = j->comida; // Usamos comida en lugar de pescado para consistencia
-            agregarRecurso(&j->comida, 3, j->nivelMochila);
-            int gan = j->comida - ant;
+            // --- CAMBIO: AHORA PESCAMOS 'PESCADO', NO 'COMIDA' ---
+            int ant = j->pescado; 
+            agregarRecurso(&j->pescado, 1, j->nivelMochila); // 1 Pescado por vez
+            int gan = j->pescado - ant;
 
-            if (gan > 0)
-                crearTextoFlotante(j->x, j->y, "Pescado", gan, RGB(100, 200, 255));
-            else
+            if (gan > 0) {
+                // Mensaje visual con color Cyan
+                crearTextoFlotante(j->x, j->y, "+1 Pescado", 0, RGB(0, 255, 255));
+            }
+            else {
                 crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
+            }
         }
     }
-    else{
-        j->timerPesca = 0;}
-    actualizarTiburones(j); // <--- AGREGAR AQUÍ
+    else {
+        j->timerPesca = 0;
+    }
+    
+    actualizarTiburones(j);
     descubrirMapa(j->x + 16, j->y + 16, 100.0f);
 }
 
