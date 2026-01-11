@@ -335,37 +335,47 @@ void moverJugador(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, in
     // 2. Animación
     if (dx != 0 || dy != 0) {
         j->pasoAnimacion++;
-        int estado = (j->pasoAnimacion / 4) % 4; // Velocidad de animación
+        int estado = (j->pasoAnimacion / 4) % 4;
         j->frameAnim = (estado == 0) ? 1 : ((estado == 2) ? 2 : 0);
     } else {
         j->frameAnim = 1; // Quieto
     }
 
-    // 3. Colisiones
-    int centroX = 1600; int centroY = 1600; int radioSeguro = 900; // Limites (ajusta según tu mapa)
+    // 3. Límites del mundo
+    int centroX = 1600; int centroY = 1600; int radioSeguro = 900;
 
     // --- EJE X ---
     int futuroX = j->x + (dx * j->velocidad);
-    // Usamos EsSuelo de mapa.h para verificar
-    int esTierraX = EsSuelo(futuroX + 16, j->y + 24, mapa); 
     
-    BOOL puedeX = (j->estadoBarco == 0 && esTierraX) || (j->estadoBarco > 0 && !esTierraX);
+    // ✅ VERIFICACIÓN CON 2 PUNTOS (PIES y CABEZA)
+    int esTierraPiesX = EsSuelo(futuroX + 16, j->y + 16, mapa);  // Punto actual (pies)
+    int esTierraCabezaX = EsSuelo(futuroX + 8, j->y + 1, mapa);  // Nuevo punto (cabeza)
     
-    // Límite Bote
+    // Para estar en tierra: AMBOS puntos deben ser tierra
+    BOOL puedeX = (j->estadoBarco == 0 && esTierraPiesX && esTierraCabezaX) || 
+                  (j->estadoBarco > 0 && !esTierraPiesX && !esTierraCabezaX);
+    
+    // Límite Bote (solo para bote de pesca, no para barco de guerra)
     if (puedeX && j->estadoBarco == 1) {
         if (sqrt(pow(futuroX - centroX, 2) + pow(j->y - centroY, 2)) > radioSeguro) puedeX = FALSE;
     }
+    
     if (puedeX) j->x = futuroX;
 
     // --- EJE Y ---
     int futuroY = j->y + (dy * j->velocidad);
-    int esTierraY = EsSuelo(j->x + 16, futuroY + 24, mapa);
     
-    BOOL puedeY = (j->estadoBarco == 0 && esTierraY) || (j->estadoBarco > 0 && !esTierraY);
+    // ✅ VERIFICACIÓN CON 2 PUNTOS (PIES y CABEZA)
+    int esTierraPiesY = EsSuelo(j->x + 16, futuroY + 16, mapa);
+    int esTierraCabezaY = EsSuelo(j->x + 8, futuroY + 1, mapa);
+    
+    BOOL puedeY = (j->estadoBarco == 0 && esTierraPiesY && esTierraCabezaY) || 
+                  (j->estadoBarco > 0 && !esTierraPiesY && !esTierraCabezaY);
     
     if (puedeY && j->estadoBarco == 1) {
         if (sqrt(pow(j->x - centroX, 2) + pow(futuroY - centroY, 2)) > radioSeguro) puedeY = FALSE;
     }
+    
     if (puedeY) j->y = futuroY;
 }
 
@@ -383,24 +393,68 @@ void actualizarCamara(Camera *cam, Jugador j) {
 }
 
 void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
-    // Coordenadas del muelle (ajusta a las de tu mapa real)
-    int muelleX = 2050; 
-    int muelleY = 1600;
-
-    // 1. Bajarse
+    // Coordenadas EXACTAS del muelle principal
+    #define MUELLE_X 2050
+    #define MUELLE_Y 1600
+    #define RADIO_PERMITIDO 100  // Radio de 100px alrededor del muelle
+    
+    // Calcular distancia al muelle
+    float dx = j->x - MUELLE_X;
+    float dy = j->y - MUELLE_Y;
+    float distancia = sqrt(dx*dx + dy*dy);
+    
+    // ============================================
+    // 1. CASO: ESTÁ EN BARCO → INTENTAR BAJAR
+    // ============================================
     if (j->estadoBarco > 0) {
-        float dist = sqrt(pow(j->x - muelleX, 2) + pow(j->y - muelleY, 2));
-        if (EsSuelo(j->x, j->y, mapa) || dist < 150) {
-            j->estadoBarco = 0;
-            if (dist < 150) { j->x = muelleX + 20; j->y = muelleY + 20; }
+        // ¿Está lo suficientemente cerca del muelle?
+        if (distancia < RADIO_PERMITIDO) {
+            // ¡SÍ! Puede bajar en el muelle
+            
+            // 1. Cambiar estado
+            j->estadoBarco = 0;  // Ahora está a pie
+            
+            // 2. Ajustar posición EXACTA en el muelle
+            // (Opcional: puedes ajustar esto para que quede mejor visualmente)
+            j->x = MUELLE_X + 30;  // 30px a la derecha del centro del muelle
+            j->y = MUELLE_Y + 20;  // 20px abajo del centro del muelle
+            
+            // 3. Feedback visual y de sonido
+            crearTextoFlotante(j->x, j->y, "Desembarcado en muelle", 0, RGB(0, 255, 200));
+            
+            // (Opcional) Sonido de éxito
+            // PlaySound("SystemExclamation", NULL, SND_ASYNC);
+            
+        } else {
+            // ¡NO! Está demasiado lejos del muelle
+            crearTextoFlotante(j->x, j->y, "Ve al muelle para desembarcar", 0, RGB(255, 50, 50));
+            
+            // (Opcional) Sonido de error
+            // PlaySound("SystemHand", NULL, SND_ASYNC);
         }
         return;
     }
-
-    // 2. Subirse
-    float dist = sqrt(pow(j->x - muelleX, 2) + pow(j->y - muelleY, 2));
-    if (dist < 150) {
-        if (j->tieneBotePesca) { j->estadoBarco = 1; j->x += 60; }
-        else if (j->cantBarcosGuerra > 0) { j->estadoBarco = 2; j->x += 60; }
-    }
+    
+    // ============================================
+    // 2. CASO: ESTÁ A PIE → INTENTAR SUBIR
+    // ============================================
+    // (Mantener lógica original, pero solo en el muelle)
+    if (distancia < RADIO_PERMITIDO) {
+        if (j->tieneBotePesca) { 
+            j->estadoBarco = 1;  // Sube a Bote de Pesca
+            j->x += 60;          // Pequeño ajuste visual
+            
+            crearTextoFlotante(j->x, j->y, "Embarcando en bote de pesca", 0, RGB(0, 200, 255));
+        }
+        else if (j->cantBarcosGuerra > 0) { 
+            j->estadoBarco = 2;  // Sube a Barco de Guerra
+            j->x += 60;          // Pequeño ajuste visual
+            
+            crearTextoFlotante(j->x, j->y, "Embarcando en barco de guerra", 0, RGB(255, 200, 0));
+        } else {
+            // Tiene barco pero no está disponible (caso raro)
+            crearTextoFlotante(j->x, j->y, "No tienes barcos disponibles", 0, RGB(255, 100, 100));
+        }
+    } 
 }
+
