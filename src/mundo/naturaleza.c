@@ -12,17 +12,14 @@ Arbol misArboles[MAX_ARBOLES];
 Mina misMinas[MAX_MINAS];
 Tesoro misTesoros[MAX_TESOROS];
 
-
+// --- FUNCIONES AUXILIARES DE DIBUJO ---
 void dibujarBarraVidaLocal(HDC hdc, int x, int y, int vidaActual, int vidaMax, int ancho) {
-    // Solo dibujar si está dañado (vida < max) y no está muerto
     if (vidaActual < vidaMax && vidaActual > 0) {
-        // Fondo Rojo
         HBRUSH bBg = CreateSolidBrush(RGB(150, 0, 0));
         RECT rBg = {x, y, x + ancho, y + 4};
         FillRect(hdc, &rBg, bBg);
         DeleteObject(bBg);
 
-        // Barra Verde
         float pct = (float)vidaActual / (float)vidaMax;
         int wGreen = (int)(ancho * pct);
         HBRUSH bFg = CreateSolidBrush(RGB(0, 255, 0));
@@ -30,49 +27,75 @@ void dibujarBarraVidaLocal(HDC hdc, int x, int y, int vidaActual, int vidaMax, i
         FillRect(hdc, &rFg, bFg);
         DeleteObject(bFg);
         
-        // Borde Negro fino (Opcional, para contraste)
         HBRUSH bFrame = CreateSolidBrush(RGB(0,0,0));
         FrameRect(hdc, &rBg, bFrame);
         DeleteObject(bFrame);
     }
 }
-// Función auxiliar local (copia simple para no depender de mapa.c)
+
 void crearChispaNaturaleza(float x, float y) { 
     crearChispas((int)x, (int)y, RGB(255, 255, 255)); 
+}
+
+// =========================================================
+// FUNCIONES PARA COLOCACIÓN MANUAL (NUEVO)
+// =========================================================
+
+void ponerArbol(int id, int x, int y, int tipo) {
+    if (id < 0 || id >= MAX_ARBOLES) return;
+
+    misArboles[id].x = x;
+    misArboles[id].y = y;
+    misArboles[id].tipo = tipo; // 0=Chico, 1=Grande
+    misArboles[id].activa = 1;
+    misArboles[id].vida = 5;
+    misArboles[id].timerRegeneracion = 0;
+}
+
+void ponerMina(int id, int x, int y, int tipo) {
+    if (id < 0 || id >= MAX_MINAS) return;
+
+    misMinas[id].x = x;
+    misMinas[id].y = y;
+    misMinas[id].tipo = tipo; // 0=Piedra, 1=Hierro
+    misMinas[id].activa = 1;
+    misMinas[id].vida = 5;
+    misMinas[id].timerRegeneracion = 0;
 }
 
 // --- ÁRBOLES ---
 
 void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
-    int cnt = 0, intentos = 0;
-    int minX = 1200, maxX = 2000, minY = 1200, maxY = 2000;
-    
+    // 1. Limpiar arreglo
     for (int i = 0; i < MAX_ARBOLES; i++) misArboles[i].activa = 0;
 
-    while (cnt < MAX_ARBOLES && intentos < 50000) {
-        intentos++;
-        int rx = minX + (rand() % (maxX - minX));
-        int ry = minY + (rand() % (maxY - minY));
-        int tipo = rand() % 2;
+    // 2. COLOCACIÓN MANUAL DE ÁRBOLES
+    // Formato: ponerArbol(ID, X, Y, TIPO);
+    
+    // -- Bosque al Oeste (Cerca del Establo) --
+    ponerArbol(0, 1150, 1350, 1);
+    ponerArbol(1, 1200, 1320, 0);
+    ponerArbol(2, 1100, 1400, 1);
+    ponerArbol(3, 1180, 1450, 0);
+    ponerArbol(4, 1250, 1300, 1);
 
-        if (!EsSuelo(rx + 16, ry + 30, mapa)) continue;
-        
-        int cerca = 0;
-        for (int i = 0; i < cnt; i++) {
-            if (sqrt(pow(rx - misArboles[i].x, 2) + pow(ry - misArboles[i].y, 2)) < 150) {
-                cerca = 1;
-                break;
-            }
-        }
-        if (cerca) continue;
+    // -- Bosque al Sur-Este (Cerca de la Tienda) --
+    ponerArbol(5, 1330, 1830, 1);
+    ponerArbol(6, 1255, 1915, 0);
+    ponerArbol(7, 1420, 1790, 1);
+    ponerArbol(8, 1580, 1865, 0);
+    ponerArbol(9, 1125, 1825, 1);
 
-        misArboles[cnt].x = rx;
-        misArboles[cnt].y = ry;
-        misArboles[cnt].tipo = tipo;
-        misArboles[cnt].activa = 1;
-        misArboles[cnt].vida = 5;
-        cnt++;
-    }
+    // -- Árboles Dispersos --
+    ponerArbol(10, 1400, 1600, 0);
+    ponerArbol(11, 1450, 1650, 1);
+    ponerArbol(12, 1350, 1700, 0);
+    ponerArbol(13, 1210, 1235, 1);
+    ponerArbol(14, 1375, 1365, 0);
+    ponerArbol(15, 1400, 1280, 1);
+    ponerArbol(16, 1675, 1775, 0);
+    ponerArbol(17, 1725, 1775, 1);
+    // ¡Agrega más líneas aquí si quieres más árboles!
 }
 
 void talarArbol(Jugador *j) {
@@ -87,7 +110,6 @@ void talarArbol(Jugador *j) {
             misArboles[i].vida--;
             crearChispas(misArboles[i].x + tam/2, misArboles[i].y + tam/2, RGB(139, 69, 19));
             
-            // --- AQUÍ EMPIEZA LA MAGIA CUANDO EL ÁRBOL CAE ---
             if (misArboles[i].vida <= 0) {
                 misArboles[i].activa = 0;
                 misArboles[i].timerRegeneracion = 0;
@@ -107,13 +129,8 @@ void talarArbol(Jugador *j) {
                 if (ganMad > 0) crearTextoFlotante(misArboles[i].x, misArboles[i].y, "Madera", ganMad, RGB(150, 75, 0));
                 if (ganHoj > 0) crearTextoFlotante(misArboles[i].x, misArboles[i].y - 20, "Hojas", ganHoj, RGB(34, 139, 34));
                 
-                // =========================================================
-                // FASE 5: GANAR EXPERIENCIA (NUEVO CÓDIGO)
-                // =========================================================
-                // La XP se gana incluso si la mochila está llena, porque el trabajo se hizo.
                 ganarExperiencia(j, XP_ARBOL); 
-                crearTextoFlotante(misArboles[i].x, misArboles[i].y - 40, "+15 XP", 0, RGB(0, 255, 255)); // Texto Cyan
-                // =========================================================
+                crearTextoFlotante(misArboles[i].x, misArboles[i].y - 40, "+15 XP", 0, RGB(0, 255, 255));
 
                 if (ganMad == 0 && ganHoj == 0) {
                     crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
@@ -163,48 +180,41 @@ int buscarArbolCercano(float x, float y, float rango) {
 // --- MINAS ---
 
 void inicializarMinas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
-    int cnt = 0, intentos = 0;
-    int minX = 1200, maxX = 2000, minY = 1200, maxY = 2000;
-    
+    // 1. Limpiar arreglo
     for (int i = 0; i < MAX_MINAS; i++) misMinas[i].activa = 0;
 
-    while (cnt < MAX_MINAS && intentos < 10000) {
-        intentos++;
-        int rx = minX + (rand() % (maxX - minX));
-        int ry = minY + (rand() % (maxY - minY));
-        if (!EsSuelo(rx + 16, ry + 16, mapa)) continue;
+    // 2. COLOCACIÓN MANUAL DE MINAS
+    // Formato: ponerMina(ID, X, Y, TIPO[0=Piedra, 1=Hierro]);
 
-        int cerca = 0;
-        for (int i = 0; i < cnt; i++)
-            if (sqrt(pow(rx - misMinas[i].x, 2) + pow(ry - misMinas[i].y, 2)) < 100) cerca = 1;
-        if (cerca) continue;
+    // -- Cantera de Piedra (Cerca del Establo) --
+    ponerMina(0, 1170, 1540, 0);
+    ponerMina(1, 1215, 1515, 0);
+    ponerMina(2, 1135, 1630, 0);
 
-        misMinas[cnt].x = rx;
-        misMinas[cnt].y = ry;
-        misMinas[cnt].tipo = rand() % 2;
-        misMinas[cnt].vida = 5;
-        misMinas[cnt].activa = 1;
-        cnt++;
-    }
+    // -- Depósito de Hierro (Más al norte) --
+    ponerMina(3, 1300, 1200, 1);
+    ponerMina(4, 1350, 1220, 1);
+
+    // -- Mixtas (Cerca de la tienda) --
+    ponerMina(5, 1360, 1940, 0); // Piedra
+    ponerMina(6, 1640, 2015, 1); // Hierro
 }
 
 void picarMina(Jugador *j) {
     for (int i = 0; i < MAX_MINAS; i++) {
         if (!misMinas[i].activa) continue;
         
-        // Detección de colisión (golpe)
         if (abs((j->x+16) - (misMinas[i].x+16)) < 40 && 
             abs((j->y+16) - (misMinas[i].y+16)) < 40) {
             
             misMinas[i].vida--;
             crearChispas(misMinas[i].x+16, misMinas[i].y+16, RGB(200,200,200));
             
-            // --- SI LA MINA SE ROMPE ---
             if (misMinas[i].vida <= 0) {
                 misMinas[i].activa = 0;
                 misMinas[i].timerRegeneracion = 0;
 
-                // CASO 1: PIEDRA
+                // PIEDRA
                 if (misMinas[i].tipo == 0) { 
                     int ant = j->piedra;
                     agregarRecurso(&j->piedra, 10, j->nivelMochila);
@@ -212,12 +222,11 @@ void picarMina(Jugador *j) {
                     
                     if (gan > 0) crearTextoFlotante(misMinas[i].x, misMinas[i].y, "Piedra", gan, RGB(150, 150, 150));
                     else crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
-
-                    // --- FASE 5: XP POR PIEDRA ---
+                    
                     ganarExperiencia(j, XP_PIEDRA); 
                     crearTextoFlotante(misMinas[i].x, misMinas[i].y - 25, "+10 XP", 0, RGB(0, 255, 255));
                 } 
-                // CASO 2: HIERRO
+                // HIERRO
                 else { 
                     int ant = j->hierro;
                     agregarRecurso(&j->hierro, 15, j->nivelMochila);
@@ -225,8 +234,7 @@ void picarMina(Jugador *j) {
                     
                     if (gan > 0) crearTextoFlotante(misMinas[i].x, misMinas[i].y, "Hierro", gan, RGB(192, 192, 192));
                     else crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
-
-                    // --- FASE 5: XP POR HIERRO ---
+                    
                     ganarExperiencia(j, XP_HIERRO); 
                     crearTextoFlotante(misMinas[i].x, misMinas[i].y - 25, "+15 XP", 0, RGB(0, 255, 255));
                 }
@@ -240,34 +248,28 @@ void dibujarMinas(HDC hdc, Camera cam, int ancho, int alto) {
     for (int i = 0; i < MAX_MINAS; i++) {
         if (!misMinas[i].activa) continue;
 
-        // --- 1. FILTRO DE NIEBLA (Imprescindible para que no se vean en lo oscuro) ---
         int col = (int)(misMinas[i].x / TAMANO_CELDA_BASE);
         int fila = (int)(misMinas[i].y / TAMANO_CELDA_BASE);
 
-        // Si la celda está en la oscuridad total (0), saltamos el dibujo
         if (col >= 0 && col < MUNDO_COLUMNAS && fila >= 0 && fila < MUNDO_FILAS) {
             if (neblina[fila][col] == 0) continue; 
         }
 
-        // --- 2. CÁLCULO DE POSICIÓN ---
         int sx = (int)((misMinas[i].x - cam.x) * cam.zoom);
         int sy = (int)((misMinas[i].y - cam.y) * cam.zoom);
         int tam = 32 * cam.zoom;
 
-        // --- 3. DIBUJO CON FILTRO DE PANTALLA ---
-        // Solo dibujamos si la mina es visible dentro de los bordes de la ventana
         if (sx > -tam && sx < ancho && sy > -tam && sy < alto) {
             HBITMAP img = (misMinas[i].tipo == 1) ? hBmpHierroPicar : hBmpPiedraPicar;
             
             if (img) {
                 DibujarImagen(hdc, img, sx, sy, tam, tam);
-                // Dibujamos la barra de vida solo si la imagen se dibujó
-                // Nota: Asegúrate de que '5' sea la vida máxima real o usa misMinas[i].vidaMax
                 dibujarBarraVidaLocal(hdc, sx, sy - 8, misMinas[i].vida, 5, tam);
             }
         }
     }
 }
+
 int buscarMinaCercana(float x, float y, float rango) {
     int mejorIndice = -1;
     float mejorDist = rango;
@@ -293,52 +295,41 @@ void inicializarTesoros() {
 
 void abrirTesoro(Jugador *j) {
     for (int i = 0; i < MAX_TESOROS; i++) {
-        // 1. Saltamos si no está activo o ya fue saqueado (estado 2 suele ser vacío)
         if (!misTesoros[i].activa || misTesoros[i].estado == 2) continue;
 
-        // 2. CALCULAMOS LA DISTANCIA (Importante declararla aquí)
         float dx = j->x - misTesoros[i].x;
         float dy = j->y - misTesoros[i].y;
         float dist = sqrt(dx*dx + dy*dy);
 
-        // Si estamos cerca y el tesoro está cerrado
         if (dist < 50 && misTesoros[i].estado == 0) {
-            misTesoros[i].estado = 1; // Abrir cofre
-            
-            // Guardamos coordenadas para los textos (para que salgan sobre el cofre)
+            misTesoros[i].estado = 1; 
             int tx = misTesoros[i].x;
             int ty = misTesoros[i].y;
 
             if (misTesoros[i].tipo == 0) {
-                // ... Tu código para tesoro normal ...
                 int oroSolo = 50 + (rand() % 50);
                 j->oro += oroSolo;
                 crearTextoFlotante(tx, ty, "+Oro", 0, RGB(255, 215, 0));
             }
-            else { // CASO 1: JOYAS Y MAPA
+            else { 
                 int oroGanado = 50 + (rand() % 10);
                 int hierroGanado = 10 + (rand() % 10);
-                
                 j->oro += oroGanado;
                 j->hierro += hierroGanado;
                 
                 crearTextoFlotante(tx, ty, "Joyas encontradas!", 0, RGB(255, 0, 255));
                 crearTextoFlotante(tx, ty - 25, "+Oro y Hierro", 0, RGB(255, 215, 0));
 
-                // --- DESBLOQUEAR MINIMAPA ---
-                // Usamos la variable del jugador que definimos antes
                 if (!j->tieneMapa) {
                     j->tieneMapa = TRUE;
-                    // Texto en un color verde brillante
                     crearTextoFlotante(tx, ty - 50, "MINIMAPA OBTENIDO!", 0, RGB(50, 255, 50));
                 }
             }
-            
-            // Marcar tesoro como saqueado para que no se pueda volver a abrir
             misTesoros[i].estado = 2; 
         }
     }
 }
+
 void dibujarTesoros(HDC hdc, Camera cam, int ancho, int alto) {
     for (int i = 0; i < MAX_TESOROS; i++) {
         if (!misTesoros[i].activa) continue;

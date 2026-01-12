@@ -302,9 +302,18 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
     SetTextColor(hdc, RGB(255, 255, 255)); 
     TextOut(hdc, textX, textY, tProgreso, strlen(tProgreso));
     }
-}
 
-// --- ARREGLADO: LLAVES EN LOS IF PARA EVITAR WARNINGS ---
+    // Muestra la posición X, Y actual en la esquina superior derecha
+    char tDebug[64];
+    sprintf(tDebug, "POS: %d, %d", (int)jugador->x, (int)jugador->y);
+    
+    // Usamos color MAGENTA brillante para que resalte sobre cualquier fondo
+    SetTextColor(hdc, RGB(255, 0, 255)); 
+    SetBkMode(hdc, TRANSPARENT);
+    
+    // Lo dibujamos arriba a la derecha (ancho - 150px)
+    TextOut(hdc, ancho - 150, 20, tDebug, strlen(tDebug));
+}
 
 void dibujarJugador(HDC hdc, Jugador *jugador, Camera cam)
 {
