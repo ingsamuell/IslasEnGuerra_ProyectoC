@@ -785,7 +785,7 @@ void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
     HFONT hOldFont = (HFONT)SelectObject(hdc, hFontTitulo);
 
     SetTextColor(hdc, RGB(255, 215, 0)); // Dorado
-    const char *titulo = "SELECCIONA TU DESTINO";
+    const char *titulo = " ";
 
     // Centrar texto (cálculo aproximado o usando GetTextExtentPoint32)
     SIZE size;
