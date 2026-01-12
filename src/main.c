@@ -74,11 +74,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             // A) MODO CONSTRUCCIÓN
             if (miJugador.edificioSeleccionado > 0) 
             {
-                // Convertir coordenadas de PANTALLA a MUNDO
+                // 1. Convertir coordenadas de PANTALLA a MUNDO
+                // Usamos mx y my (clic del mouse)
                 int mundoX = (int)((mx / miCamara.zoom) + miCamara.x);
                 int mundoY = (int)((my / miCamara.zoom) + miCamara.y);
 
-                // Intentar construir (Pasamos mapaMundo que es la matriz char[200][200])
+                // 2. Intentar construir
+                // Pasamos las coordenadas calculadas (mundoX, mundoY)
+                // Y el mapa global correcto (mapaMundo)
                 intentarColocarEdificio(&miJugador, mundoX, mundoY, mapaMundo);
             }
             // B) SELECCIÓN DE UNIDADES (RTS)
@@ -260,7 +263,8 @@ int mundoMouseY = (int)(miCamara.y + (estadoJuego.puntoMouse.y / miCamara.zoom))
 
 if (miJugador.edificioSeleccionado > 0) {
     // Pasamos &miCamara al final como pide tu edificios.c
-    dibujarFantasmaConstruccion(hdcMem, &miJugador, mundoMouseX, mundoMouseY, estadoJuego.mapaSeleccionado, &miCamara);
+    dibujarFantasmaConstruccion(hdcMem, &miJugador, mundoMouseX, mundoMouseY, 
+                                estadoJuego.mapaSeleccionado, mapaMundo, &miCamara);
 }
 
 // 2. Corregir la llamada al MiniMapa (El orden exacto que pide tu .h)
