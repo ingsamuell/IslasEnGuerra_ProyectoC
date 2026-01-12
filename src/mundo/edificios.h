@@ -15,9 +15,14 @@ extern Edificio edificiosEnemigos[MAX_EDIFICIOS_ENEMIGOS];
 
 // Prototipos de Funciones
 void inicializarEdificios();
-void dibujarEdificio(HDC hdc, int x, int y, int tipoTamano, int esEnemigo, int mapaID, Camera *cam);
-void dibujarFantasmaConstruccion(HDC hdc, Jugador *j, int mx, int my, int mapaID, Camera *cam);
-void intentarColocarEdificio(Jugador *j, int mx, int my, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
-void dibujarTodosLosEdificios(HDC hdc, int mapaID, Camera *cam);
 void actualizarEdificios(float deltaTiempo);
+
+// --- CORRECCIÓN AQUÍ: Añadimos 'mapa' y 'Camera' ---
+void dibujarEdificio(HDC hdc, int x, int y, int tipoTamano, int esEnemigo, int mapaID, Camera *cam);
+void dibujarTodosLosEdificios(HDC hdc, int mapaID, Camera *cam);
+
+// Funciones de Construcción (Necesitan el MAPA para validar suelo)
+void dibujarFantasmaConstruccion(HDC hdc, Jugador *j, int mx, int my, int mapaID, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera *cam);
+void intentarColocarEdificio(Jugador *j, int mx, int my, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
+
 #endif
