@@ -27,4 +27,7 @@ void dibujarItemRejilla(HDC hdc, HBITMAP icono, int cantidad, int maximo, int x,
 void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto);
 void dibujarJugador(HDC hdc, Jugador *jugador, Camera cam);
 
+// --- SISTEMA DE LÍMITES ---
+void mantenerDentroDelMapa(Jugador *j);
+
 #endif

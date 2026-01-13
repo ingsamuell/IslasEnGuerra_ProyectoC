@@ -401,7 +401,7 @@ void moverJugador(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, in
     // --- EJE X ---
     int futuroX = j->x + (dx * j->velocidad);
     
-    // ✅ VERIFICACIÓN CON 2 PUNTOS (PIES y CABEZA)
+    // VERIFICACIÓN CON 2 PUNTOS (PIES y CABEZA)
     int esTierraPiesX = EsSuelo(futuroX + 16, j->y + 16, mapa);  // Punto actual (pies)
     int esTierraCabezaX = EsSuelo(futuroX + 8, j->y + 1, mapa);  // Nuevo punto (cabeza)
     
@@ -419,7 +419,7 @@ void moverJugador(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, in
     // --- EJE Y ---
     int futuroY = j->y + (dy * j->velocidad);
     
-    // ✅ VERIFICACIÓN CON 2 PUNTOS (PIES y CABEZA)
+    // VERIFICACIÓN CON 2 PUNTOS (PIES y CABEZA)
     int esTierraPiesY = EsSuelo(j->x + 16, futuroY + 16, mapa);
     int esTierraCabezaY = EsSuelo(j->x + 8, futuroY + 1, mapa);
     
@@ -431,6 +431,9 @@ void moverJugador(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, in
     }
     
     if (puedeY) j->y = futuroY;
+
+    // --- ¡NUEVO! Aplicar sistema de corrientes ---
+    mantenerDentroDelMapa(j);
 }
 
 void actualizarCamara(Camera *cam, Jugador j) {
@@ -441,24 +444,83 @@ void actualizarCamara(Camera *cam, Jugador j) {
     cam->x = j.x - (anchoPantalla / 2 / cam->zoom);
     cam->y = j.y - (altoPantalla / 2 / cam->zoom);
     
-    // --- NUEVO: Permitir que la cámara se mueva en agua profunda ---
-    // En el SUR-ESTE ya funciona porque hay agua profunda
-    // En el NOR-OESTE necesitamos permitirlo también
+    // --- LÍMITES CON 100px DE MARGEN ---
+    int margen = 700;  // ¡CAMBIADO DE 700 A 100!
     
-    // Mínimos: permitir valores NEGATIVOS (mostrar "mar infinito")
-    int minX = -700;  // 500px de "mar infinito" al noroeste
-    int minY = -700;  // 500px de "mar infinito" al noroeste
+    // Mínimos: -100px
+    if (cam->x < -margen) cam->x = -margen;
+    if (cam->y < -margen) cam->y = -margen;
     
-    if (cam->x < minX) cam->x = minX;
-    if (cam->y < minY) cam->y = minY;
+    // Máximos: 3200 + 100px
+    int anchoVisible = anchoPantalla / cam->zoom;
+    int altoVisible = altoPantalla / cam->zoom;
     
-    // Máximos: ya funcionan bien (hay agua profunda al sureste)
-    int maxX = MUNDO_ANCHO - (anchoPantalla / cam->zoom) + 700;
-    int maxY = MUNDO_ALTO - (altoPantalla / cam->zoom) + 700;
+    int maxX = MUNDO_ANCHO - anchoVisible + margen;
+    int maxY = MUNDO_ALTO - altoVisible + margen;
     
     if (cam->x > maxX) cam->x = maxX;
     if (cam->y > maxY) cam->y = maxY;
 }
+
+void mantenerDentroDelMapa(Jugador *j) {
+    // Área jugable exacta (3200×3200)
+    int minX = 0;
+    int minY = 0;
+    int maxX = MUNDO_ANCHO - 32;  // 3200 - 32 (tamaño sprite)
+    int maxY = MUNDO_ALTO - 32;   // 3200 - 32
+    
+    // Zona de corriente (100px fuera del mapa)
+    int zonaCorriente = 100;
+    
+    // Fuerza de la corriente (ajustable)
+    float fuerza = 2.5f;
+    
+    // -----------------------------------------------------
+    // 1. OESTE (x < 0)
+    // -----------------------------------------------------
+    if (j->x < minX - zonaCorriente) {
+        // No permitir ir más allá de -100px
+        j->x = minX - zonaCorriente;
+    }
+    else if (j->x < minX) {
+        // Entre -100px y 0px: corriente hacia adentro (ESTE)
+        j->x += fuerza;
+    }
+    
+    // -----------------------------------------------------
+    // 2. NORTE (y < 0)
+    // -----------------------------------------------------
+    if (j->y < minY - zonaCorriente) {
+        j->y = minY - zonaCorriente;
+    }
+    else if (j->y < minY) {
+        // Corriente hacia adentro (SUR)
+        j->y += fuerza;
+    }
+    
+    // -----------------------------------------------------
+    // 3. ESTE (x > 3168)
+    // -----------------------------------------------------
+    if (j->x > maxX + zonaCorriente) {
+        j->x = maxX + zonaCorriente;
+    }
+    else if (j->x > maxX) {
+        // Corriente hacia adentro (OESTE)
+        j->x -= fuerza;
+    }
+    
+    // -----------------------------------------------------
+    // 4. SUR (y > 3168)
+    // -----------------------------------------------------
+    if (j->y > maxY + zonaCorriente) {
+        j->y = maxY + zonaCorriente;
+    }
+    else if (j->y > maxY) {
+        // Corriente hacia adentro (NORTE)
+        j->y -= fuerza;
+    }
+}
+
 void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     // Coordenadas EXACTAS del muelle principal
     #define MUELLE_X 2050
