@@ -95,6 +95,16 @@ void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     ponerArbol(15, 1400, 1280, 1);
     ponerArbol(16, 1675, 1775, 0);
     ponerArbol(17, 1725, 1775, 1);
+    ponerArbol(18, 1515, 1495, 0);
+    ponerArbol(19, 1510, 1240, 1);
+    ponerArbol(20, 1610, 1220, 0);
+    ponerArbol(21, 1675, 1125, 1);
+    ponerArbol(22, 1750, 1125, 0);
+    ponerArbol(23, 1850, 1165, 1);
+    ponerArbol(24, 1955, 1130, 0);
+    ponerArbol(25, 1970, 1270, 1);
+    ponerArbol(26, 1785, 1305, 0);
+
     // ¡Agrega más líneas aquí si quieres más árboles!
 }
 
@@ -197,7 +207,12 @@ void inicializarMinas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
 
     // -- Mixtas (Cerca de la tienda) --
     ponerMina(5, 1360, 1940, 0); // Piedra
-    ponerMina(6, 1640, 2015, 1); // Hierro
+    ponerMina(6, 1255, 1965, 1); // Hierro
+    ponerMina(7, 1580, 1710, 0); // Piedra
+    ponerMina(8, 1685, 1730, 1); // Hierro
+    ponerMina(9, 1820, 1760, 0); // Piedra
+    ponerMina(10, 1675, 1825, 1); // Hierro
+    ponerMina(11, 1335, 1785, 0); // Piedra
 }
 
 void picarMina(Jugador *j) {

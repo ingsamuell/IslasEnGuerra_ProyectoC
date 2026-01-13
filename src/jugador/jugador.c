@@ -308,7 +308,7 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
     sprintf(tDebug, "POS: %d, %d", (int)jugador->x, (int)jugador->y);
     
     // Usamos color MAGENTA brillante para que resalte sobre cualquier fondo
-    SetTextColor(hdc, RGB(255, 0, 255)); 
+    SetTextColor(hdc, RGB(255, 27, 45)); 
     SetBkMode(hdc, TRANSPARENT);
     
     // Lo dibujamos arriba a la derecha (ancho - 150px)
