@@ -124,16 +124,16 @@ void inicializarIslas(int mapaId)
 
     // ISLA OESTE - RECURSOS DEL JUGADOR
     misIslas[3].activa = 1;
-    misIslas[3].x = 2450;
-    misIslas[3].y = 1000;
+    misIslas[3].x = 2790;
+    misIslas[3].y = 750;
     misIslas[3].ancho = 400;
     misIslas[3].alto = 400;
     misIslas[3].esEnemiga = 0;
 
     // ISLA ESTE - RECURSOS DEL JUGADOR
     misIslas[4].activa = 1;
-    misIslas[4].x = 2450;
-    misIslas[4].y = 1600;
+    misIslas[4].x = 2850;
+    misIslas[4].y = 2200;
     misIslas[4].ancho = 500;
     misIslas[4].alto = 500;
     misIslas[4].esEnemiga = 0;
@@ -146,22 +146,22 @@ void inicializarIslas(int mapaId)
     // Donde estaba el edificio enemigo solitario
     misIslas[5].activa = 1;
     misIslas[5].x = 100;    // Esquina derecha
-    misIslas[5].y = 1150;    // Esquina inferior
+    misIslas[5].y = 2300;    // Esquina inferior
     misIslas[5].ancho = 900;
     misIslas[5].alto = 900;
     misIslas[5].esEnemiga = 1;
 
     // 2. ISLA ENEMIGA 2 (Esquina SUPERIOR IZQUIERDA)
     misIslas[6].activa = 1;
-    misIslas[6].x = 250;     // Esquina izquierda
-    misIslas[6].y = 2300;     // Esquina superior
+    misIslas[6].x = 50;     // Esquina izquierda
+    misIslas[6].y = 1150;     // Esquina superior
     misIslas[6].ancho = 500; // Tamaño de isla secundaria
     misIslas[6].alto = 500;
     misIslas[6].esEnemiga = 1;
 
     // 3. ISLA ENEMIGA 3 (Esquina SUPERIOR DERECHA)
     misIslas[7].activa = 1;
-    misIslas[7].x = 400;    // Esquina derecha
+    misIslas[7].x = 300;    // Esquina derecha
     misIslas[7].y = 300;     // Esquina superior
     misIslas[7].ancho = 400; // Tamaño de isla secundaria
     misIslas[7].alto = 400;
