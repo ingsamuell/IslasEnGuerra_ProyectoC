@@ -1215,4 +1215,3 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
     }
     dibujarInterfazGuerra(hdc, ancho);
 }
-

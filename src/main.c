@@ -132,11 +132,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 estadoJuego.estadoActual = ESTADO_MENU_CARGAR;
                 
                 // Verificar si existe partida guardada
-                existePartida = ExistePartidaGuardada();
+                existePartida = ExistePartida(0); // Usamos el slot 0 por defecto
                 if (existePartida) {
-                    ObtenerInfoPartida(infoPartidaTexto);
+                    ObtenerInfoPartida(0, infoPartidaTexto);
                 } else {
-                    strcpy(infoPartidaTexto, "No hay partida guardada.");
+                    strcpy(infoPartidaTexto, "No hay partida guardada");
                 }
                 InvalidateRect(hwnd, NULL, FALSE);
             }
@@ -161,27 +161,59 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         // ---------------------------------------------------------
         else if (estadoJuego.estadoActual == ESTADO_MENU_CARGAR)
         {
-            // BOTÓN CONTINUAR (Solo funciona si hay partida)
-            // [AJUSTAR]: Coordenadas del botón verde "Continuar"
-            if (existePartida && mx >= 300 && mx <= 500 && my >= 300 && my <= 350) 
-            {
-                if (CargarPartida(&miJugador, mapaMundo)) {
+// DETECTAR CLIC EN SLOTS Y BOTONES DE BORRAR
+    for (int i = 1; i <= 3; i++) {
+        int yBase = 100 + ((i-1) * 110);
+        
+        // 1. CLIC EN EL SLOT (CARGAR / CREAR) - (Coordenadas originales)
+        if (mx >= 250 && mx <= 650 && my >= yBase && my <= yBase + 90) {
+            if (ExistePartida(i)) {
+                if (CargarPartida(i, &miJugador, mapaMundo)) {
+                    estadoJuego.slotJugado = i;
                     estadoJuego.estadoActual = ESTADO_PARTIDA;
                     actualizarCamara(&miCamara, miJugador);
-                    MessageBox(hwnd, "¡Partida Cargada!", "Éxito", MB_OK);
-                } else {
-                    MessageBox(hwnd, "Error al cargar el archivo.", "Error", MB_ICONERROR);
+                    MessageBox(hwnd, "Partida Cargada", "Exito", MB_OK);
                 }
-                InvalidateRect(hwnd, NULL, FALSE);
+            } else {
+                estadoJuego.slotJugado = i;
+                estadoJuego.estadoActual = ESTADO_SELECCION_MAPA;
             }
+            InvalidateRect(hwnd, NULL, FALSE);
+            return 0;
+        }
 
-            // BOTÓN VOLVER
-            // [AJUSTAR]: Coordenadas del botón rojo "Volver"
-            if (mx >= 300 && mx <= 500 && my >= 400 && my <= 450) 
-            {
-                estadoJuego.estadoActual = ESTADO_MENU;
-                InvalidateRect(hwnd, NULL, FALSE);
+        // 2. CLIC EN BOTÓN BORRAR [X] (Coordenadas nuevas: 660-700)
+        // Solo si existe la partida
+        if (ExistePartida(i) && mx >= 660 && mx <= 700 && my >= yBase + 25 && my <= yBase + 65) {
+            
+            // Preguntar confirmación
+            int resp = MessageBox(hwnd, 
+                "Estas seguro de que quieres BORRAR esta partida permanentemente?", 
+                "Confirmar Borrado", MB_YESNO | MB_ICONWARNING);
+            
+            if (resp == IDYES) {
+                if (BorrarPartida(i)) {
+                    MessageBox(hwnd, "Partida eliminada.", "Info", MB_OK);
+                } else {
+                    MessageBox(hwnd, "No se pudo eliminar el archivo.", "Error", MB_ICONERROR);
+                }
+                InvalidateRect(hwnd, NULL, FALSE); // Repintar para que desaparezca
             }
+            return 0;
+        }
+    }
+
+    // BOTÓN VER REGISTRO
+    if (mx >= 250 && mx <= 440 && my >= 450 && my <= 500) {
+        AbrirArchivoLog();
+    }
+
+    // BOTÓN VOLVER
+    if (mx >= 460 && mx <= 650 && my >= 450 && my <= 500) {
+        estadoJuego.estadoActual = ESTADO_MENU;
+        InvalidateRect(hwnd, NULL, FALSE);
+    }
+    
         }
         
         // ---------------------------------------------------------
@@ -385,52 +417,71 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         // =========================================================
         else if (estadoJuego.estadoActual == ESTADO_MENU_CARGAR)
         {
-            // 1. Fondo Oscuro
-            HBRUSH brFondo = CreateSolidBrush(RGB(30, 30, 50));
-            RECT rFondo = {0, 0, ancho, alto};
-            FillRect(hdcMem, &rFondo, brFondo);
-            DeleteObject(brFondo);
+           // 1. Fondo Oscuro
+    HBRUSH brFondo = CreateSolidBrush(RGB(30, 30, 50));
+    RECT rFondo = {0, 0, ancho, alto};
+    FillRect(hdcMem, &rFondo, brFondo);
+    DeleteObject(brFondo);
 
-            // 2. Título "HISTORIAL DE PARTIDA"
-            SetBkMode(hdcMem, TRANSPARENT);
-            SetTextColor(hdcMem, RGB(255, 215, 0)); 
-            // [AJUSTAR]: Posición del Título (X=350, Y=100)
-            TextOut(hdcMem, 350, 100, "HISTORIAL DE PARTIDA", 20);
+    // 2. Título
+    SetBkMode(hdcMem, TRANSPARENT);
+    SetTextColor(hdcMem, RGB(255, 215, 0)); 
+    TextOut(hdcMem, 350, 50, "SELECCIONAR PARTIDA", 19);
 
-            // 3. Cuadro de Info (El rectángulo gris)
-            HBRUSH brInfo = CreateSolidBrush(RGB(50, 50, 70));
-            // [AJUSTAR]: Coordenadas del cuadro {Izquierda, Arriba, Derecha, Abajo}
-            RECT rInfo = {250, 150, 550, 250}; 
-            FillRect(hdcMem, &rInfo, brInfo);
-            DeleteObject(brInfo);
-            
-            // Texto Info (Nombre de la partida, fecha...)
+    // 3. DIBUJAR LOS 3 SLOTS
+    for (int i = 1; i <= 3; i++) {
+        int yBase = 100 + ((i-1) * 110); // Espaciado vertical
+        
+        // Color según si existe o no
+        COLORREF colorCaja = ExistePartida(i) ? RGB(60, 60, 80) : RGB(40, 40, 40);
+        HBRUSH brSlot = CreateSolidBrush(colorCaja);
+        RECT rSlot = {250, yBase, 650, yBase + 90}; 
+        FillRect(hdcMem, &rSlot, brSlot);
+        DeleteObject(brSlot);
+
+        // Marco si pasas el mouse (opcional, lógica simple visual)
+        HBRUSH brBorde = CreateSolidBrush(RGB(200, 200, 200));
+        FrameRect(hdcMem, &rSlot, brBorde);
+        DeleteObject(brBorde);
+
+        // Texto Info
+        char info[128];
+        ObtenerInfoPartida(i, info);
+        SetTextColor(hdcMem, RGB(255, 255, 255));
+        TextOut(hdcMem, 270, yBase + 35, info, strlen(info));
+        // --- NUEVO: BOTÓN DE BORRAR [X] (Solo si existe partida) ---
+        if (existePartida) {
+            HBRUSH brBorrar = CreateSolidBrush(RGB(200, 50, 50)); // Rojo
+            // Lo dibujamos a la derecha del slot (x: 660 a 700)
+            RECT rBorrar = {660, yBase + 25, 700, yBase + 65}; 
+            FillRect(hdcMem, &rBorrar, brBorrar);
+            DeleteObject(brBorrar);
+
+            // Borde del botón
+            HBRUSH brBordeX = CreateSolidBrush(RGB(255, 255, 255));
+            FrameRect(hdcMem, &rBorrar, brBordeX);
+            DeleteObject(brBordeX);
+
+            // La "X"
             SetTextColor(hdcMem, RGB(255, 255, 255));
-            // [AJUSTAR]: Posición del texto dentro del cuadro (X=270, Y=190)
-            TextOut(hdcMem, 270, 190, infoPartidaTexto, strlen(infoPartidaTexto));
-
-            // 4. Botón CONTINUAR (Verde)
-            if (existePartida) {
-                HBRUSH brBtn = CreateSolidBrush(RGB(0, 150, 0)); 
-                // [AJUSTAR]: Coordenadas del botón CONTINUAR {300, 300, 500, 350}
-                RECT rBtn = {300, 300, 500, 350}; 
-                FillRect(hdcMem, &rBtn, brBtn);
-                DeleteObject(brBtn);
-                
-                SetTextColor(hdcMem, RGB(255, 255, 255));
-                TextOut(hdcMem, 330, 315, "CONTINUAR AVENTURA", 18);
-            }
-
-            // 5. Botón VOLVER (Rojo)
-            HBRUSH brVolver = CreateSolidBrush(RGB(150, 0, 0)); 
-            // [AJUSTAR]: Coordenadas del botón VOLVER {300, 400, 500, 450}
-            RECT rVolver = {300, 400, 500, 450}; 
-            FillRect(hdcMem, &rVolver, brVolver);
-            DeleteObject(brVolver);
-            
-            SetTextColor(hdcMem, RGB(255, 255, 255));
-            TextOut(hdcMem, 380, 415, "VOLVER", 6);
+            TextOut(hdcMem, 673, yBase + 35, "X", 1);
         }
+    }
+
+    // 4. BOTÓN VER REGISTRO (TXT)
+    HBRUSH brLog = CreateSolidBrush(RGB(0, 100, 200)); // Azul
+    RECT rLog = {250, 450, 440, 500};
+    FillRect(hdcMem, &rLog, brLog);
+    DeleteObject(brLog);
+    TextOut(hdcMem, 280, 465, "VER REGISTRO .TXT", 17);
+
+    // 5. BOTÓN VOLVER
+    HBRUSH brVolver = CreateSolidBrush(RGB(150, 0, 0)); // Rojo
+    RECT rVolver = {460, 450, 650, 500}; 
+    FillRect(hdcMem, &rVolver, brVolver);
+    DeleteObject(brVolver);
+    TextOut(hdcMem, 510, 465, "VOLVER", 6);
+}
 
         // =========================================================
         // OVERLAY: PANTALLA DE GUARDADO (Caja Negra con Nombre)
@@ -513,6 +564,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             {
                 // --- INICIAR PARTIDA NUEVA ---
                 estadoJuego.mapaSeleccionado = estadoJuego.opcionSeleccionada;
+                //REGISTRAR EN EL LOG (Añade esto aquí)
+        char bufferLog[128];
+        const char* nombreMapa = (estadoJuego.mapaSeleccionado == 0) ? "Islas Oceano" : 
+                                 (estadoJuego.mapaSeleccionado == 1) ? "Archipielago" : "Continente";
+        
+        sprintf(bufferLog, "NUEVA PARTIDA INICIADA - Mapa: %s - Slot: %d", nombreMapa, estadoJuego.slotJugado);
+        RegistrarLog(bufferLog);
 
                 // Inicializar mapa y colisiones
                 inicializarJuego(&miJugador, &estadoJuego, mapaMundo, estadoJuego.mapaSeleccionado);
@@ -553,12 +611,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             case VK_ESCAPE:
             {
                 int msg = MessageBox(hwnd,
-                                     "¿Deseas guardar antes de salir al menú?\n\nSI: Guarda como 'AutoSave' y sale.\nNO: Sale sin guardar.\nCANCELAR: Seguir jugando.",
+                                     "Deseas guardar antes de salir al menu?\n\nSI: Guarda como 'AutoSave' y sale.\nNO: Sale sin guardar.\nCANCELAR: Seguir jugando.",
                                      "Salir de la Partida", MB_YESNOCANCEL | MB_ICONQUESTION);
 
                 if (msg == IDYES)
                 {
-                    GuardarPartida("AutoSave", &miJugador, mapaMundo);
+                    GuardarPartida(0, "AutoSave", &miJugador, mapaMundo);
                     estadoJuego.estadoActual = ESTADO_SELECCION_MAPA; // O MENU
                 }
                 else if (msg == IDNO)
@@ -697,11 +755,18 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             if (wParam == VK_RETURN) // ENTER -> Confirmar Guardado
             {
                 if (lenNombre > 0)
-                {
-                    GuardarPartida(nombreGuardadoInput, &miJugador, mapaMundo);
-                    MessageBox(hwnd, "¡Partida Guardada Correctamente!", "Sistema", MB_OK | MB_ICONINFORMATION);
-                    estadoJuego.estadoActual = ESTADO_PARTIDA;
-                }
+{
+    // Si no tenemos slot asignado (ej. pruebas), usar el 1 por defecto
+    if (estadoJuego.slotJugado == 0) estadoJuego.slotJugado = 1;
+
+    GuardarPartida(estadoJuego.slotJugado, nombreGuardadoInput, &miJugador, mapaMundo);
+    
+    char msj[64];
+    sprintf(msj, "Guardado en Slot %d", estadoJuego.slotJugado);
+    MessageBox(hwnd, msj, "Sistema", MB_OK | MB_ICONINFORMATION);
+    
+    estadoJuego.estadoActual = ESTADO_PARTIDA;
+}
             }
             else if (wParam == VK_ESCAPE) // ESC -> Cancelar
             {
@@ -767,7 +832,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         if (!hBmpVaca[i])
             vacasFaltan++;
     if (vacasFaltan > 0)
-        MessageBox(NULL, "Faltan imágenes de vacas en assets/", "Aviso", MB_OK);
+        MessageBox(NULL, "Faltan imagenes de vacas en assets/", "Aviso", MB_OK);
 
     // Estado inicial
     estadoJuego.estadoActual = ESTADO_MENU;

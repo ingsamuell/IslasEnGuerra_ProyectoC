@@ -586,4 +586,3 @@ void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
         }
     } 
 }
-

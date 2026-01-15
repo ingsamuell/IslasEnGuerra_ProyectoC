@@ -323,6 +323,7 @@ typedef struct
     int mapaSeleccionado; // 0, 1 o 2
     int frameTienda;      // Contador para la animación del gato
     POINT puntoMouse;
+    int slotJugado;
 } EstadoJuego;
 
 typedef struct

@@ -1,0 +1,15 @@
+[15/01/2026 13:54] NUEVA PARTIDA INICIADA - Mapa: Islas Oceano - Slot: 0
+[15/01/2026 13:54] Partida guardada en Slot 1 (Nivel 1)
+[15/01/2026 13:55] Partida cargada desde Slot 1
+[15/01/2026 13:55] Partida guardada en Slot 0 (Nivel 1)
+[15/01/2026 13:55] Partida cargada desde Slot 1
+[15/01/2026 13:55] Partida guardada en Slot 0 (Nivel 1)
+[15/01/2026 13:55] Partida cargada desde Slot 1
+[15/01/2026 14:02] NUEVA PARTIDA INICIADA - Mapa: Continente - Slot: 0
+[15/01/2026 14:02] Partida guardada en Slot 0 (Nivel 1)
+[15/01/2026 14:02] NUEVA PARTIDA INICIADA - Mapa: Islas Oceano - Slot: 1
+[15/01/2026 14:02] Partida guardada en Slot 0 (Nivel 1)
+[15/01/2026 14:02] NUEVA PARTIDA INICIADA - Mapa: Islas Oceano - Slot: 1
+[15/01/2026 14:02] Partida guardada en Slot 1 (Nivel 1)
+[15/01/2026 14:02] Partida guardada en Slot 0 (Nivel 1)
+[15/01/2026 14:02] ELIMINADO: Partida del Slot 1 borrada por el usuario.

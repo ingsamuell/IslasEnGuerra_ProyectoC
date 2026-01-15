@@ -160,6 +160,7 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
                     if (unidades[target].vida <= 0) {
                         unidades[target].activa = 0;
                         ganarExperiencia(j, 50);
+                        RegistrarLog("EVENTO: Enemigo eliminado. +50 XP ganada.");
                         crearTextoFlotante(unidades[i].x, unidades[i].y, "+50 XP", 0, RGB(0, 255, 255));
                         unidades[i].estado = ESTADO_IDLE;
                     }

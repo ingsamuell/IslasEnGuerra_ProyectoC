@@ -2,17 +2,20 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
-#include "../mundo/naturaleza.h" // Para acceder a misArboles, misMinas
-#include "../mundo/edificios.h"  // Para misEdificios
+#include <windows.h> // Para ShellExecute
+#include "../mundo/naturaleza.h" 
+#include "../mundo/edificios.h"  
 
-#define ARCHIVO_GUARDADO "partida.bin"
-
-// Variables externas que necesitamos guardar
+// Variables externas a guardar
 extern Arbol misArboles[MAX_ARBOLES];
 extern Mina misMinas[MAX_MINAS];
 extern Tesoro misTesoros[MAX_TESOROS];
 extern Edificio misEdificios[MAX_EDIFICIOS_JUGADOR];
-// Si tienes enemigos o neblina, agrégalos aquí también como extern
+
+// Ayuda para generar nombres de archivo: "partida_1.bin", "partida_2.bin"
+void obtenerNombreArchivo(int slot, char *buffer) {
+    sprintf(buffer, "partida_%d.bin", slot);
+}
 
 void obtenerFechaHora(char *buffer) { 
     time_t t = time(NULL);
@@ -22,42 +25,63 @@ void obtenerFechaHora(char *buffer) {
         tm->tm_hour, tm->tm_min);
 }
 
-int GuardarPartida(char *nombrePersonalizado, Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
-    FILE *f = fopen(ARCHIVO_GUARDADO, "wb"); // 'wb' = Write Binary
+// --- LOG DE TEXTO (.txt) ---
+void RegistrarLog(const char *mensaje) {
+    FILE *f = fopen("registro_acciones.txt", "a"); // "a" = Append (añadir al final)
+    if (f) {
+        char fecha[32];
+        obtenerFechaHora(fecha);
+        fprintf(f, "[%s] %s\n", fecha, mensaje);
+        fclose(f);
+    }
+}
+
+void AbrirArchivoLog() {
+    // Abre el archivo de texto con el programa predeterminado (Bloc de notas)
+    ShellExecute(NULL, "open", "registro_acciones.txt", NULL, NULL, SW_SHOW);
+}
+
+// --- GUARDADO BINARIO ---
+int GuardarPartida(int slot, char *nombrePersonalizado, Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    char nombreArchivo[32];
+    obtenerNombreArchivo(slot, nombreArchivo);
+
+    FILE *f = fopen(nombreArchivo, "wb");
     if (!f) return 0;
 
-    // 1. PREPARAR ENCABEZADO
     EncabezadoGuardado head;
-    strcpy(head.nombrePartida, nombrePersonalizado);
+    strncpy(head.nombrePartida, nombrePersonalizado, 31);
     obtenerFechaHora(head.fechaHora);
     head.nivelJugador = j->nivel;
-    head.diaJuego = 1; // Si tienes contador de días, ponlo aquí
+    head.diaJuego = 1; 
 
-    // 2. ESCRIBIR DATOS (El orden es CRUCIAL)
     fwrite(&head, sizeof(EncabezadoGuardado), 1, f);
     fwrite(j, sizeof(Jugador), 1, f);
-    fwrite(mapa, sizeof(char), MUNDO_FILAS * MUNDO_COLUMNAS, f); // El mapa entero
+    fwrite(mapa, sizeof(char), MUNDO_FILAS * MUNDO_COLUMNAS, f);
     
-    // Guardar Entidades
     fwrite(misArboles, sizeof(Arbol), MAX_ARBOLES, f);
     fwrite(misMinas, sizeof(Mina), MAX_MINAS, f);
     fwrite(misTesoros, sizeof(Tesoro), MAX_TESOROS, f);
     fwrite(misEdificios, sizeof(Edificio), MAX_EDIFICIOS_JUGADOR, f);
 
-    // Guardar Neblina (Importante: Si la tienes en main.c, pásala como argumento o usa extern)
-    // fwrite(neblina, sizeof(int), MUNDO_FILAS * MUNDO_COLUMNAS, f);
-
     fclose(f);
+    
+    // Registrar en el LOG que se guardó
+    char msg[100];
+    sprintf(msg, "Partida guardada en Slot %d (Nivel %d)", slot, j->nivel);
+    RegistrarLog(msg);
+    
     return 1;
 }
 
-int CargarPartida(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
-    FILE *f = fopen(ARCHIVO_GUARDADO, "rb"); // 'rb' = Read Binary
+int CargarPartida(int slot, Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    char nombreArchivo[32];
+    obtenerNombreArchivo(slot, nombreArchivo);
+
+    FILE *f = fopen(nombreArchivo, "rb");
     if (!f) return 0;
 
     EncabezadoGuardado head;
-    
-    // LEER EN EL MISMO ORDEN QUE ESCRIBIMOS
     fread(&head, sizeof(EncabezadoGuardado), 1, f);
     fread(j, sizeof(Jugador), 1, f);
     fread(mapa, sizeof(char), MUNDO_FILAS * MUNDO_COLUMNAS, f);
@@ -68,11 +92,18 @@ int CargarPartida(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     fread(misEdificios, sizeof(Edificio), MAX_EDIFICIOS_JUGADOR, f);
     
     fclose(f);
+
+    char msg[100];
+    sprintf(msg, "Partida cargada desde Slot %d", slot);
+    RegistrarLog(msg);
+
     return 1;
 }
 
-int ExistePartidaGuardada() {
-    FILE *f = fopen(ARCHIVO_GUARDADO, "rb");
+int ExistePartida(int slot) {
+    char nombreArchivo[32];
+    obtenerNombreArchivo(slot, nombreArchivo);
+    FILE *f = fopen(nombreArchivo, "rb");
     if (f) {
         fclose(f);
         return 1;
@@ -80,15 +111,33 @@ int ExistePartidaGuardada() {
     return 0;
 }
 
-void ObtenerInfoPartida(char *bufferDestino) {
-    FILE *f = fopen(ARCHIVO_GUARDADO, "rb");
+int BorrarPartida(int slot) {
+    char nombreArchivo[32];
+    obtenerNombreArchivo(slot, nombreArchivo);
+
+    // remove() devuelve 0 si tuvo éxito
+    if (remove(nombreArchivo) == 0) {
+        char msg[100];
+        sprintf(msg, "ELIMINADO: Partida del Slot %d borrada por el usuario.", slot);
+        RegistrarLog(msg);
+        return 1; // Éxito
+    }
+    
+    RegistrarLog("ERROR: Intento fallido de borrar partida.");
+    return 0; // Fallo (quizás estaba abierto o no existía)
+}
+void ObtenerInfoPartida(int slot, char *bufferDestino) {
+    char nombreArchivo[32];
+    obtenerNombreArchivo(slot, nombreArchivo);
+
+    FILE *f = fopen(nombreArchivo, "rb");
     if (!f) {
-        strcpy(bufferDestino, "Vacío");
+        sprintf(bufferDestino, "[VACIO] Slot %d", slot);
         return;
     }
     EncabezadoGuardado head;
     fread(&head, sizeof(EncabezadoGuardado), 1, f);
     fclose(f);
 
-    sprintf(bufferDestino, "%s (Nvl %d) - %s", head.nombrePartida, head.nivelJugador, head.fechaHora);
+    sprintf(bufferDestino, "Slot %d: %s (Nvl %d) - %s", slot, head.nombrePartida, head.nivelJugador, head.fechaHora);
 }

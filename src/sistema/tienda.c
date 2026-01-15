@@ -6,6 +6,7 @@
 #include "../mundo/edificios.h" 
 #include <stdio.h>
 
+
 // --- LÓGICA DE DIBUJO DEL EDIFICIO (MAPA) ---
 void dibujarTiendasEnIslas(HDC hdc, Camera cam, int ancho, int alto, int frameTienda) {
     // Coordenadas fijas de la tienda principal (ajusta si tu tienda está en otro lado)
@@ -108,6 +109,7 @@ if (my >= ty && my <= ty + 40)
                         j->tieneEspada = TRUE;
                         ganarExperiencia(j, 10);
                         crearTextoFlotante(msgX, msgY, "Espada Equipada!", 0, RGB(0, 255, 0));
+                        RegistrarLog("COMPRA: Espada adquirida."); // <--- AGREGADO
                     }
                 }
                 // Item 1: Pico
@@ -123,6 +125,7 @@ if (my >= ty && my <= ty + 40)
                         j->tienePico = TRUE;
                         ganarExperiencia(j, 10);
                         crearTextoFlotante(msgX, msgY, "Pico Equipado!", 0, RGB(0, 255, 0));
+                        RegistrarLog("COMPRA: Pico adquirido."); // <--- AGREGADO
                     }
                 }
                 // Item 2: Hacha
@@ -138,6 +141,7 @@ if (my >= ty && my <= ty + 40)
                         j->tieneHacha = TRUE;
                         ganarExperiencia(j, 10);
                         crearTextoFlotante(msgX, msgY, "Hacha Equipada!", 0, RGB(0, 255, 0));
+                        RegistrarLog("COMPRA: Hacha adquirida."); // <--- AGREGADO
                     }
                 }
                 // Item 3: Caña
@@ -163,6 +167,7 @@ if (my >= ty && my <= ty + 40)
                         j->tieneCana = TRUE;
                         ganarExperiencia(j, 20);
                         crearTextoFlotante(msgX, msgY, "Cana Equipada!", 0, RGB(0, 255, 0));
+                        RegistrarLog("COMPRA: Cana adquirida."); // <--- AGREGADO
                     }
                 }
                 InvalidateRect(hwnd, NULL, FALSE);
@@ -201,6 +206,9 @@ if (my >= ty && my <= ty + 40)
                         j->cantSoldados += cant;
                         spawnearEscuadron(TIPO_SOLDADO, cant, j->x + 50, j->y);
                         ganarExperiencia(j, 10 * cant);
+                        char logMsg[64];
+    					sprintf(logMsg, "COMPRA: %d Soldado(s) reclutado(s).", cant);
+    					RegistrarLog(logMsg);
                     }
                 }
                 // Minero (i=1)
@@ -216,6 +224,9 @@ if (my >= ty && my <= ty + 40)
                         j->cantMineros += cant;
                         spawnearEscuadron(TIPO_MINERO, cant, j->x + 50, j->y);
                         ganarExperiencia(j, 5 * cant);
+                        char logMsg[64];
+    					sprintf(logMsg, "COMPRA: %d Minero(s) reclutado(s).", cant);
+    					RegistrarLog(logMsg);
                     }
                 }
                 // Leñador (i=2)
@@ -231,6 +242,9 @@ if (my >= ty && my <= ty + 40)
                         j->cantLenadores += cant;
                         spawnearEscuadron(TIPO_LENADOR, cant, j->x + 50, j->y);
                         ganarExperiencia(j, 5 * cant);
+                        char logMsg[64];
+    					sprintf(logMsg, "COMPRA: %d Leñador(s) reclutado(s).", cant);
+    					RegistrarLog(logMsg);
                     }
                 }
                 // Cazador (i=3)
@@ -246,6 +260,9 @@ if (my >= ty && my <= ty + 40)
                         j->cantCazadores += cant;
                         spawnearEscuadron(TIPO_CAZADOR, cant, j->x + 50, j->y);
                         ganarExperiencia(j, 5 * cant);
+                        char logMsg[64];
+    					sprintf(logMsg, "COMPRA: %d Cazador(s) reclutado(s).", cant);
+    					RegistrarLog(logMsg);
                     }
                 }
                 InvalidateRect(hwnd, NULL, FALSE);
@@ -273,6 +290,7 @@ if (my >= ty && my <= ty + 40)
                 j->nivelMochila = 2;
                 ganarExperiencia(j, 50);
                 MessageBox(hwnd, "Mochila Mejorada (Nvl 2)!", "Mejora", MB_OK);
+                RegistrarLog("MEJORA: Mochila ampliada a Nivel 2."); // <--- AGREGADO
             }
         }
         else if (my >= startY + 80 && my <= startY + 140)
@@ -290,6 +308,7 @@ if (my >= ty && my <= ty + 40)
                 j->nivelMochila = 3;
                 ganarExperiencia(j, 100);
                 MessageBox(hwnd, "Mochila MAXIMA (Nvl 3)!", "Mejora", MB_OK);
+                RegistrarLog("MEJORA: Mochila ampliada a Nivel 3."); 
             }
         }
         else if (my >= startY + 160 && my <= startY + 220)
@@ -307,6 +326,7 @@ if (my >= ty && my <= ty + 40)
                 j->cantBarcosGuerra++;
                 ganarExperiencia(j, 50);
                 crearTextoFlotante(msgX, msgY, "Barco Comprado!", 0, RGB(0, 255, 255));
+                RegistrarLog("COMPRA: Galeon de Guerra adquirido.");
             }
         }
         else if (my >= startY + 240 && my <= startY + 300)
@@ -324,6 +344,7 @@ if (my >= ty && my <= ty + 40)
                 j->tieneBotePesca = TRUE;
                 ganarExperiencia(j, 30);
                 crearTextoFlotante(msgX, msgY, "Bote Adquirido!", 0, RGB(0, 255, 255));
+                RegistrarLog("COMPRA: Bote adquirido."); 
             }
         }
         else if (my >= startY + 320 && my <= startY + 380)
@@ -347,7 +368,7 @@ if (my >= ty && my <= ty + 40)
                 
                 ganarExperiencia(j, 40);
                 crearTextoFlotante(msgX, msgY, "Armadura Equipada!", 0, RGB(0, 255, 0));
-                PlaySound("SystemAsterisk", NULL, SND_ASYNC);
+
             }
         }
         InvalidateRect(hwnd, NULL, FALSE);
@@ -384,6 +405,10 @@ if (my >= ty && my <= ty + 40)
                         j->oro += ganancia; 
                         sprintf(msg, "+%d Oro", ganancia);
                         crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 215, 0));
+                        char logVenta[64];
+    					char* nombresRecursos[] = {"Madera", "Piedra", "Hierro", "Comida", "Hojas"};
+						sprintf(logVenta, "VENTA: %d unidades de %s vendidas.", cant, nombresRecursos[i]);
+    					RegistrarLog(logVenta);
                     }
                     InvalidateRect(hwnd, NULL, FALSE);
                 }
