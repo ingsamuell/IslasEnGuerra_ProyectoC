@@ -61,9 +61,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         // =========================================================
         // Esta ventana te dirá dónde estás haciendo clic.
         // Úsala para anotar los números y luego BORRA estas 3 líneas.
-       // char coordenadas[64];
-       // sprintf(coordenadas, "Clic en X: %d, Y: %d", mx, my);
-       // MessageBox(hwnd, coordenadas, "Debug Coordenadas", MB_OK);
+        //char coordenadas[64];
+        //sprintf(coordenadas, "Clic en X: %d, Y: %d", mx, my);
+        //MessageBox(hwnd, coordenadas, "Debug Coordenadas", MB_OK);
         // =========================================================
 
         // ---------------------------------------------------------
@@ -151,7 +151,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
             // BOTÓN SALIR
             // [AJUSTAR]: Cambia los números
-            if (mx >= 1185 && mx <= 1492 && my >= 694 && my <= 671) {
+            if (mx >= 1178 && mx <= 1500 && my >= 688 && my <= 768) {
                  PostQuitMessage(0);
             }
         }
