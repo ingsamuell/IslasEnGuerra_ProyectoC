@@ -27,15 +27,15 @@ void spawnearEnemigo(int tipo, float x, float y) {
             
             // CONFIGURACIÓN DE CLASES
             if (tipo == TIPO_ENEMIGO_PIRATA) {
-                unidades[i].vidaMax = 100;
-                unidades[i].vida = 50;
+                unidades[i].vidaMax = 30;
+                unidades[i].vida = 30;
                 unidades[i].damage = 2;
                 unidades[i].rangoAtaque = 40; // Cuerpo a cuerpo (Espada)
                 unidades[i].cooldownAtaque = 60; // 1 segundo
             } 
             else if (tipo == TIPO_ENEMIGO_MAGO) {
-                unidades[i].vidaMax = 60; // Menos vida
-                unidades[i].vida = 60;
+                unidades[i].vidaMax = 30; // Menos vida
+                unidades[i].vida = 30;
                 unidades[i].damage = 5;
                 unidades[i].rangoAtaque = 150; // ¡MAGIA A DISTANCIA!
                 unidades[i].cooldownAtaque = 100; // Dispara lento
