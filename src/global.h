@@ -120,6 +120,14 @@
 #define RADIO_SEG_ISLA_MEDIANA 6 // 240px (15 * 16)
 #define RADIO_SEG_ISLA_PEQUENA 6 // 160px (10 * 16)
 
+#define TIPO_BARCO_ALIADO 20  // El barco que manejan tus soldados
+#define TIPO_BARCO_ENEMIGO 21 // Barcos piratas reales
+
+// --- TIPOS DE PARTÍCULAS ---
+#define PART_SANGRE 0
+#define PART_MAGIA 1
+#define PART_BALA_CANON 2     // <--- NUEVO
+#define PART_EXPLOSION 3      // <--- NUEVO
 
 
 // --- ESTRUCTURA DE UNIDAD (NPCs) ---
@@ -213,7 +221,9 @@ typedef struct
     BOOL tieneBotePesca;
     int cantBarcosGuerra; // <--- CAMBIO: Ahora es un contador (0 a 4)
     int timerInmunidadBarco;
-
+    int cooldownCanon;     // Tiempo para el próximo disparo
+    int maxCooldownCanon;  // Tiempo total de recarga (ej. 120 frames)
+int timerAtaque;
     // Estados de Equipo
     BOOL armaduraEquipada;
     int herramientaActiva; // Usar constantes HERRAMIENTA_NADA, etc.
@@ -302,7 +312,9 @@ typedef struct
     float x, y;
     float vx, vy; // Velocidad
     int vida;     // Duración del efecto
+    float destinoX, destinoY;
     COLORREF color;
+    int tipo;       
     int activo;
 } Particula;
 

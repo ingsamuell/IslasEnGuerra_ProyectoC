@@ -7,6 +7,7 @@
 
 extern Unidad unidades[MAX_UNIDADES];
 extern Edificio edificiosEnemigos[MAX_EDIFICIOS_ENEMIGOS];
+extern int screenShake; // Al inicio del archivo
 
 // Configuración de Oleadas
 int timerInvasion = 0;
@@ -27,17 +28,17 @@ void spawnearEnemigo(int tipo, float x, float y) {
             // CONFIGURACIÓN DE CLASES
             if (tipo == TIPO_ENEMIGO_PIRATA) {
                 unidades[i].vidaMax = 100;
-                unidades[i].vida = 100;
-                unidades[i].damage = 5;
+                unidades[i].vida = 50;
+                unidades[i].damage = 2;
                 unidades[i].rangoAtaque = 40; // Cuerpo a cuerpo (Espada)
                 unidades[i].cooldownAtaque = 60; // 1 segundo
             } 
             else if (tipo == TIPO_ENEMIGO_MAGO) {
                 unidades[i].vidaMax = 60; // Menos vida
                 unidades[i].vida = 60;
-                unidades[i].damage = 8;
-                unidades[i].rangoAtaque = 250; // ¡MAGIA A DISTANCIA!
-                unidades[i].cooldownAtaque = 120; // Dispara lento
+                unidades[i].damage = 5;
+                unidades[i].rangoAtaque = 150; // ¡MAGIA A DISTANCIA!
+                unidades[i].cooldownAtaque = 100; // Dispara lento
             }
             
             crearChispas((int)x, (int)y, RGB(255, 0, 0)); // Efecto de aparición
@@ -49,21 +50,19 @@ void spawnearEnemigo(int tipo, float x, float y) {
 // --- 2. IA DE COMBATE (CEREBRO) ---
 void actualizarIAEnemigos(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
     for (int i = 0; i < MAX_UNIDADES; i++) {
-        // Solo procesar enemigos activos
         if (!unidades[i].activa || unidades[i].bando != BANDO_ENEMIGO) continue;
 
         Unidad *u = &unidades[i];
 
-        // A. BUSCAR OBJETIVO (Soldado cercano o Jugador)
+        // --- A. BUSCAR OBJETIVO ---
         float distJugador = sqrt(pow(j->x - u->x, 2) + pow(j->y - u->y, 2));
         int targetId = -1;
         float minDist = 9999;
 
-        // Buscar si hay algún soldado aliado cerca para atacar
-        for(int k=0; k<MAX_UNIDADES; k++) {
+        for(int k = 0; k < MAX_UNIDADES; k++) {
             if(unidades[k].activa && unidades[k].bando == BANDO_ALIADO) {
                 float d = sqrt(pow(unidades[k].x - u->x, 2) + pow(unidades[k].y - u->y, 2));
-                if(d < 300 && d < minDist) { // Prioridad a soldados cercanos
+                if(d < 300 && d < minDist) {
                     minDist = d;
                     targetId = k;
                 }
@@ -74,39 +73,39 @@ void actualizarIAEnemigos(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
         float objX = (targetId != -1) ? unidades[targetId].x : j->x;
         float objY = (targetId != -1) ? unidades[targetId].y : j->y;
 
-        // B. COMPORTAMIENTO
-        if (distObjetivo < 600) { // Si ve a alguien
+        // --- B. COMPORTAMIENTO ---
+        if (distObjetivo < 600) { 
             
-            // 1. ATACAR (Si está en rango)
+            // 1. ATACAR
             if (distObjetivo <= u->rangoAtaque) {
                 u->estado = ESTADO_ATACANDO;
                 u->timerAtaque++;
+
+                // --- EFECTO VISUAL DE CARGA (NUEVO) ---
+                if (u->tipo == TIPO_ENEMIGO_MAGO && u->timerAtaque == u->cooldownAtaque - 20) {
+                    crearProyectilMagico(u->x, u->y, objX, objY); 
+
+                }
                 
+                // --- MOMENTO DEL GOLPE ---
                 if (u->timerAtaque >= u->cooldownAtaque) {
                     u->timerAtaque = 0;
                     
-                    // Aplicar Daño
                     if (targetId != -1) {
-                        unidades[targetId].vida -= u->damage; // Dañar Soldado
-                        crearChispas(objX, objY, RGB(255, 0, 0));
-                        if(unidades[targetId].vida <= 0) unidades[targetId].activa = 0; // Matar soldado
+                        unidades[targetId].vida -= u->damage;
+                        crearSangre(objX, objY); // <--- Efecto de sangre
+                        if(unidades[targetId].vida <= 0) unidades[targetId].activa = 0;
+                        screenShake = 5; // Un temblor pequeño para golpes normales
                     } else {
-                        j->vidaActual -= u->damage; // Dañar Jugador
-                        crearTextoFlotante(j->x, j->y - 30, "-VIDA", 0, RGB(200, 0, 0));
+                        j->vidaActual -= u->damage;
+                        crearSangre(j->x, j->y); // <--- Efecto de sangre
+                        crearTextoFlotante(j->x, j->y - 30, "-VIDA", 0, RGB(255, 50, 50));
+                        screenShake = 5; // Un temblor pequeño para golpes normales
                         if(j->vidaActual < 0) j->vidaActual = 0;
-                    }
-
-                    // EFECTO VISUAL DEL ATAQUE
-                    if (u->tipo == TIPO_ENEMIGO_MAGO) {
-                        crearChispas(objX, objY, RGB(0, 255, 255)); // Magia Azul
-                        PlaySound("SystemAsterisk", NULL, SND_ASYNC); 
-                    } else {
-                        // Pirata (Espada)
-                        crearChispas(objX, objY, RGB(200, 200, 200)); 
                     }
                 }
             } 
-            // 2. PERSEGUIR (Si está lejos)
+            // 2. PERSEGUIR
             else {
                 u->estado = ESTADO_PERSIGUIENDO;
                 float vel = 1.8f;
@@ -116,16 +115,14 @@ void actualizarIAEnemigos(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
                 u->x += (dx / distObjetivo) * vel;
                 u->y += (dy / distObjetivo) * vel;
                 
-                // Animación simple
                 if (fabs(dx) > fabs(dy)) u->direccion = (dx > 0) ? 3 : 2;
                 else u->direccion = (dy > 0) ? 0 : 1;
+                
                 u->frameAnim = (u->frameAnim + 1) % 3; 
                 actualizarAnimacionUnidad(u, dx, dy);
             }
         }
-        
-        aplicarSeparacion(i, mapa); // Evitar que se amontonen
-        
+        aplicarSeparacion(i, mapa);
     }
 }
 

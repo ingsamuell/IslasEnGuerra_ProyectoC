@@ -320,14 +320,20 @@ if (my >= ty && my <= ty + 40)
             if (j->madera < 50) { sprintf(msg, "Faltan %d Mad", 50 - j->madera); crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
             if (j->oro < 100) { sprintf(msg, "Faltan %d Oro", 100 - j->oro); crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
             
-            if (!falta) {
-                j->oro -= 100;
-                j->madera -= 50;
-                j->cantBarcosGuerra++;
-                ganarExperiencia(j, 50);
-                crearTextoFlotante(msgX, msgY, "Barco Comprado!", 0, RGB(0, 255, 255));
-                RegistrarLog("COMPRA: Galeon de Guerra adquirido.");
-            }
+           if (!falta) {
+        j->oro -= 100;
+        j->madera -= 50;
+        j->cantBarcosGuerra++;
+        if (j->cantBarcosGuerra > 1) {
+            // Spawnear Barco Aliado al lado del muelle
+            spawnearEscuadron(TIPO_BARCO_ALIADO, 1, MUELLE_X + 100, MUELLE_Y);
+            crearTextoFlotante(j->x, j->y, "Flota: Barco Aliado!", 0, RGB(0, 255, 255));
+        } else {
+            crearTextoFlotante(j->x, j->y, "Barco Personal Listo!", 0, RGB(0, 255, 255));
+        }
+        
+        ganarExperiencia(j, 50);
+    }
         }
         else if (my >= startY + 240 && my <= startY + 300)
         { // Bote de Pesca (Requiere Nivel 4)

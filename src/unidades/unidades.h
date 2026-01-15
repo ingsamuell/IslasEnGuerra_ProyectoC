@@ -10,7 +10,7 @@ extern Unidad unidades[MAX_UNIDADES];
 // Inicialización y Creación
 void inicializarUnidades();
 void spawnearEscuadron(int tipo, int cantidad, int x, int y);
-
+void dibujarEfectoAtaque(HDC hdc, int x, int y, int direccion, int tam);
 // Lógica y Actualización
 void aplicarSeparacion(int id, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j);

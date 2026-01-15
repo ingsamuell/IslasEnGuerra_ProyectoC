@@ -21,6 +21,7 @@ char neblina[MUNDO_FILAS][MUNDO_COLUMNAS];
 char mapa[MUNDO_FILAS][MUNDO_COLUMNAS];
 // Referencias externas necesarias
 extern Jugador miJugador;
+int screenShake = 0;
 
 
 #define MARGEN_ESTABLO 100
@@ -343,51 +344,181 @@ void actualizarYDibujarTextos(HDC hdc, Camera cam)
     }
 }
 
-void crearChispas(int x, int y, COLORREF color)
-{
-    int creadas = 0;
-    for (int i = 0; i < MAX_PARTICULAS && creadas < 8; i++)
-    {
-        if (!chispas[i].activo)
-        {
-            chispas[i].x = x;
-            chispas[i].y = y;
-            chispas[i].vx = (rand() % 11 - 5);
-            chispas[i].vy = (rand() % 11 - 8);
-            chispas[i].vida = 15 + (rand() % 10);
-            chispas[i].color = color;
-            chispas[i].activo = 1;
-            creadas++;
-        }
-    }
-}
-
 void crearChispaBlanca(float x, float y) { crearChispas((int)x, (int)y, RGB(255, 255, 255)); }
 
-void actualizarYDibujarParticulas(HDC hdc, Camera cam)
-{
-    for (int i = 0; i < MAX_PARTICULAS; i++)
-    {
-        if (chispas[i].activo)
-        {
-            chispas[i].x += chispas[i].vx;
-            chispas[i].y += chispas[i].vy;
-            chispas[i].vy += 0.4f;
-            chispas[i].vida--;
-            if (chispas[i].vida <= 0)
-                chispas[i].activo = 0;
-            else
-            {
-                int sx = (int)((chispas[i].x - cam.x) * cam.zoom);
-                int sy = (int)((chispas[i].y - cam.y) * cam.zoom);
-                HBRUSH hBr = CreateSolidBrush(chispas[i].color);
-                RECT r = {sx, sy, sx + 4, sy + 4};
-                FillRect(hdc, &r, hBr);
-                DeleteObject(hBr);
+// --- VARIABLES GLOBALES INTERNAS ---
+// Usamos 'particulas' para TODO (sangre, magia, chispas, cañones)
+extern Particula particulas[MAX_PARTICULAS]; 
+
+// ---------------------------------------------------------
+// SISTEMA DE PARTÍCULAS UNIFICADO
+// ---------------------------------------------------------
+
+// 1. CHISPAS (Restaurado: Para Madera, Piedra, Golpes normales)
+void crearChispas(int x, int y, COLORREF color) {
+    for (int i = 0; i < 5; i++) { // 5 chispas por impacto
+        for (int k = 0; k < MAX_PARTICULAS; k++) {
+            if (!particulas[k].activo) {
+                particulas[k].activo = 1;
+                particulas[k].tipo = -1; // -1 = Chispa genérica
+                particulas[k].x = (float)x;
+                particulas[k].y = (float)y;
+                // Velocidad aleatoria
+                particulas[k].vx = (rand() % 10 - 5) * 0.5f; 
+                particulas[k].vy = (rand() % 10 - 5) * 0.5f;
+                particulas[k].vida = 15; // Duran poco
+                particulas[k].color = color;
+                break;
             }
         }
     }
 }
+
+// 2. SANGRE (Para daño a unidades)
+void crearSangre(float x, float y) {
+    for (int i = 0; i < 8; i++) { 
+        for (int k = 0; k < MAX_PARTICULAS; k++) {
+            if (!particulas[k].activo) {
+                particulas[k].activo = 1;
+                particulas[k].tipo = PART_SANGRE; 
+                particulas[k].x = x;
+                particulas[k].y = y;
+                particulas[k].vx = (rand() % 10 - 5) * 0.6f; 
+                particulas[k].vy = (rand() % 10 - 5) * 0.6f;
+                particulas[k].vida = 30; 
+                particulas[k].color = RGB(200, 0, 0); 
+                break;
+            }
+        }
+    }
+}
+
+// 3. PROYECTIL MÁGICO (Mago)
+void crearProyectilMagico(float x, float y, float destX, float destY) {
+    for (int k = 0; k < MAX_PARTICULAS; k++) {
+        if (!particulas[k].activo) {
+            particulas[k].activo = 1;
+            particulas[k].tipo = PART_MAGIA; 
+            particulas[k].x = x;
+            particulas[k].y = y;
+            
+            float dx = destX - x;
+            float dy = destY - y;
+            float dist = sqrt(dx*dx + dy*dy);
+            float velocidad = 7.0f; 
+            
+            particulas[k].vx = (dx / dist) * velocidad;
+            particulas[k].vy = (dy / dist) * velocidad;
+            particulas[k].vida = 30; 
+            particulas[k].color = RGB(0, 255, 255); // Cian
+            break; 
+        }
+    }
+}
+
+// 4. BALA DE CAÑÓN (Barcos)
+void crearBalaCanon(float x, float y, float destX, float destY) {
+    for (int k = 0; k < MAX_PARTICULAS; k++) {
+        if (!particulas[k].activo) {
+            particulas[k].activo = 1;
+            particulas[k].tipo = PART_BALA_CANON;
+            particulas[k].x = x;
+            particulas[k].y = y;
+            particulas[k].destinoX = destX; // Guardamos destino para saber cuándo explota
+            particulas[k].destinoY = destY;
+            
+            float dx = destX - x;
+            float dy = destY - y;
+            float dist = sqrt(dx*dx + dy*dy);
+            float velocidad = 6.0f; 
+            
+            particulas[k].vx = (dx / dist) * velocidad;
+            particulas[k].vy = (dy / dist) * velocidad;
+            particulas[k].vida = (int)(dist / velocidad); // Vida exacta para llegar
+            particulas[k].color = RGB(0, 0, 0); // Negra
+            break;
+        }
+    }
+}
+
+// 5. EXPLOSIÓN DE AGUA (Al impactar bala)
+void crearExplosionAgua(float x, float y) {
+    for (int i = 0; i < 10; i++) {
+        for (int k = 0; k < MAX_PARTICULAS; k++) {
+            if (!particulas[k].activo) {
+                particulas[k].activo = 1;
+                particulas[k].tipo = -1; // Como chispa pero blanca
+                particulas[k].x = x;
+                particulas[k].y = y;
+                particulas[k].vx = (rand() % 10 - 5) * 0.8f;
+                particulas[k].vy = (rand() % 10 - 5) * 0.8f;
+                particulas[k].vida = 25;
+                particulas[k].color = RGB(200, 200, 255); // Espuma
+                break;
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------
+// ACTUALIZACIÓN Y DIBUJADO UNIFICADO
+// ---------------------------------------------------------
+void actualizarYDibujarParticulas(HDC hdc, Camera cam) {
+    for (int i = 0; i < MAX_PARTICULAS; i++) {
+        if (!particulas[i].activo) continue;
+
+        // FÍSICA
+        particulas[i].x += particulas[i].vx;
+        particulas[i].y += particulas[i].vy;
+        particulas[i].vida--;
+
+        // Lógica especial para Bala de Cañón
+        if (particulas[i].tipo == PART_BALA_CANON && particulas[i].vida <= 0) {
+            crearExplosionAgua(particulas[i].x, particulas[i].y);
+            PlaySound("SystemAsterisk", NULL, SND_ASYNC); // Sonido impacto
+            particulas[i].activo = 0;
+            continue;
+        }
+
+        if (particulas[i].vida <= 0) {
+            particulas[i].activo = 0;
+            continue;
+        }
+
+        // DIBUJADO
+        int sx = (int)((particulas[i].x - cam.x) * cam.zoom);
+        int sy = (int)((particulas[i].y - cam.y) * cam.zoom);
+        
+        // Si sale de pantalla, no dibujar (optimización)
+        if (sx < -10 || sx > 2000 || sy < -10 || sy > 1500) continue;
+
+        if (particulas[i].tipo == PART_BALA_CANON) {
+            // Bala grande
+            HBRUSH brocha = CreateSolidBrush(RGB(0, 0, 0));
+            HGDIOBJ old = SelectObject(hdc, brocha);
+            Ellipse(hdc, sx, sy, sx + (int)(8*cam.zoom), sy + (int)(8*cam.zoom));
+            SelectObject(hdc, old);
+            DeleteObject(brocha);
+        } 
+        else if (particulas[i].tipo == PART_MAGIA) {
+            // Magia brillante
+            HBRUSH brocha = CreateSolidBrush(RGB(0, 255, 255));
+            RECT r = {sx, sy, sx + (int)(6*cam.zoom), sy + (int)(6*cam.zoom)};
+            FillRect(hdc, &r, brocha);
+            DeleteObject(brocha);
+        }
+        else {
+            // Chispas, Sangre y Explosiones (Pixels)
+            int size = (int)(2 * cam.zoom);
+            // Dibujar un cuadrado pequeño del color correspondiente
+            HBRUSH brocha = CreateSolidBrush(particulas[i].color);
+            RECT r = {sx, sy, sx + size, sy + size};
+            FillRect(hdc, &r, brocha);
+            DeleteObject(brocha);
+        }
+    }
+}
+
 
 // --- 4. ENTIDADES DEL JUEGO (VACAS, ARBOLES, MINAS, TESOROS) ---
 
@@ -1070,6 +1201,20 @@ void dibujarMiniMapa(HDC hdc, Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]
 
 void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda, int mapaId)
 {
+	
+	
+	// --- APLICAR TEMBLOR ---
+    int shakeX = 0, shakeY = 0;
+    if (screenShake > 0) {
+        shakeX = (rand() % 10) - 5; // Mueve la cámara aleatoriamente
+        shakeY = (rand() % 10) - 5;
+        screenShake--; // El efecto se desvanece
+    }
+    
+    // Usamos una cámara temporal para no afectar la lógica del juego, solo el dibujo
+    Camera camEfecto = cam;
+    camEfecto.x += shakeX;
+    camEfecto.y += shakeY;
     // ---------------------------------------------------------
     // 1. CAPA FONDO: AGUA
     // ---------------------------------------------------------

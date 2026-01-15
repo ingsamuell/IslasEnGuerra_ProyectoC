@@ -32,7 +32,12 @@ void dibujarMinas(HDC hdc, Camera cam, int ancho, int alto);
 // Lógica para detectar si el jugador está picando una mina
 void picarMina(Jugador *j);
 void crearChispas(int x, int y, COLORREF color);
+void crearSangre(float x, float y);
+void crearProyectilMagico(float x, float y, float destinoX, float destinoY);
+void actualizarParticulas();
 void actualizarYDibujarParticulas(HDC hdc, Camera cam);
+void crearExplosionAgua(float x, float y);
+void crearBalaCanon(float x, float y, float destX, float destY);
 void agregarTextoFlotante(int x, int y, char* contenido, COLORREF color);
 void actualizarYDibujarTextos(HDC hdc, Camera cam);
 void actualizarLogicaSistema(Jugador *j);

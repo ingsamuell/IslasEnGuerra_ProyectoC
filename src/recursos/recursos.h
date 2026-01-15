@@ -187,5 +187,6 @@ void LiberarRecursos();
 void DibujarImagen(HDC hdcDestino, HBITMAP hBitmap, int x, int y, int ancho, int alto);
 void reclutarTrabajador(Jugador *j, int tipo);
 extern void RegistrarLog(const char* texto);
+extern int screenShake; // Intensidad del temblor
 
 #endif

@@ -69,49 +69,75 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         // ---------------------------------------------------------
         // 1. ESTADO: JUGANDO
         // ---------------------------------------------------------
-        if (estadoJuego.estadoActual == ESTADO_PARTIDA)
-        {
-            BOOL clicEnUI = FALSE;
-
-            if (miJugador.tiendaAbierta)
-            {
-                RECT rcClient;
-                GetClientRect(hwnd, &rcClient);
-                int anchoW = 340;
-                int tx = rcClient.right - anchoW - 20;
-                int ty = 80;
-
-                if (mx >= tx && mx <= tx + anchoW && my >= ty && my <= ty + 480)
-                {
-                    clicEnUI = TRUE;
-                    procesarClickMochilaTienda(mx, my, FALSE, &miJugador, hwnd);
-                }
-            }
-
-            if (!clicEnUI)
-            {
-                if (miJugador.edificioSeleccionado > 0)
-                {
-                    int mundoX = (int)((mx / miCamara.zoom) + miCamara.x);
-                    int mundoY = (int)((my / miCamara.zoom) + miCamara.y);
-                    intentarColocarEdificio(&miJugador, mundoX, mundoY, mapaMundo);
-                }
-                else
-                {
-                    seleccionando = TRUE;
-                    inicioSel.x = mx;
-                    inicioSel.y = my;
-                    finSel.x = mx;
-                    finSel.y = my;
-
-                    if (!(wParam & MK_SHIFT))
-                    {
-                        for (int i = 0; i < MAX_UNIDADES; i++)
-                            unidades[i].seleccionado = 0;
+if (estadoJuego.estadoActual == ESTADO_PARTIDA)
+    {
+        // --- PRIORIDAD A: COMBATE NAVAL (Si el jugador está en barco de guerra) ---
+        if (miJugador.estadoBarco == 2) { 
+            if (miJugador.cooldownCanon <= 0) {
+                float mouseWorldX = (mx / miCamara.zoom) + miCamara.x;
+                float mouseWorldY = (my / miCamara.zoom) + miCamara.y;
+                
+                crearBalaCanon(miJugador.x, miJugador.y, mouseWorldX, mouseWorldY);
+                
+                // Lógica de Daño en área
+                for(int i = 0; i < MAX_UNIDADES; i++) {
+                    if(unidades[i].activa && unidades[i].bando == BANDO_ENEMIGO) {
+                        float d = sqrt(pow(unidades[i].x - mouseWorldX, 2) + pow(unidades[i].y - mouseWorldY, 2));
+                        if (d < 50) { 
+                            unidades[i].vida -= 40;
+                            if(unidades[i].vida <= 0) {
+                                unidades[i].activa = 0;
+                                crearExplosionAgua(unidades[i].x, unidades[i].y);
+                            }
+                        }
                     }
+                }
+                
+                miJugador.cooldownCanon = 120; // 2 segundos de recarga
+                crearTextoFlotante(miJugador.x, miJugador.y - 40, "Recargando...", 0, RGB(200, 200, 200));
+            } else {
+                crearTextoFlotante(miJugador.x, miJugador.y - 40, "Cañones no listos!", 0, RGB(255, 50, 50));
+                PlaySound("SystemHand", NULL, SND_ASYNC);
+            }
+            return 0; // Salimos para no procesar selección de unidades mientras disparamos
+        }
+
+        // --- PRIORIDAD B: CLIC EN TIENDA ---
+        BOOL clicEnUI = FALSE;
+        if (miJugador.tiendaAbierta) {
+            RECT rcClient;
+            GetClientRect(hwnd, &rcClient);
+            int anchoW = 340;
+            int tx = rcClient.right - anchoW - 20;
+            int ty = 80;
+
+            if (mx >= tx && mx <= tx + anchoW && my >= ty && my <= ty + 480) {
+                clicEnUI = TRUE;
+                procesarClickMochilaTienda(mx, my, FALSE, &miJugador, hwnd);
+                return 0;
+            }
+        }
+
+        // --- PRIORIDAD C: CONSTRUCCIÓN O SELECCIÓN ---
+        if (!clicEnUI) {
+            if (miJugador.edificioSeleccionado > 0) {
+                int mundoX = (int)((mx / miCamara.zoom) + miCamara.x);
+                int mundoY = (int)((my / miCamara.zoom) + miCamara.y);
+                intentarColocarEdificio(&miJugador, mundoX, mundoY, mapaMundo);
+            } else {
+                seleccionando = TRUE;
+                inicioSel.x = mx;
+                inicioSel.y = my;
+                finSel.x = mx;
+                finSel.y = my;
+
+                if (!(wParam & MK_SHIFT)) {
+                    for (int i = 0; i < MAX_UNIDADES; i++)
+                        unidades[i].seleccionado = 0;
                 }
             }
         }
+    }
 
         // ---------------------------------------------------------
         // 2. ESTADO: MENÚ PRINCIPAL (Aquí es donde debes ajustar)
@@ -861,6 +887,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             // 2. Lógica del Juego (Solo si estamos jugando)
             if (estadoJuego.estadoActual == ESTADO_PARTIDA)
             {
+            	
+            	if (miJugador.cooldownCanon > 0) {
+        miJugador.cooldownCanon--;
+    }
                 // --- A) UNIDADES RTS (Lo más importante) ---
                 actualizarUnidades(mapaMundo, &miJugador);
 
