@@ -23,5 +23,6 @@ void ordenarUnidad(int mX, int mY, Camera cam); // Lógica inteligente (Cazar/Ta
 
 // Renderizado
 void dibujarUnidades(HDC hdc, Camera cam);
+void golpearEnemigoCercano(Jugador *j);
 
 #endif

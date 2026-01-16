@@ -317,18 +317,21 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
 
 void dibujarJugador(HDC hdc, Jugador *jugador, Camera cam)
 {
+    // 1. CÁLCULO DE POSICIÓN Y ESCALADO
     int tam = 32 * cam.zoom;
-    RECT r; GetClipBox(hdc, &r);
+    RECT r; 
+    GetClipBox(hdc, &r);
+    
     int cx = (r.right / 2) - (tam / 2);
     int cy = (r.bottom / 2) - (tam / 2);
 
     // =========================================================
-    // CASO 1: ESTÁ EN BARCO
+    // CASO 1: ESTADO NAVEGACIÓN (Barco o Bote)
     // =========================================================
     if (jugador->estadoBarco > 0) {
         HBITMAP imgBarco = NULL;
         
-        // 1. Barra de Vida (Común para ambos barcos)
+        // A) Barra de Vida (Siempre arriba)
         dibujarBarraVidaLocal(hdc, cx - 10, cy - 25, jugador->vidaActual, jugador->vidaMax, 50 * cam.zoom);
         
         int dir = (jugador->direccion == DIR_IZQUIERDA) ? 0 : 1; 
@@ -336,72 +339,66 @@ void dibujarJugador(HDC hdc, Jugador *jugador, Camera cam)
         if (jugador->estadoBarco == 1) imgBarco = hBmpBote[dir];       
         else if (jugador->estadoBarco == 2) imgBarco = hBmpBarco[dir]; 
         
-        // 2. Dibujar el Sprite del Barco
         if (imgBarco) {
             DibujarImagen(hdc, imgBarco, cx - 16, cy - 16, 80 * cam.zoom, 64 * cam.zoom);
         }
         
-        // 3. Lógica específica según el tipo de barco
+        // B) Lógica específica según el tipo de nave
         if (jugador->estadoBarco == 1) {
-            // Bote de Pesca
             SetTextColor(hdc, RGB(0, 255, 255));
             TextOut(hdc, cx, cy - 40, "PESCANDO", 8);
         } 
-        else if (jugador->estadoBarco == 2) {
-            // --- BARRA DE RECARGA DE CAÑONES (Barco de Guerra) ---
-            int barW = 40 * cam.zoom; // Escalado con zoom
-            int barH = 4 * cam.zoom;
-            int bx = cx - (barW / 4);
-            int by = cy + (35 * cam.zoom);
-            
-            // Fondo
+        else if (jugador->estadoBarco == 2) { 
+            // === [NUEVO] BARRA DE RECARGA DE CAÑÓN ===
+            int barW = 50 * cam.zoom;
+            int barH = 6 * cam.zoom;
+            int bx = cx - (10 * cam.zoom);
+            int by = cy - (40 * cam.zoom); // Posicionada arriba para no tapar la vida
+
+            // Fondo de la barra
             HBRUSH bg = CreateSolidBrush(RGB(50, 50, 50));
             RECT rBg = {bx, by, bx + barW, by + barH};
             FillRect(hdc, &rBg, bg);
             DeleteObject(bg);
-            
-            // Progreso
+
+            // Cálculo de recarga (Basado en cooldownCanon)
             float pct = 1.0f - ((float)jugador->cooldownCanon / 120.0f);
-            if (pct < 0) pct = 0;
-            if (pct > 1) pct = 1;
-            
-            HBRUSH fg = CreateSolidBrush(pct >= 1.0f ? RGB(0, 255, 255) : RGB(100, 100, 255));
+            if (pct < 0) { pct = 0; } 
+			if (pct > 1) { pct = 1; }
+
+            // Color: Cian si está listo, Azul oscuro si recarga
+            COLORREF colorBarra = (pct >= 1.0f) ? RGB(0, 255, 255) : RGB(0, 0, 150);
+            HBRUSH fg = CreateSolidBrush(colorBarra);
             RECT rFg = {bx, by, bx + (int)(barW * pct), by + barH};
             FillRect(hdc, &rFg, fg);
             DeleteObject(fg);
             
+            // Indicador de texto "LISTO"
             if (pct >= 1.0f) {
-                SetTextColor(hdc, RGB(0, 255, 255));
                 SetBkMode(hdc, TRANSPARENT);
-                TextOut(hdc, bx, by + 5, "LISTO", 5);
+                SetTextColor(hdc, RGB(0, 255, 255));
+                TextOut(hdc, bx + 5, by - (15 * cam.zoom), "LISTO", 5);
             }
         }
-        
-        return; // Salir aquí si está en barco
+        return; 
     }
 
     // =========================================================
-    // CASO 2: A PIE (Lógica de Ataque y Dibujo)
+    // CASO 2: ESTADO A PIE
     // =========================================================
     
-    // --- LÓGICA DE ATAQUE (Embestida visual) ---
-    if (jugador->timerAtaque > 0) {
-        // Mientras el timer esté activo, dibujamos el rastro del arma
-        dibujarEfectoAtaque(hdc, cx, cy, jugador->direccion, tam);
-
-        // Si estamos en la fase inicial del ataque, el sprite se desplaza hacia adelante
-        if (jugador->timerAtaque > 10) {
-            int empujeSutil = 8 * cam.zoom; // Distancia de la embestida
-            switch(jugador->direccion) {
-                case DIR_ABAJO:     cy += empujeSutil; break;
-                case DIR_ARRIBA:    cy -= empujeSutil; break;
-                case DIR_IZQUIERDA: cx -= empujeSutil; break;
-                case DIR_DERECHA:   cx += empujeSutil; break;
-            }
+    // --- A) LÓGICA DE EMBESTIDA ---
+    if (jugador->timerAtaque > 10) {
+        int empujeSutil = 8 * cam.zoom; 
+        switch(jugador->direccion) {
+            case DIR_ABAJO:     cy += empujeSutil; break;
+            case DIR_ARRIBA:    cy -= empujeSutil; break;
+            case DIR_IZQUIERDA: cx -= empujeSutil; break;
+            case DIR_DERECHA:   cx += empujeSutil; break;
         }
     }
 
-    // Seleccionar Sprite según estado
+    // --- B) SELECCIÓN DE SPRITE ---
     HBITMAP spriteFinal = hBmpJugador; 
     int dir = jugador->direccion;
     int anim = jugador->frameAnim;
@@ -410,22 +407,41 @@ void dibujarJugador(HDC hdc, Jugador *jugador, Camera cam)
         if (hBmpArmaduraAnim[dir][anim]) spriteFinal = hBmpArmaduraAnim[dir][anim];
     } else {
         switch (jugador->herramientaActiva) {
-            case HERRAMIENTA_ESPADA:
-                if (hBmpEspadaAnim[dir][anim]) spriteFinal = hBmpEspadaAnim[dir][anim];
-                break;
-            case HERRAMIENTA_PICO:
-                if (hBmpPicoAnim[dir][anim]) spriteFinal = hBmpPicoAnim[dir][anim];
-                break;
-            case HERRAMIENTA_HACHA:
-                if (hBmpHachaAnim[dir][anim]) spriteFinal = hBmpHachaAnim[dir][anim];
-                break;
-            default:
-                if (hBmpJugadorAnim[dir][anim]) spriteFinal = hBmpJugadorAnim[dir][anim];
-                break;
+            case HERRAMIENTA_ESPADA: if (hBmpEspadaAnim[dir][anim]) spriteFinal = hBmpEspadaAnim[dir][anim]; break;
+            case HERRAMIENTA_PICO:   if (hBmpPicoAnim[dir][anim])   spriteFinal = hBmpPicoAnim[dir][anim]; break;
+            case HERRAMIENTA_HACHA:  if (hBmpHachaAnim[dir][anim])  spriteFinal = hBmpHachaAnim[dir][anim]; break;
+            default:                 if (hBmpJugadorAnim[dir][anim])spriteFinal = hBmpJugadorAnim[dir][anim]; break;
         }
     }
 
-    // Dibujar el personaje (usando cx/cy que pueden estar desplazados por el ataque)
+    // --- C) EFECTO VISUAL DE ATAQUE (Slash) ---
+    if (jugador->timerAtaque > 0) { 
+        int xCentro = cx + (tam / 2);
+        int yCentro = cy + (tam / 2);
+        int alcance = 35 * cam.zoom;
+        
+        HPEN hPen = CreatePen(PS_SOLID, 3, RGB(255, 255, 200));
+        HGDIOBJ old = SelectObject(hdc, hPen);
+        
+        if (dir == DIR_DERECHA) {
+            MoveToEx(hdc, xCentro, yCentro - 10, NULL);
+            LineTo(hdc, xCentro + alcance, yCentro + 10);
+        } else if (dir == DIR_IZQUIERDA) {
+            MoveToEx(hdc, xCentro, yCentro - 10, NULL);
+            LineTo(hdc, xCentro - alcance, yCentro + 10);
+        } else if (dir == DIR_ARRIBA) {
+            MoveToEx(hdc, xCentro - 10, yCentro, NULL);
+            LineTo(hdc, xCentro + 10, yCentro - alcance);
+        } else if (dir == DIR_ABAJO) {
+            MoveToEx(hdc, xCentro - 10, yCentro, NULL);
+            LineTo(hdc, xCentro + 10, yCentro + alcance);
+        }
+        
+        SelectObject(hdc, old);
+        DeleteObject(hPen);
+    }
+
+    // --- D) RENDERIZADO FINAL DEL PERSONAJE ---
     DibujarImagen(hdc, spriteFinal, cx, cy, tam, tam);
 }
 

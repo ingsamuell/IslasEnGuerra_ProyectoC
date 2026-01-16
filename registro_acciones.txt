@@ -482,3 +482,5 @@
 [15/01/2026 18:04] VENTA: 1 unidades de Hojas vendidas.
 [15/01/2026 18:04] VENTA: 1 unidades de Hojas vendidas.
 [15/01/2026 18:04] COMPRA: 1 Soldado(s) reclutado(s).
+[16/01/2026 17:19] NUEVA PARTIDA INICIADA - Mapa: Islas Oceano - Slot: 0
+[16/01/2026 17:20] COMPRA: 1 Minero(s) reclutado(s).
