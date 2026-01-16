@@ -127,8 +127,8 @@
 // --- TIPOS DE PARTÍCULAS ---
 #define PART_SANGRE 0
 #define PART_MAGIA 1
-#define PART_BALA_CANON 2     // <--- NUEVO
-#define PART_EXPLOSION 3      // <--- NUEVO
+#define PART_BALA_CANON 2    
+#define PART_EXPLOSION 3      
 
 
 // --- ESTRUCTURA DE UNIDAD (NPCs) ---

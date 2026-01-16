@@ -595,64 +595,77 @@ void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     // Coordenadas EXACTAS del muelle principal
     #define MUELLE_X 2050
     #define MUELLE_Y 1600
-    #define RADIO_PERMITIDO 100  // Radio de 100px alrededor del muelle
+    #define RADIO_PERMITIDO 100 
     
-    // Calcular distancia al muelle
     float dx = j->x - MUELLE_X;
     float dy = j->y - MUELLE_Y;
     float distancia = sqrt(dx*dx + dy*dy);
     
     // ============================================
-    // 1. CASO: ESTÁ EN BARCO → INTENTAR BAJAR
+    // 1. CASO: ESTÁ EN BARCO → BAJAR (Desembarcar)
     // ============================================
     if (j->estadoBarco > 0) {
-        // ¿Está lo suficientemente cerca del muelle?
         if (distancia < RADIO_PERMITIDO) {
-            // ¡SÍ! Puede bajar en el muelle
-            
-            // 1. Cambiar estado
-            j->estadoBarco = 0;  // Ahora está a pie
-            
-            // 2. Ajustar posición EXACTA en el muelle
-            // (Opcional: puedes ajustar esto para que quede mejor visualmente)
-            j->x = MUELLE_X + 30;  // 30px a la derecha del centro del muelle
-            j->y = MUELLE_Y + 20;  // 20px abajo del centro del muelle
-            
-            // 3. Feedback visual y de sonido
-            crearTextoFlotante(j->x, j->y, "Desembarcado en muelle", 0, RGB(0, 255, 200));
-            
-            // (Opcional) Sonido de éxito
-            // PlaySound("SystemExclamation", NULL, SND_ASYNC);
-            
+            j->estadoBarco = 0;  // Pie
+            j->x = MUELLE_X + 30; 
+            j->y = MUELLE_Y + 20;
+            crearTextoFlotante(j->x, j->y, "Desembarcado", 0, RGB(0, 255, 200));
         } else {
-            // ¡NO! Está demasiado lejos del muelle
-            crearTextoFlotante(j->x, j->y, "Ve al muelle para desembarcar", 0, RGB(255, 50, 50));
-            
-            // (Opcional) Sonido de error
-            // PlaySound("SystemHand", NULL, SND_ASYNC);
+            crearTextoFlotante(j->x, j->y, "Ve al muelle para bajar", 0, RGB(255, 50, 50));
         }
         return;
     }
     
     // ============================================
-    // 2. CASO: ESTÁ A PIE → INTENTAR SUBIR
+    // 2. CASO: ESTÁ A PIE → ELEGIR BARCO
     // ============================================
-    // (Mantener lógica original, pero solo en el muelle)
     if (distancia < RADIO_PERMITIDO) {
-        if (j->tieneBotePesca) { 
-            j->estadoBarco = 1;  // Sube a Bote de Pesca
-            j->x += 60;          // Pequeño ajuste visual
+        
+        // A) TIENE LOS DOS BARCOS -> PREGUNTAR
+        if (j->tieneBotePesca && j->cantBarcosGuerra > 0) {
             
-            crearTextoFlotante(j->x, j->y, "Embarcando en bote de pesca", 0, RGB(0, 200, 255));
+            // Pausar un momento para preguntar
+            HWND hwnd = GetActiveWindow();
+            int eleccion = MessageBox(hwnd, 
+                "Tienes dos tipos de embarcaciones disponibles.\n\n"
+                "Cual quieres usar?\n"
+                "SI: Barco de Guerra (Canones)\n"
+                "NO: Bote de Pesca (Cana)\n"
+                "CANCELAR: Quedarse en tierra", 
+                "Elegir Navio", MB_YESNOCANCEL | MB_ICONQUESTION);
+
+            if (eleccion == IDYES) {
+                // ELEGIR GUERRA
+                j->estadoBarco = 2; 
+                j->x += 60;
+                crearTextoFlotante(j->x, j->y, "A la batalla!", 0, RGB(255, 150, 0));
+            } 
+            else if (eleccion == IDNO) {
+                // ELEGIR PESCA
+                j->estadoBarco = 1; 
+                j->x += 60;
+                crearTextoFlotante(j->x, j->y, "Dia de pesca...", 0, RGB(0, 255, 255));
+            }
+            // Si es CANCEL, no hace nada
         }
-        else if (j->cantBarcosGuerra > 0) { 
-            j->estadoBarco = 2;  // Sube a Barco de Guerra
-            j->x += 60;          // Pequeño ajuste visual
-            
-            crearTextoFlotante(j->x, j->y, "Embarcando en barco de guerra", 0, RGB(255, 200, 0));
-        } else {
-            // Tiene barco pero no está disponible (caso raro)
-            crearTextoFlotante(j->x, j->y, "No tienes barcos disponibles", 0, RGB(255, 100, 100));
+        
+        // B) SOLO TIENE BARCO DE GUERRA
+        else if (j->cantBarcosGuerra > 0) {
+            j->estadoBarco = 2;
+            j->x += 60;
+            crearTextoFlotante(j->x, j->y, "Barco de Guerra", 0, RGB(255, 200, 0));
+        }
+        
+        // C) SOLO TIENE BOTE DE PESCA
+        else if (j->tieneBotePesca) {
+            j->estadoBarco = 1; 
+            j->x += 60;
+            crearTextoFlotante(j->x, j->y, "Bote de Pesca", 0, RGB(0, 200, 255));
+        }
+        
+        // D) NO TIENE NADA
+        else {
+            crearTextoFlotante(j->x, j->y, "Compra un barco en la tienda!", 0, RGB(255, 100, 100));
         }
     } 
 }
