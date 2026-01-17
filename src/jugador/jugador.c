@@ -16,7 +16,6 @@ int obtenerCapacidadMaxima(int nivel) {
     return 99;
 }
 
-// ESTA ES LA FUNCIÓN QUE MAPA.C ESTABA BUSCANDO
 void agregarRecurso(int *recurso, int cantidad, int nivelMochila) {
     int max = obtenerCapacidadMaxima(nivelMochila);
     *recurso += cantidad;
