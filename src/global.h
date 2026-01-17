@@ -52,6 +52,8 @@
 #define MAX_ARBOLES 80 // Un buen número para cubrir 5 islas
 #define MAX_TIBURONES 30
 
+#define MARGEN_ESTABLO 100
+
 // --- TESOROS Y RECURSOS ---
 #define MAX_TESOROS 2
 #define MAX_MINAS 30
@@ -128,7 +130,9 @@
 #define PART_SANGRE 0
 #define PART_MAGIA 1
 #define PART_BALA_CANON 2    
-#define PART_EXPLOSION 3      
+#define PART_EXPLOSION 3   
+//Partida
+
 
 
 // --- ESTRUCTURA DE UNIDAD (NPCs) ---

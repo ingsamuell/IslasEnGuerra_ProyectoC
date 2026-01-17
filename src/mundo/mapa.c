@@ -1,4 +1,4 @@
-/* src/mapa/mapa.c - VERSIÓN LIMPIA Y PROFESIONAL */
+/* src/mapa/mapa.c */
 #include "mapa.h"
 #include "fauna.h"
 #include "naturaleza.h"
@@ -22,9 +22,6 @@ char mapa[MUNDO_FILAS][MUNDO_COLUMNAS];
 // Referencias externas necesarias
 extern Jugador miJugador;
 int screenShake = 0;
-
-
-#define MARGEN_ESTABLO 100
 
 // --- 1. SISTEMA DE ISLAS Y RECURSOS GRÁFICOS ---
 
@@ -144,7 +141,6 @@ void inicializarIslas(int mapaId)
     // ====================================================
 
     // 1. ISLA ENEMIGA GRANDE (Esquina INFERIOR DERECHA)
-    // Donde estaba el edificio enemigo solitario
     misIslas[5].activa = 1;
     misIslas[5].x = 100;    // Esquina derecha
     misIslas[5].y = 2300;    // Esquina inferior
@@ -182,7 +178,6 @@ COLORREF ObtenerColorDePunto(int x, int y, int mapaId)
         if (x >= misIslas[i].x && x < misIslas[i].x + misIslas[i].ancho &&
             y >= misIslas[i].y && y < misIslas[i].y + misIslas[i].alto)
         {
-
             int localX = x - misIslas[i].x;
             int localY = y - misIslas[i].y;
 
@@ -204,7 +199,7 @@ COLORREF ObtenerColorDePunto(int x, int y, int mapaId)
     return RGB(0, 100, 180); // Agua Profunda
 }
 
-// Genera la matriz de colisión (Se ejecuta UNA VEZ al cargar)
+// Genera la matriz de colisión
 void generarColisionDeMapaCompleto(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId)
 {
     // 1. Limpiamos a AGUA (0)
@@ -216,7 +211,7 @@ void generarColisionDeMapaCompleto(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int m
         }
     }
 
-    // 2. Escaneamos punto por punto (16x16)
+    // 2. Escaneamos punto por punto 
     for (int fila = 0; fila < MUNDO_FILAS; fila++)
     {
         for (int col = 0; col < MUNDO_COLUMNAS; col++)
@@ -246,7 +241,7 @@ void dibujarInterfazGuerra(HDC hdc, int ancho) {
         }
     }
 
-    // Solo dibujar si hay enemigos (Modo Batalla)
+    // Solo dibujar si hay enemigos 
     if (enemigosVivos > 0) {
         // Fondo Rojo Superior
         RECT r = {0, 0, ancho, 40};
@@ -259,7 +254,7 @@ void dibujarInterfazGuerra(HDC hdc, int ancho) {
         SetTextColor(hdc, RGB(255, 255, 0)); // Amarillo
         
         char texto[128];
-        sprintf(texto, " MODO BATALLA !!!   Enemigos: %d   |   Tus Soldados: %d", enemigosVivos, soldadosVivos);
+        sprintf(texto, " MODO BATALLA  Enemigos: %d   |   Tus Soldados: %d", enemigosVivos, soldadosVivos);
         
         // Centrar texto (aprox)
         TextOut(hdc, (ancho / 2) - 150, 10, texto, strlen(texto));
@@ -277,7 +272,7 @@ void dibujarInterfazGuerra(HDC hdc, int ancho) {
 void inicializarNieblaTotal() {
     for (int y = 0; y < MUNDO_FILAS; y++) {
         for (int x = 0; x < MUNDO_COLUMNAS; x++) {
-            neblina[y][x] = 0; // <--- ¡AQUÍ ESTÁ EL CAMBIO! Todo empieza oculto
+            neblina[y][x] = 0; 
         }
     }
 }
@@ -286,7 +281,7 @@ void inicializarMapa(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId)
 {
     inicializarIslas(mapaId);
     generarColisionDeMapaCompleto(mapa, mapaId);
-    inicializarNieblaTotal(); // <--- AGREGAR ESTO AL PRINCIPIO
+    inicializarNieblaTotal(); 
 }
 
 int EsSuelo(int x, int y, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS])
@@ -354,7 +349,7 @@ extern Particula particulas[MAX_PARTICULAS];
 // SISTEMA DE PARTÍCULAS UNIFICADO
 // ---------------------------------------------------------
 
-// 1. CHISPAS (Restaurado: Para Madera, Piedra, Golpes normales)
+// 1. CHISPAS 
 void crearChispas(int x, int y, COLORREF color) {
     for (int i = 0; i < 5; i++) { // 5 chispas por impacto
         for (int k = 0; k < MAX_PARTICULAS; k++) {
@@ -475,7 +470,6 @@ void actualizarYDibujarParticulas(HDC hdc, Camera cam) {
         // Lógica especial para Bala de Cañón
         if (particulas[i].tipo == PART_BALA_CANON && particulas[i].vida <= 0) {
             crearExplosionAgua(particulas[i].x, particulas[i].y);
-            PlaySound("SystemAsterisk", NULL, SND_ASYNC); // Sonido impacto
             particulas[i].activo = 0;
             continue;
         }
@@ -714,7 +708,7 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
     int tituloWidth = 600;
     int tituloHeight = 120;
     int tituloX = (ancho - tituloWidth) / 2;
-    int tituloY = alto / 6; // 16.6% desde arriba
+    int tituloY = alto / 6; 
 
     if (hBmpTitulo)
     {
@@ -737,7 +731,7 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
 
     // --- BOTÓN "JUGAR" (Centro - 150px MÁS ABAJO que los otros) ---
     int jugarX = (ancho - btnAncho) / 2;
-    int jugarY = startY + 230; // ← 150 PÍXELES MÁS ABAJO
+    int jugarY = startY + 230; 
     HBITMAP imgJugar = (hBmpBtnJugar) ? hBmpBtnJugar : hBmpBoton;
     DibujarImagen(hdc, imgJugar, jugarX, jugarY, btnAncho, btnAlto);
 
@@ -747,8 +741,8 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
     DibujarImagen(hdc, imgInstr, instruccionesX, startY, btnAncho, btnAlto);
 
     // 4. BOTÓN "SALIR" (MÁS ABAJO y MÁS A LA DERECHA)
-    int margenHorizontal = 0;  // ← MÁS A LA DERECHA (antes 30)
-    int margenVertical = 0;    // ← MÁS ABAJO (antes 30)
+    int margenHorizontal = 0;  
+    int margenVertical = 0;   
     int salirX = ancho - btnAncho - margenHorizontal;
     int salirY = alto - btnAlto - margenVertical;
     HBITMAP imgSalir = (hBmpBtnSalir) ? hBmpBtnSalir : hBmpBoton;
@@ -856,7 +850,7 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
         char *msg = "CONTROLES:\n\n"
                     "W, A, S, D: Mover personaje\n"
                     "ESPACIO: Accion (Talar, Minar, Abrir)\n"
-                    "BLOQ MAYUS: Abrir Mochila\n"
+                    "I: Abrir Mochila\n"
                     "T: Abrir Tienda (Cerca del edificio)\n"
                     "TAB: Equipar/Quitar Armadura\n"
                     "1, 2, 3: Equipar Herramientas\n"
@@ -1157,7 +1151,7 @@ void dibujarMiniMapa(HDC hdc, Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]
     // 5. TEXTOS Y PUNTOS CARDINALES
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, RGB(0, 0, 0)); // Letras Negras
-    // Dibujamos N, S, E, O dentro del marco o justo afuera (aquí dentro para limpieza)
+    // Dibujamos N, S, E, O dentro del marco o justo afuera
     TextOut(hdc, xBase + (tamMapa/2) - 4, yBase + 2, "N", 1); 
     TextOut(hdc, xBase + (tamMapa/2) - 4, yBase + tamMapa - 14, "S", 1); 
     TextOut(hdc, xBase + tamMapa - 12, yBase + (tamMapa/2) - 8, "E", 1); 
@@ -1288,15 +1282,12 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
     dibujarVacas(hdc, cam, ancho, alto); // Ahora las vacas se dibujan ANTES de la niebla
     
     // Muelle y Tienda
-    dibujarMuelleYFlota(hdc, cam, &miJugador); // Si tienes esta función implementada
-    // Si la tienda es un objeto estático, dibújala aquí también.
-
+    dibujarMuelleYFlota(hdc, cam, &miJugador); 
     // ---------------------------------------------------------
     // 4. CAPA PERSONAJES: JUGADOR Y UNIDADES
     // ---------------------------------------------------------
     dibujarUnidades(hdc, cam);
     dibujarJugador(hdc, &miJugador, cam);
-
     // ---------------------------------------------------------
     // 5. CAPA SUPERIOR: NIEBLA DE GUERRA
     // ---------------------------------------------------------
@@ -1317,7 +1308,7 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
 
     for (int f = inicioFila; f < finFila; f++) {
         for (int c = inicioCol; c < finCol; c++) {
-            // SI ESTÁ OCULTO (0), DIBUJAR NUBE
+            // SI ESTÁ OCULTO (0) 
             if (neblina[f][c] == 0) {
                 int x = (int)(((c * TAMANO_CELDA_BASE) - cam.x) * cam.zoom);
                 int y = (int)(((f * TAMANO_CELDA_BASE) - cam.y) * cam.zoom);

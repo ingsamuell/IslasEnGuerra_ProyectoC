@@ -1,9 +1,9 @@
 #include "naturaleza.h"
-#include "mapa.h"             // Para EsSuelo(), crearChispas(), crearTextoFlotante()
-#include "../recursos/recursos.h" // Para las imágenes (HBITMAPs)
+#include "mapa.h"            
+#include "../recursos/recursos.h" 
 #include "../jugador/jugador.h"
 #include "../mundo/mapa.h"
-#include "../global.h"   // Para modificar el inventario del jugador
+#include "../global.h"   
 #include <math.h>
 #include <stdio.h>
 
@@ -37,10 +37,7 @@ void crearChispaNaturaleza(float x, float y) {
     crearChispas((int)x, (int)y, RGB(255, 255, 255)); 
 }
 
-// =========================================================
-// FUNCIONES PARA COLOCACIÓN MANUAL (NUEVO)
-// =========================================================
-
+// FUNCIONES PARA COLOCACIÓN MANUAL 
 void ponerArbol(int id, int x, int y, int tipo) {
     if (id < 0 || id >= MAX_ARBOLES) return;
 
@@ -64,14 +61,11 @@ void ponerMina(int id, int x, int y, int tipo) {
 }
 
 // --- ÁRBOLES ---
-
 void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     // 1. Limpiar arreglo
     for (int i = 0; i < MAX_ARBOLES; i++) misArboles[i].activa = 0;
 
     // 2. COLOCACIÓN MANUAL DE ÁRBOLES
-    // Formato: ponerArbol(ID, X, Y, TIPO);
-    
     // -- Bosque al Oeste (Cerca del Establo) --
     ponerArbol(0, 1150, 1350, 1);
     ponerArbol(1, 1200, 1320, 0);
@@ -105,7 +99,6 @@ void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     ponerArbol(25, 1970, 1270, 1);
     ponerArbol(26, 1785, 1305, 0);
 
-    // ¡Agrega más líneas aquí si quieres más árboles!
 }
 
 void talarArbol(Jugador *j) {
@@ -188,14 +181,11 @@ int buscarArbolCercano(float x, float y, float rango) {
 }
 
 // --- MINAS ---
-
 void inicializarMinas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     // 1. Limpiar arreglo
     for (int i = 0; i < MAX_MINAS; i++) misMinas[i].activa = 0;
 
     // 2. COLOCACIÓN MANUAL DE MINAS
-    // Formato: ponerMina(ID, X, Y, TIPO[0=Piedra, 1=Hierro]);
-
     // -- Cantera de Piedra (Cerca del Establo) --
     ponerMina(0, 1170, 1540, 0);
     ponerMina(1, 1215, 1515, 0);
@@ -302,7 +292,6 @@ int buscarMinaCercana(float x, float y, float rango) {
 }
 
 // --- TESOROS ---
-
 void inicializarTesoros() {
     misTesoros[0].x = 1320; misTesoros[0].y = 1250; misTesoros[0].tipo = 0; misTesoros[0].estado = 0; misTesoros[0].activa = 1;
     misTesoros[1].x = 1850; misTesoros[1].y = 1550; misTesoros[1].tipo = 1; misTesoros[1].estado = 0; misTesoros[1].activa = 1;
