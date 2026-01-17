@@ -122,16 +122,16 @@ void inicializarIslas(int mapaId)
 
     // ISLA OESTE - RECURSOS DEL JUGADOR
     misIslas[3].activa = 1;
-    misIslas[3].x = 2790;
-    misIslas[3].y = 750;
+    misIslas[3].x = 2620;
+    misIslas[3].y = 905;
     misIslas[3].ancho = 400;
     misIslas[3].alto = 400;
     misIslas[3].esEnemiga = 0;
 
     // ISLA ESTE - RECURSOS DEL JUGADOR
     misIslas[4].activa = 1;
-    misIslas[4].x = 2850;
-    misIslas[4].y = 2200;
+    misIslas[4].x = 2575;
+    misIslas[4].y = 1925;
     misIslas[4].ancho = 500;
     misIslas[4].alto = 500;
     misIslas[4].esEnemiga = 0;
@@ -143,7 +143,7 @@ void inicializarIslas(int mapaId)
     // 1. ISLA ENEMIGA GRANDE (Esquina INFERIOR DERECHA)
     misIslas[5].activa = 1;
     misIslas[5].x = 100;    // Esquina derecha
-    misIslas[5].y = 2300;    // Esquina inferior
+    misIslas[5].y = 2200;    // Esquina inferior
     misIslas[5].ancho = 900;
     misIslas[5].alto = 900;
     misIslas[5].esEnemiga = 1;
