@@ -1,20 +1,17 @@
 #include "edificios.h"
-#include "mapa.h"       // Necesario para EsSuelo
-#include "naturaleza.h" // Necesario para arboles y minas
+#include "mapa.h"      
+#include "naturaleza.h" 
 #include "../recursos/recursos.h"
 #include <stdio.h>
 #include <math.h>
 
-// Referencia a la matriz global del mapa (definida en main.c o mapa.c)
 extern char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
 
 // Variables Globales de Edificios
 Edificio misEdificios[MAX_EDIFICIOS_JUGADOR];
 Edificio edificiosEnemigos[MAX_EDIFICIOS_ENEMIGOS];
 
-// -------------------------------------------------------------
 // 1. INICIALIZACIÓN
-// -------------------------------------------------------------
 void inicializarEdificios()
 {
     // Limpiar jugador
@@ -26,7 +23,7 @@ void inicializarEdificios()
         misEdificios[i].tipo = i + 1;
     }
 
-    // Configurar enemigos (Ejemplo básico)
+    // Configurar enemigos 
     float coordsX[4] = {400, 2600, 400, 2600};
     float coordsY[4] = {400, 400, 2600, 2600};
 
@@ -43,12 +40,10 @@ void inicializarEdificios()
     }
 }
 
-// -------------------------------------------------------------
 // 2. DIBUJAR UN EDIFICIO INDIVIDUAL
-// -------------------------------------------------------------
 void dibujarEdificio(HDC hdc, int x, int y, int tipoTamano, int esEnemigo, int mapaID, Camera *cam)
 {
-    // 1. Selección de Sprite (Igual que antes)
+    // 1. Selección de Sprite
     if (mapaID < 0)
         mapaID = 0;
     if (mapaID > 2)
@@ -103,9 +98,7 @@ void dibujarEdificio(HDC hdc, int x, int y, int tipoTamano, int esEnemigo, int m
     }
 }
 
-// -------------------------------------------------------------
 // 3. MODO FANTASMA (LOGICA DE CONSTRUCCIÓN)
-// -------------------------------------------------------------
 void dibujarFantasmaConstruccion(HDC hdc, Jugador *j, int mx, int my, int mapaID, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera *cam) {
     if (j->edificioSeleccionado == 0) return; 
 
@@ -129,7 +122,7 @@ void dibujarFantasmaConstruccion(HDC hdc, Jugador *j, int mx, int my, int mapaID
     int costoExtra = 0;   
     COLORREF colorEstado = RGB(0, 255, 0); // Verde
 
-    // 3. Validar Terreno (Ahora sí tenemos 'mapa')
+    // 3. Validar Terreno 
     if (!EsSuelo(hitX, hitY, mapa) || 
         !EsSuelo(hitX + hitW, hitY, mapa) || 
         !EsSuelo(hitX, hitY + hitH, mapa) || 
@@ -186,9 +179,7 @@ void dibujarFantasmaConstruccion(HDC hdc, Jugador *j, int mx, int my, int mapaID
     }
 }
 
-// -------------------------------------------------------------
 // 4. COLOCACIÓN DE EDIFICIOS
-// -------------------------------------------------------------
 int COSTO_PEQ_ORO = 100;
 int COSTO_MED_ORO = 300;
 int COSTO_GDE_ORO = 600;
@@ -196,7 +187,7 @@ int COSTO_GDE_ORO = 600;
 void intentarColocarEdificio(Jugador *j, int mx, int my, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     if (j->edificioSeleccionado == 0) return;
 
-    // Definir tamaño y huella (Igual que arriba)
+    // Definir tamaño y huella 
     int tamSprite = 64; 
     if (j->edificioSeleccionado == 2) tamSprite = 96;
     if (j->edificioSeleccionado == 3) tamSprite = 128;
@@ -301,7 +292,6 @@ void actualizarEdificios(float deltaTiempo)
     }
 }
 
-// --- CORRECCIÓN: Agregar Camera *cam como parámetro ---
 void dibujarTodosLosEdificios(HDC hdc, int mapaID, Camera *cam)
 {
     // 1. DIBUJAR ENEMIGOS

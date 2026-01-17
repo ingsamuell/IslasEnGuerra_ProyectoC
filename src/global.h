@@ -52,6 +52,8 @@
 #define MAX_ARBOLES 80 // Un buen número para cubrir 5 islas
 #define MAX_TIBURONES 30
 
+#define MARGEN_ESTABLO 100
+
 // --- TESOROS Y RECURSOS ---
 #define MAX_TESOROS 2
 #define MAX_MINAS 30
@@ -122,12 +124,15 @@
 
 #define TIPO_BARCO_ALIADO 20  // El barco que manejan tus soldados
 #define TIPO_BARCO_ENEMIGO 21 // Barcos piratas reales
+#define ESTADO_SUBIR_BARCO 12
 
 // --- TIPOS DE PARTÍCULAS ---
 #define PART_SANGRE 0
 #define PART_MAGIA 1
-#define PART_BALA_CANON 2     // <--- NUEVO
-#define PART_EXPLOSION 3      // <--- NUEVO
+#define PART_BALA_CANON 2    
+#define PART_EXPLOSION 3   
+//Partida
+
 
 
 // --- ESTRUCTURA DE UNIDAD (NPCs) ---
@@ -138,12 +143,10 @@ typedef struct
     int estado;
     int seleccionado;
     int activa;
-
     // Movimiento
     int destinoX, destinoY;
     bool moviendo; // true si se está desplazando
     int vidaMax;
-
     // Stats y Visual
     int vida;
     int frameAnim;
@@ -159,6 +162,7 @@ typedef struct
     int cooldownAtaque;  // Velocidad de ataque
     int timerAtaque;     // Contador interno
     int targetEsJugador; // 1 si ataca al Jugador, 0 si ataca a otra unidad
+    int pasajeros; // Cantidad de soldados dentro (0 a 3)
 } Unidad;
 
 // --- ESTRUCTURA DE ISLA ---

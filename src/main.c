@@ -64,43 +64,58 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         //char coordenadas[64];
         //sprintf(coordenadas, "Clic en X: %d, Y: %d", mx, my);
         //MessageBox(hwnd, coordenadas, "Debug Coordenadas", MB_OK);
-        // =========================================================
-
+        // --- PRIORIDAD A: COMBATE NAVAL (Si el jugador está en barco de guerra) ---
         // ---------------------------------------------------------
         // 1. ESTADO: JUGANDO
         // ---------------------------------------------------------
-if (estadoJuego.estadoActual == ESTADO_PARTIDA)
-    {
-        // --- PRIORIDAD A: COMBATE NAVAL (Si el jugador está en barco de guerra) ---
-        if (miJugador.estadoBarco == 2) { 
-            if (miJugador.cooldownCanon <= 0) {
-                float mouseWorldX = (mx / miCamara.zoom) + miCamara.x;
-                float mouseWorldY = (my / miCamara.zoom) + miCamara.y;
+        if (estadoJuego.estadoActual == ESTADO_PARTIDA)
+        {
+            // === [NUEVO] COMBATE NAVAL (Disparo del Jugador) ===
+            // Solo si estás en el Barco de Guerra (Tipo 2)
+            if (miJugador.estadoBarco == 2) {
                 
-                crearBalaCanon(miJugador.x, miJugador.y, mouseWorldX, mouseWorldY);
-                
-                // Lógica de Daño en área
-                for(int i = 0; i < MAX_UNIDADES; i++) {
-                    if(unidades[i].activa && unidades[i].bando == BANDO_ENEMIGO) {
-                        float d = sqrt(pow(unidades[i].x - mouseWorldX, 2) + pow(unidades[i].y - mouseWorldY, 2));
-                        if (d < 50) { 
-                            unidades[i].vida -= 40;
-                            if(unidades[i].vida <= 0) {
-                                unidades[i].activa = 0;
-                                crearExplosionAgua(unidades[i].x, unidades[i].y);
+                // 1. Verificar si el cañón está frío (listo)
+                if (miJugador.cooldownCanon <= 0) {
+                    
+                    // Calcular destino del disparo (Mouse en el mundo)
+                    float targetX = (mx / miCamara.zoom) + miCamara.x;
+                    float targetY = (my / miCamara.zoom) + miCamara.y;
+
+                    // 2. CREAR BALA (Visual)
+                    crearBalaCanon(miJugador.x, miJugador.y, targetX, targetY);
+                    
+                    // 3. LÓGICA DE DAÑO (Radio de explosión)
+                    // Buscamos enemigos cerca del clic
+                    for(int i=0; i<MAX_UNIDADES; i++) {
+                        if(unidades[i].activa && unidades[i].bando == BANDO_ENEMIGO) {
+                            float dx = unidades[i].x - targetX;
+                            float dy = unidades[i].y - targetY;
+                            float dist = sqrt(dx*dx + dy*dy);
+                            
+                            if (dist < 60) { // Radio de explosión grande
+                                unidades[i].vida -= 50; // ¡DAÑO MASIVO!
+                                crearTextoFlotante(unidades[i].x, unidades[i].y, "BOOM!", 0, RGB(255, 100, 0));
+                                crearSangre(unidades[i].x, unidades[i].y);
+                                
+                                if(unidades[i].vida <= 0) {
+                                    unidades[i].activa = 0;
+                                    ganarExperiencia(&miJugador, 80);
+                                }
                             }
                         }
                     }
+
+                    // 4. INICIAR RECARGA (2 segundos = 120 frames)
+                    miJugador.cooldownCanon = 120; 
+                    
+                } else {
+                    crearTextoFlotante(miJugador.x, miJugador.y - 50, "Recargando...", 0, RGB(200, 200, 200));
                 }
                 
-                miJugador.cooldownCanon = 120; // 2 segundos de recarga
-                crearTextoFlotante(miJugador.x, miJugador.y - 40, "Recargando...", 0, RGB(200, 200, 200));
-            } else {
-                crearTextoFlotante(miJugador.x, miJugador.y - 40, "Cañones no listos!", 0, RGB(255, 50, 50));
-                PlaySound("SystemHand", NULL, SND_ASYNC);
+                // IMPORTANTE: Return 0 aquí evita que te muevas o selecciones cosas al disparar
+                return 0; 
             }
-            return 0; // Salimos para no procesar selección de unidades mientras disparamos
-        }
+            // ===================================================
 
         // --- PRIORIDAD B: CLIC EN TIENDA ---
         BOOL clicEnUI = FALSE;
@@ -765,6 +780,7 @@ if (estadoJuego.estadoActual == ESTADO_PARTIDA)
                 golpearVaca(&miJugador);
                 picarMina(&miJugador);
                 intentarMontarBarco(&miJugador, mapaMundo);
+                golpearEnemigoCercano(&miJugador);
                 InvalidateRect(hwnd, NULL, FALSE);
                 break;
             }
@@ -828,6 +844,7 @@ if (estadoJuego.estadoActual == ESTADO_PARTIDA)
 
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
+
 
 /* ========== MAIN ========== */
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
@@ -903,8 +920,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 actualizarInvasiones(&miJugador);
                 // 2. Actualizar IA de los Enemigos
                 actualizarIAEnemigos(mapaMundo, &miJugador);
-                // 3. IA de Aliados (Tus soldados atacando enemigos)
-                actualizarUnidades(mapaMundo, &miJugador);
 
                 // --- C) ANIMACIONES AMBIENTALES ---
                 static int timerGato = 0;
