@@ -779,7 +779,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 abrirTesoro(&miJugador);
                 golpearVaca(&miJugador);
                 picarMina(&miJugador);
-                intentarMontarBarco(&miJugador, mapaMundo);
+                manejarBarcos(&miJugador, mapaMundo);
                 golpearEnemigoCercano(&miJugador);
                 InvalidateRect(hwnd, NULL, FALSE);
                 break;

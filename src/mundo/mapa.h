@@ -95,4 +95,6 @@ void procesarClickSeleccionMapa(int x, int y, HWND hwnd, EstadoJuego *estado);
 void procesarClickMochila(int mouseX, int mouseY, Jugador *jugador, HWND hwnd);
 void procesarClickMochilaTienda(int mx, int my, int esClickDerecho, Jugador *j, HWND hwnd);
 
+void dibujarBarcoAnclado(HDC hdc, Camera cam);
+
 #endif /* MAPA_H */

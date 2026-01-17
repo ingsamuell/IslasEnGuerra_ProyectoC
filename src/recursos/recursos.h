@@ -189,4 +189,10 @@ void reclutarTrabajador(Jugador *j, int tipo);
 extern void RegistrarLog(const char* texto);
 extern int screenShake; // Intensidad del temblor
 
+extern float barcoGuardadoX;
+extern float barcoGuardadoY;
+extern int barcoGuardadoTipo;
+extern int barcoGuardadoActivo;
+extern int barcoGuardadoIsla;
+
 #endif

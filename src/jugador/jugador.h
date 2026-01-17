@@ -31,4 +31,17 @@ void dibujarJugador(HDC hdc, Jugador *jugador, Camera cam);
 // --- SISTEMA DE LÍMITES ---
 void mantenerDentroDelMapa(Jugador *j);
 
+// Sistema de barco guardado (para playas)
+extern float barcoGuardadoX;
+extern float barcoGuardadoY;
+extern int barcoGuardadoTipo;
+extern int barcoGuardadoActivo;
+extern int barcoGuardadoIsla; // 0 = muelle central, 1-4 = islas secundarias
+
+// Funciones nuevas
+int desembarcarEnPlaya(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
+int reembarcarDesdePlaya(Jugador *j);
+void dibujarBarcoAnclado(HDC hdc, Camera cam);
+void manejarBarcos(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]); // <-- ¡AGREGAR ESTA LÍNEA!
+
 #endif

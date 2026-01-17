@@ -5,6 +5,13 @@
 #include <math.h>          // <--- AGREGAR ESTO (Para distancias)
 #include <stdio.h>
 
+// Variables globales para el barco anclado
+float barcoGuardadoX = 0;
+float barcoGuardadoY = 0;
+int barcoGuardadoTipo = 0;  // 0=nada, 1=bote, 2=guerra
+int barcoGuardadoActivo = 0;
+int barcoGuardadoIsla = 0;  // 0=muelle, 1-4=islas
+
 // =========================================================
 // 1. LÓGICA INTERNA
 // =========================================================
@@ -327,61 +334,68 @@ void dibujarJugador(HDC hdc, Jugador *jugador, Camera cam)
     // =========================================================
     // CASO 1: ESTADO NAVEGACIÓN (Barco o Bote)
     // =========================================================
-    if (jugador->estadoBarco > 0) {
-        HBITMAP imgBarco = NULL;
-        
-        // A) Barra de Vida (Siempre arriba)
-        dibujarBarraVidaLocal(hdc, cx - 10, cy - 25, jugador->vidaActual, jugador->vidaMax, 50 * cam.zoom);
-        
-        int dir = (jugador->direccion == DIR_IZQUIERDA) ? 0 : 1; 
-        
-        if (jugador->estadoBarco == 1) imgBarco = hBmpBote[dir];       
-        else if (jugador->estadoBarco == 2) imgBarco = hBmpBarco[dir]; 
-        
+if (jugador->estadoBarco > 0) {
+    HBITMAP imgBarco = NULL;
+    
+    // A) Barra de Vida (Siempre arriba)
+    dibujarBarraVidaLocal(hdc, cx - 10, cy - 25, jugador->vidaActual, jugador->vidaMax, 50 * cam.zoom);
+    
+    int dir = (jugador->direccion == DIR_IZQUIERDA) ? 0 : 1; 
+    
+    // ============================================
+    // ¡DIFERENCIAR TAMAÑOS! 
+    // ============================================
+    if (jugador->estadoBarco == 1) { 
+        // BOTE DE PESCA - MÁS PEQUEÑO
+        imgBarco = hBmpBote[dir];
         if (imgBarco) {
+            // Tamaño reducido: 60x48 en lugar de 80x64
+            DibujarImagen(hdc, imgBarco, cx - 8, cy - 6, 50 * cam.zoom, 40 * cam.zoom);
+            //                          ↑ajuste X  ↑ajuste Y  ↑ancho menor ↑alto menor
+        }
+        SetTextColor(hdc, RGB(0, 255, 255));
+        TextOut(hdc, cx, cy - 40, "PESCANDO", 8);
+    } 
+    else if (jugador->estadoBarco == 2) { 
+        // BARCO DE GUERRA - TAMAÑO ORIGINAL
+        imgBarco = hBmpBarco[dir];
+        if (imgBarco) {
+            // Tamaño original: 80x64
             DibujarImagen(hdc, imgBarco, cx - 16, cy - 16, 80 * cam.zoom, 64 * cam.zoom);
+            //                          ↑original   ↑original   ↑ancho orig ↑alto orig
         }
         
-        // B) Lógica específica según el tipo de nave
-        if (jugador->estadoBarco == 1) {
+        // === BARRA DE RECARGA DE CAÑÓN ===
+        int barW = 50 * cam.zoom;
+        int barH = 6 * cam.zoom;
+        int bx = cx - (10 * cam.zoom);
+        int by = cy - (40 * cam.zoom);
+
+        // Fondo de la barra
+        HBRUSH bg = CreateSolidBrush(RGB(50, 50, 50));
+        RECT rBg = {bx, by, bx + barW, by + barH};
+        FillRect(hdc, &rBg, bg);
+        DeleteObject(bg);
+
+        // Cálculo de recarga
+        float pct = 1.0f - ((float)jugador->cooldownCanon / 120.0f);
+        if (pct < 0) { pct = 0; } 
+        if (pct > 1) { pct = 1; }
+
+        COLORREF colorBarra = (pct >= 1.0f) ? RGB(0, 255, 255) : RGB(0, 0, 150);
+        HBRUSH fg = CreateSolidBrush(colorBarra);
+        RECT rFg = {bx, by, bx + (int)(barW * pct), by + barH};
+        FillRect(hdc, &rFg, fg);
+        DeleteObject(fg);
+        
+        if (pct >= 1.0f) {
+            SetBkMode(hdc, TRANSPARENT);
             SetTextColor(hdc, RGB(0, 255, 255));
-            TextOut(hdc, cx, cy - 40, "PESCANDO", 8);
-        } 
-        else if (jugador->estadoBarco == 2) { 
-            // === [NUEVO] BARRA DE RECARGA DE CAÑÓN ===
-            int barW = 50 * cam.zoom;
-            int barH = 6 * cam.zoom;
-            int bx = cx - (10 * cam.zoom);
-            int by = cy - (40 * cam.zoom); // Posicionada arriba para no tapar la vida
-
-            // Fondo de la barra
-            HBRUSH bg = CreateSolidBrush(RGB(50, 50, 50));
-            RECT rBg = {bx, by, bx + barW, by + barH};
-            FillRect(hdc, &rBg, bg);
-            DeleteObject(bg);
-
-            // Cálculo de recarga (Basado en cooldownCanon)
-            float pct = 1.0f - ((float)jugador->cooldownCanon / 120.0f);
-            if (pct < 0) { pct = 0; } 
-			if (pct > 1) { pct = 1; }
-
-            // Color: Cian si está listo, Azul oscuro si recarga
-            COLORREF colorBarra = (pct >= 1.0f) ? RGB(0, 255, 255) : RGB(0, 0, 150);
-            HBRUSH fg = CreateSolidBrush(colorBarra);
-            RECT rFg = {bx, by, bx + (int)(barW * pct), by + barH};
-            FillRect(hdc, &rFg, fg);
-            DeleteObject(fg);
-            
-            // Indicador de texto "LISTO"
-            if (pct >= 1.0f) {
-                SetBkMode(hdc, TRANSPARENT);
-                SetTextColor(hdc, RGB(0, 255, 255));
-                TextOut(hdc, bx + 5, by - (15 * cam.zoom), "LISTO", 5);
-            }
+            TextOut(hdc, bx + 5, by - (15 * cam.zoom), "LISTO", 5);
         }
-        return; 
     }
-
+    return; 
+}
     // =========================================================
     // CASO 2: ESTADO A PIE
     // =========================================================
@@ -667,4 +681,186 @@ void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
             crearTextoFlotante(j->x, j->y, "Compra un barco en la tienda!", 0, RGB(255, 100, 100));
         }
     } 
+}
+
+// =========================================================
+// 1. DIBUJAR BARCO ANCLADO (Visible donde lo dejaste)
+// =========================================================
+void dibujarBarcoAnclado(HDC hdc, Camera cam) {
+    if (!barcoGuardadoActivo) return;
+    
+    // Calcular posición en pantalla
+    int sx = (int)((barcoGuardadoX - cam.x) * cam.zoom);
+    int sy = (int)((barcoGuardadoY - cam.y) * cam.zoom);
+    
+    // ¡DIFERENCIAR TAMAÑOS TAMBIÉN AQUÍ!
+    int tamAncho = 0, tamAlto = 0;
+    int offsetX = 0, offsetY = 0;
+    HBITMAP imgBarco = NULL;
+    int dir = 1; // Derecha por defecto
+    
+    if (barcoGuardadoTipo == 1) {
+        // BOTE DE PESCA ANCLADO - MUY PEQUEÑO (50×40)
+        imgBarco = hBmpBote[dir];
+        tamAncho = 50 * cam.zoom;  // Ancho 50px
+        tamAlto = 40 * cam.zoom;   // Alto 40px
+        offsetX = tamAncho / 2;    // 25
+        offsetY = tamAlto / 2;     // 20
+    } else if (barcoGuardadoTipo == 2) {
+        // BARCO DE GUERRA ANCLADO - GRANDE (80×64)
+        imgBarco = hBmpBarco[dir];
+        tamAncho = 80 * cam.zoom;  // Ancho 80px
+        tamAlto = 64 * cam.zoom;   // Alto 64px
+        offsetX = tamAncho / 2;    // 40
+        offsetY = tamAlto / 2;     // 32
+    }
+    
+    // Dibujar el barco si está en pantalla
+    if (imgBarco && sx > -tamAncho && sx < 2000 && sy > -tamAlto && sy < 1500) {
+        DibujarImagen(hdc, imgBarco, sx - offsetX, sy - offsetY, tamAncho, tamAlto);
+        //                    ↑centrado según tamaño diferente ancho/alto
+    }
+}
+
+// =========================================================
+// 2. DESEMBARCAR EN PLAYA (Nueva función separada)
+// =========================================================
+int desembarcarEnPlaya(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    // Solo si está en barco
+    if (j->estadoBarco == 0) return 0;
+    
+    // Referencia a las islas (de mapa.c)
+    extern Isla misIslas[MAX_ISLAS];
+    
+    // 1. Verificar si está cerca de alguna isla secundaria (1-4)
+    for (int i = 1; i <= 4; i++) {
+        if (!misIslas[i].activa) continue;
+        
+        // Calcular centro aproximado de la isla
+        int centroIslaX = misIslas[i].x + (misIslas[i].ancho / 2);
+        int centroIslaY = misIslas[i].y + (misIslas[i].alto / 2);
+        
+        // Calcular distancia al borde de la isla (radio aproximado)
+        float radioIsla = (misIslas[i].ancho + misIslas[i].alto) / 4;
+        float dist = sqrt(pow(j->x - centroIslaX, 2) + pow(j->y - centroIslaY, 2));
+        
+        // Si está cerca del borde de la isla (en el agua, pero cerca)
+        if (dist < radioIsla + 100 && dist > radioIsla - 50) {
+            // Buscar un punto de tierra cerca para desembarcar
+            int puntoTierraX = 0, puntoTierraY = 0;
+            int encontrado = 0;
+            
+            // Buscar en las 8 direcciones alrededor del barco
+            int offsets[8][2] = {
+                {-50, 0}, {50, 0}, {0, -50}, {0, 50},
+                {-35, -35}, {35, -35}, {-35, 35}, {35, 35}
+            };
+            
+            for (int d = 0; d < 8 && !encontrado; d++) {
+                int testX = (int)j->x + offsets[d][0];
+                int testY = (int)j->y + offsets[d][1];
+                
+                if (EsSuelo(testX, testY, mapa)) {
+                    puntoTierraX = testX;
+                    puntoTierraY = testY;
+                    encontrado = 1;
+                    
+                    // Guardar posición del barco (en el agua donde está)
+                    barcoGuardadoX = j->x;
+                    barcoGuardadoY = j->y;
+                    barcoGuardadoTipo = j->estadoBarco;
+                    barcoGuardadoActivo = 1;
+                    barcoGuardadoIsla = i;
+                    
+                    // Desembarcar jugador
+                    j->estadoBarco = 0;
+                    j->x = puntoTierraX;
+                    j->y = puntoTierraY;
+                    
+                    // Feedback
+                    char mensaje[64];
+                    sprintf(mensaje, "Barco anclado en Isla %d", i);
+                    crearTextoFlotante(j->x, j->y, mensaje, 0, RGB(0, 255, 255));
+                    
+                    // Descubrir área
+                    descubrirMapa(j->x, j->y, 120.0f);
+                    return 1;
+                }
+            }
+        }
+    }
+    
+    // Si no encontró playa, mostrar mensaje
+    // crearTextoFlotante(j->x, j->y, "Acercate a una playa para anclar", 0, RGB(255, 100, 100));
+    return 0;
+}
+
+// =========================================================
+// 3. RE-EMBARCAR DESDE PLAYA
+// =========================================================
+int reembarcarDesdePlaya(Jugador *j) {
+    // Solo si está a pie y hay barco guardado
+    if (j->estadoBarco != 0) return 0;
+    if (!barcoGuardadoActivo) return 0;
+    
+    // Calcular distancia al barco guardado
+    float dist = sqrt(pow(j->x - barcoGuardadoX, 2) + pow(j->y - barcoGuardadoY, 2));
+    
+    if (dist < 100) { // Cerca del barco
+        // Embarcar de nuevo
+        j->estadoBarco = barcoGuardadoTipo;
+        j->x = barcoGuardadoX;
+        j->y = barcoGuardadoY;
+        barcoGuardadoActivo = 0; // El barco ya no se dibuja aparte
+        
+        crearTextoFlotante(j->x, j->y, "Zarpando!", 0, RGB(0, 255, 255));
+        return 1;
+    }
+    
+    // Mostrar dirección aproximada
+    float dx = barcoGuardadoX - j->x;
+    float dy = barcoGuardadoY - j->y;
+    
+    char direccion[32];
+    if (fabs(dx) > fabs(dy)) {
+        strcpy(direccion, (dx > 0) ? "Este" : "Oeste");
+    } else {
+        strcpy(direccion, (dy > 0) ? "Sur" : "Norte");
+    }
+    
+    return 0;
+}
+
+// =========================================================
+// 4. FUNCIÓN UNIFICADA PARA MANEJAR BARCOS (MODIFICAR)
+// =========================================================
+void manejarBarcos(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
+    // ============================================
+    // A. SI ESTÁ A PIE
+    // ============================================
+    if (j->estadoBarco == 0) {
+        // 1. Primero ver si puede subir a su barco anclado
+        if (barcoGuardadoActivo) {
+            if (reembarcarDesdePlaya(j)) {
+                return; // Subió a su barco anclado
+            }
+        }
+        
+        // 2. Si no, usar la lógica original (muelle central)
+        intentarMontarBarco(j, mapa);
+        return;
+    }
+    
+    // ============================================
+    // B. SI ESTÁ EN BARCO
+    // ============================================
+    if (j->estadoBarco > 0) {
+        // 1. Intentar desembarcar en playa (nuevo)
+        if (desembarcarEnPlaya(j, mapa)) {
+            return; // Desembarcó en playa
+        }
+        
+        // 2. Si no pudo en playa, usar lógica original (muelle)
+        intentarMontarBarco(j, mapa);
+    }
 }

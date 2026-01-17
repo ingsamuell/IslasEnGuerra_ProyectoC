@@ -142,7 +142,7 @@ void inicializarIslas(int mapaId)
 
     // 1. ISLA ENEMIGA GRANDE (Esquina INFERIOR DERECHA)
     misIslas[5].activa = 1;
-    misIslas[5].x = 100;    // Esquina derecha
+    misIslas[5].x = 90;    // Esquina derecha
     misIslas[5].y = 2200;    // Esquina inferior
     misIslas[5].ancho = 900;
     misIslas[5].alto = 900;
@@ -1279,6 +1279,7 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
     dibujarArboles(hdc, cam, ancho, alto, mapaId);
     
     dibujarTiburones(hdc, cam, ancho, alto);
+    dibujarBarcoAnclado(hdc, cam);
     dibujarVacas(hdc, cam, ancho, alto); // Ahora las vacas se dibujan ANTES de la niebla
     
     // Muelle y Tienda
