@@ -55,7 +55,7 @@
 #define MARGEN_ESTABLO 100
 
 // --- TESOROS Y RECURSOS ---
-#define MAX_TESOROS 2
+#define MAX_TESOROS 12
 #define MAX_MINAS 30
 #define MAX_PARTICULAS 50
 #define MAX_TEXTOS 20

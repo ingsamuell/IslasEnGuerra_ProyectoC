@@ -80,25 +80,84 @@ void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     ponerArbol(8, 1580, 1865, 0);
     ponerArbol(9, 1125, 1825, 1);
 
-    // -- Árboles Dispersos --
-    ponerArbol(10, 1400, 1600, 0);
-    ponerArbol(11, 1450, 1650, 1);
-    ponerArbol(12, 1350, 1700, 0);
-    ponerArbol(13, 1210, 1235, 1);
-    ponerArbol(14, 1375, 1365, 0);
-    ponerArbol(15, 1400, 1280, 1);
-    ponerArbol(16, 1675, 1775, 0);
-    ponerArbol(17, 1725, 1775, 1);
-    ponerArbol(18, 1515, 1495, 0);
-    ponerArbol(19, 1510, 1240, 1);
-    ponerArbol(20, 1610, 1220, 0);
-    ponerArbol(21, 1675, 1125, 1);
-    ponerArbol(22, 1750, 1125, 0);
-    ponerArbol(23, 1850, 1165, 1);
-    ponerArbol(24, 1955, 1130, 0);
-    ponerArbol(25, 1970, 1270, 1);
-    ponerArbol(26, 1785, 1305, 0);
+    // ====================================================
+    // ISLA NORTE (Tus coordenadas exactas)
+    // ====================================================
+    ponerArbol(10, 1490, 640, 1);   // Grande centro-norte
+    ponerArbol(11, 1560, 620, 1);   // Grande centro
+    ponerArbol(12, 1630, 650, 1);   // Grande centro-este
+    ponerArbol(13, 1680, 680, 0);   // Chico este
+    ponerArbol(14, 1600, 720, 0);   // Chico sureste
 
+    // ====================================================
+    // ISLA SUR (Manteniendo las que están bien, quitando las especificadas)
+    // ====================================================
+    // Manteniendo las demás de la isla sur:
+    ponerArbol(15, 1690, 2875, 1);  // Grande
+    ponerArbol(16, 1480, 2480, 0);  // Chico
+    
+    // Sector Noreste (manteniendo)
+    ponerArbol(17, 1650, 2360, 1);  // Grande
+    ponerArbol(18, 1700, 2390, 0);  // Chico
+    ponerArbol(19, 1750, 2420, 1);  // Grande
+    ponerArbol(20, 1800, 2450, 0);  // Chico
+    
+    // Sector Centro (manteniendo)
+    ponerArbol(21, 1550, 2500, 1);  // Grande centro
+    ponerArbol(22, 1600, 2550, 0);  // Chico centro-este
+    ponerArbol(23, 1500, 2580, 1);  // Grande centro-oeste
+    
+    // Sector Sur (manteniendo)
+    ponerArbol(24, 1450, 2700, 0);  // Chico suroeste
+    ponerArbol(25, 1550, 2720, 1);  // Grande centro-sur
+    ponerArbol(26, 1650, 2750, 0);  // Chico sureste
+    ponerArbol(27, 1750, 2780, 1);  // Grande extremo sureste
+    
+    // Sector Este (manteniendo)
+    ponerArbol(28, 1900, 2600, 1);  // Grande este
+    ponerArbol(29, 1950, 2650, 0);  // Chico extremo este
+
+    // ====================================================
+    // ISLA OESTE (Tus coordenadas exactas)
+    // ====================================================
+    ponerArbol(30, 2910, 1095, 1);  // Grande
+    ponerArbol(31, 2905, 1205, 0);  // Pequeño
+    ponerArbol(32, 2840, 1015, 1);  // Grande
+    ponerArbol(33, 2740, 1255, 0);  // Pequeño
+    ponerArbol(34, 2785, 1135, 1);  // Grande
+    ponerArbol(35, 2860, 1020, 0);  // Pequeño
+
+    // ====================================================
+    // ISLA ESTE (Tus coordenadas exactas)
+    // ====================================================
+    ponerArbol(36, 2880, 2060, 1);  // Grande
+    ponerArbol(37, 2865, 2125, 1);  // Grande
+    ponerArbol(38, 2770, 2285, 0);  // Pequeño
+    ponerArbol(39, 2680, 2325, 1);  // Grande
+    ponerArbol(40, 2710, 2235, 0);  // Pequeño
+    ponerArbol(41, 2870, 2200, 1);  // Grande
+    ponerArbol(42, 2975, 2155, 0);  // Pequeño
+    ponerArbol(43, 2900, 2065, 1);  // Grande
+    ponerArbol(44, 2910, 2035, 0);  // Pequeño
+
+    // -- Árboles Dispersos ORIGINALES (manteniendo los clave) --
+    ponerArbol(45, 1400, 1600, 0);
+    ponerArbol(46, 1450, 1650, 1);
+    ponerArbol(47, 1350, 1700, 0);
+    ponerArbol(48, 1210, 1235, 1);
+    ponerArbol(49, 1375, 1365, 0);
+    ponerArbol(50, 1400, 1280, 1);
+    ponerArbol(51, 1675, 1775, 0);
+    ponerArbol(52, 1725, 1775, 1);
+    ponerArbol(53, 1515, 1495, 0);
+    ponerArbol(54, 1510, 1240, 1);
+    ponerArbol(55, 1610, 1220, 0);
+    ponerArbol(56, 1675, 1125, 1);
+    ponerArbol(57, 1750, 1125, 0);
+    ponerArbol(58, 1850, 1165, 1);
+    ponerArbol(59, 1955, 1130, 0);
+    ponerArbol(60, 1970, 1270, 1);
+    ponerArbol(61, 1785, 1305, 0);
 }
 
 void talarArbol(Jugador *j) {
@@ -187,22 +246,62 @@ void inicializarMinas(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
 
     // 2. COLOCACIÓN MANUAL DE MINAS
     // -- Cantera de Piedra (Cerca del Establo) --
-    ponerMina(0, 1170, 1540, 0);
-    ponerMina(1, 1215, 1515, 0);
-    ponerMina(2, 1135, 1630, 0);
+    ponerMina(0, 1170, 1540, 0); // Piedra
+    ponerMina(1, 1215, 1515, 0); // Piedra
+    ponerMina(2, 1135, 1630, 0); // Piedra
 
     // -- Depósito de Hierro (Más al norte) --
-    ponerMina(3, 1300, 1200, 1);
-    ponerMina(4, 1350, 1220, 1);
+    ponerMina(3, 1300, 1200, 1); // Hierro
+    ponerMina(4, 1350, 1220, 1); // Hierro
 
-    // -- Mixtas (Cerca de la tienda) --
-    ponerMina(5, 1360, 1940, 0); // Piedra
-    ponerMina(6, 1255, 1965, 1); // Hierro
-    ponerMina(7, 1580, 1710, 0); // Piedra
-    ponerMina(8, 1685, 1730, 1); // Hierro
-    ponerMina(9, 1820, 1760, 0); // Piedra
-    ponerMina(10, 1675, 1825, 1); // Hierro
-    ponerMina(11, 1335, 1785, 0); // Piedra
+    // ====================================================
+    // ISLA NORTE (Índice 1) - Centradas, dispersas
+    // Coordenadas base: x=1440, y=600, ancho=320, alto=230
+    // ====================================================
+    // Mina 5: Hierro - Centro-norte
+    ponerMina(5, 1580, 680, 1);   
+    ponerMina(6, 1510, 720, 0);   
+    ponerMina(7, 1640, 740, 0);  
+
+    // ====================================================
+    // ISLA SUR (Índice 2) - RICA EN RECURSOS, bien centrados
+    // Coordenadas base: x=1350, y=2300, ancho=700, alto=700
+    // ====================================================
+    ponerMina(8, 1500, 2450, 0);  
+    ponerMina(9, 1850, 2480, 1);  
+    ponerMina(10, 1700, 2650, 1); 
+    ponerMina(11, 1550, 2800, 0); 
+    ponerMina(12, 1900, 2850, 1);
+    ponerMina(13, 1750, 2500, 0); 
+    // ====================================================
+    // ISLA OESTE (Índice 3) - Centradas
+    // Coordenadas base: x=2620, y=905, ancho=400, alto=400
+    // ====================================================
+    ponerMina(14, 2800, 1085, 1); 
+    ponerMina(15, 2820, 1005, 0);  
+    ponerMina(16, 2770, 1185, 1); 
+    ponerMina(17, 2900, 1125, 0); 
+    // ====================================================
+    // ISLA ESTE (Índice 4) - Balanceadas, centradas
+    // Coordenadas base: x=2575, y=1925, ancho=500, alto=500
+    // ====================================================
+    // Mina 18: Hierro - Centro-oeste
+    ponerMina(18, 2695, 2125, 1); 
+    ponerMina(19, 2795, 2045, 0);  
+    ponerMina(20, 2925, 2175, 1); 
+    ponerMina(21, 2755, 2275, 0); 
+    ponerMina(22, 2825, 2145, 1);  
+    // ====================================================
+    // MINAS MIXTAS ORIGINALES (cerca de la tienda)
+    // ====================================================
+    // Mantenemos algunas cerca de la tienda para acceso temprano
+    ponerMina(23, 1360, 1940, 0); // Piedra
+    ponerMina(24, 1255, 1965, 1); // Hierro
+    ponerMina(25, 1580, 1710, 0); // Piedra
+    ponerMina(26, 1685, 1730, 1); // Hierro
+    ponerMina(27, 1820, 1760, 0); // Piedra - OPcional
+    ponerMina(28, 1675, 1825, 1); // Hierro - Opcional
+    ponerMina(29, 1335, 1785, 0); // Piedra - Opcional
 }
 
 void picarMina(Jugador *j) {
@@ -293,8 +392,152 @@ int buscarMinaCercana(float x, float y, float rango) {
 
 // --- TESOROS ---
 void inicializarTesoros() {
-    misTesoros[0].x = 1320; misTesoros[0].y = 1250; misTesoros[0].tipo = 0; misTesoros[0].estado = 0; misTesoros[0].activa = 1;
-    misTesoros[1].x = 1850; misTesoros[1].y = 1550; misTesoros[1].tipo = 1; misTesoros[1].estado = 0; misTesoros[1].activa = 1;
+    // Limpiar arreglo
+    for (int i = 0; i < MAX_TESOROS; i++) {
+        misTesoros[i].activa = 0;
+        misTesoros[i].estado = 0;
+    }
+    
+    int tesoroID = 0;
+    
+    // ====================================================
+    // ISLA NORTE (Índice 1) - 2 TESOROS
+    // ====================================================
+    // Tesoro 1: Centro de la isla norte
+    if (tesoroID < MAX_TESOROS) {
+        misTesoros[tesoroID].x = 1440 + 120;  // 1440 + 120 = 1560
+        misTesoros[tesoroID].y = 600 + 80;    // 600 + 80 = 680
+        misTesoros[tesoroID].tipo = 0;        // Oro simple
+        misTesoros[tesoroID].estado = 0;      // Cerrado
+        misTesoros[tesoroID].activa = 1;
+        tesoroID++;
+    }
+    
+    // Tesoro 2: Esquina noreste de la isla norte
+    if (tesoroID < MAX_TESOROS) {
+        misTesoros[tesoroID].x = 1440 + 240;  // 1440 + 240 = 1680
+        misTesoros[tesoroID].y = 600 + 40;    // 600 + 40 = 640
+        misTesoros[tesoroID].tipo = 1;        // Oro + Hierro (Joyas)
+        misTesoros[tesoroID].estado = 0;
+        misTesoros[tesoroID].activa = 1;
+        tesoroID++;
+    }
+    
+    // ====================================================
+    // ISLA SUR (Índice 2) - 3 TESOROS
+    // ====================================================
+    // Tesoro 3: Centro-norte de la isla sur
+    if (tesoroID < MAX_TESOROS) {
+        misTesoros[tesoroID].x = 1350 + 300;  // 1350 + 300 = 1650
+        misTesoros[tesoroID].y = 2300 + 150;  // 2300 + 150 = 2450
+        misTesoros[tesoroID].tipo = 0;        // Oro simple
+        misTesoros[tesoroID].estado = 0;
+        misTesoros[tesoroID].activa = 1;
+        tesoroID++;
+    }
+    
+    // Tesoro 4: Oeste de la isla sur
+    if (tesoroID < MAX_TESOROS) {
+        misTesoros[tesoroID].x = 1350 + 100;  // 1350 + 100 = 1450
+        misTesoros[tesoroID].y = 2300 + 350;  // 2300 + 350 = 2650
+        misTesoros[tesoroID].tipo = 1;        // Joyas
+        misTesoros[tesoroID].estado = 0;
+        misTesoros[tesoroID].activa = 1;
+        tesoroID++;
+    }
+    
+    // Tesoro 5: Este de la isla sur
+    if (tesoroID < MAX_TESOROS) {
+        misTesoros[tesoroID].x = 1350 + 550;  // 1350 + 550 = 1900
+        misTesoros[tesoroID].y = 2300 + 400;  // 2300 + 400 = 2700
+        misTesoros[tesoroID].tipo = 0;        // Oro simple
+        misTesoros[tesoroID].estado = 0;
+        misTesoros[tesoroID].activa = 1;
+        tesoroID++;
+    }
+    
+    // ====================================================
+    // ISLA OESTE (Índice 3) - 2 TESOROS
+    // ====================================================
+    // Tesoro 6: Centro de la isla oeste
+    if (tesoroID < MAX_TESOROS) {
+        misTesoros[tesoroID].x = 2620 + 180;  // 2620 + 180 = 2800
+        misTesoros[tesoroID].y = 905 + 180;   // 905 + 180 = 1085
+        misTesoros[tesoroID].tipo = 1;        // Joyas
+        misTesoros[tesoroID].estado = 0;
+        misTesoros[tesoroID].activa = 1;
+        tesoroID++;
+    }
+    
+    // Tesoro 7: Esquina suroeste de la isla oeste
+    if (tesoroID < MAX_TESOROS) {
+        misTesoros[tesoroID].x = 2620 + 80;   // 2620 + 80 = 2700
+        misTesoros[tesoroID].y = 905 + 300;   // 905 + 300 = 1205
+        misTesoros[tesoroID].tipo = 0;        // Oro simple
+        misTesoros[tesoroID].estado = 0;
+        misTesoros[tesoroID].activa = 1;
+        tesoroID++;
+    }
+    
+    // ====================================================
+    // ISLA ESTE (Índice 4) - 2 TESOROS
+    // ====================================================
+    // Tesoro 8: Centro de la isla este
+    if (tesoroID < MAX_TESOROS) {
+        misTesoros[tesoroID].x = 2575 + 220;  // 2575 + 220 = 2795
+        misTesoros[tesoroID].y = 1925 + 200;  // 1925 + 200 = 2125
+        misTesoros[tesoroID].tipo = 0;        // Oro simple
+        misTesoros[tesoroID].estado = 0;
+        misTesoros[tesoroID].activa = 1;
+        tesoroID++;
+    }
+    
+    // Tesoro 9: Esquina sureste de la isla este
+    if (tesoroID < MAX_TESOROS) {
+        misTesoros[tesoroID].x = 2575 + 380;  // 2575 + 380 = 2955
+        misTesoros[tesoroID].y = 1925 + 350;  // 1925 + 350 = 2275
+        misTesoros[tesoroID].tipo = 1;        // Joyas
+        misTesoros[tesoroID].estado = 0;
+        misTesoros[tesoroID].activa = 1;
+        tesoroID++;
+    }
+    
+    // ====================================================
+    // TESOROS ORIGINALES (Opcional - los mantenemos también)
+    // ====================================================
+    // Tesoro original cerca del establo
+    if (tesoroID < MAX_TESOROS) {
+        misTesoros[tesoroID].x = 1320;
+        misTesoros[tesoroID].y = 1250;
+        misTesoros[tesoroID].tipo = 0;
+        misTesoros[tesoroID].estado = 0;
+        misTesoros[tesoroID].activa = 1;
+        tesoroID++;
+    }
+    
+    // Tesoro original cerca de la tienda
+    if (tesoroID < MAX_TESOROS) {
+        misTesoros[tesoroID].x = 1850;
+        misTesoros[tesoroID].y = 1550;
+        misTesoros[tesoroID].tipo = 1;
+        misTesoros[tesoroID].estado = 0;
+        misTesoros[tesoroID].activa = 1;
+        tesoroID++;
+    }
+    
+    // Total: 9 tesoros en islas secundarias + 2 originales = 11 tesoros
+    
+    // Verificación de límite
+    if (tesoroID >= MAX_TESOROS) {
+        char debugMsg[128];
+        sprintf(debugMsg, "Advertencia: Se intentaron crear %d tesoros, pero MAX_TESOROS = %d\n", 
+                tesoroID, MAX_TESOROS);
+        OutputDebugString(debugMsg);
+    } else {
+        char debugMsg[128];
+        sprintf(debugMsg, "Tesoros creados: %d de %d disponibles\n", tesoroID, MAX_TESOROS);
+        OutputDebugString(debugMsg);
+    }
 }
 
 void abrirTesoro(Jugador *j) {
