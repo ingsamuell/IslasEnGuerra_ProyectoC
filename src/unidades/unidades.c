@@ -287,7 +287,7 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
             case ESTADO_TALANDO: {
                 int a = unidades[i].targetIndex;
                 if (a == -1 || !misArboles[a].activa) { 
-                    int nuevo = buscarArbolCercano(unidades[i].x, unidades[i].y, 150.0f);
+                    int nuevo = buscarArbolCercano(unidades[i].x, unidades[i].y, 350.0f);
                     if (nuevo != -1) {
                         unidades[i].targetIndex = nuevo;
                         unidades[i].destinoX = misArboles[nuevo].x;
@@ -333,7 +333,7 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
                         misArboles[a].timerRegeneracion = 0;
                         
                         unidades[i].targetIndex = -1;
-                        int next = buscarArbolCercano(unidades[i].x, unidades[i].y, 200.0f);
+                        int next = buscarArbolCercano(unidades[i].x, unidades[i].y, 450.0f);
                         if(next != -1) unidades[i].targetIndex = next;
                         else unidades[i].estado = ESTADO_IDLE;
                     }
@@ -344,7 +344,7 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
             case ESTADO_MINANDO: {
                 int m = unidades[i].targetIndex;
                 if (m == -1 || !misMinas[m].activa) { 
-                    int nueva = buscarMinaCercana(unidades[i].x, unidades[i].y, 150.0f);
+                    int nueva = buscarMinaCercana(unidades[i].x, unidades[i].y, 350.0f);
                     if (nueva != -1) unidades[i].targetIndex = nueva;
                     else unidades[i].estado = ESTADO_IDLE;
                     break; 
@@ -380,7 +380,7 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
                         crearChispas(targetX, targetY, RGB(200, 200, 200));
                         misMinas[m].activa = 0;
                         unidades[i].targetIndex = -1;
-                        int next = buscarMinaCercana(unidades[i].x, unidades[i].y, 200.0f);
+                        int next = buscarMinaCercana(unidades[i].x, unidades[i].y, 450.0f);
                         if(next != -1) unidades[i].targetIndex = next;
                         else unidades[i].estado = ESTADO_IDLE;
                     }
@@ -460,7 +460,7 @@ void actualizarAnimacionUnidad(Unidad *u, float dx, float dy) {
     }
 }
 
-void dibujarUnidades(HDC hdc, Camera cam) { 
+void dibujarUnidades(HDC hdc, Camera cam) {
     for (int i = 0; i < MAX_UNIDADES; i++) {
         if (!unidades[i].activa) continue;
 
@@ -479,62 +479,70 @@ void dibujarUnidades(HDC hdc, Camera cam) {
         HBITMAP hBmpActual = NULL;
 
         // =================================================================
-        // --- CORRECCIÓN: DIBUJAR BARCO DE LA FLOTA (SIEMPRE ES BARCO) ---
+        // CASO A: ES UN BARCO DE FLOTA (Comprado como Barco)
         // =================================================================
         if (unidades[i].tipo == TIPO_BARCO_ALIADO) {
              int dirBote = (unidades[i].direccion == DIR_IZQUIERDA) ? 0 : 1;
-             hBmpActual = hBmpBarco[dirBote]; // Usar sprite de Galeón
-             tam = (int)(64 * cam.zoom);      // Hacerlo grande (Galeón)
-             ux -= 15 * cam.zoom;             // Ajustar centro
+             hBmpActual = hBmpBarco[dirBote]; // SIEMPRE Barco de Guerra
+             tam = (int)(64 * cam.zoom);      // Tamaño Grande
+             ux -= 15 * cam.zoom;             
              uy -= 15 * cam.zoom;
-             // === NUEVO: TEXTO "BARCO ALIADO" ===
-             SetBkMode(hdc, TRANSPARENT);
              
-             // Color: Gris si está vacío, Cian si tiene tripulación
+             // Texto de Tripulación
+             SetBkMode(hdc, TRANSPARENT);
              COLORREF colorTxt = (unidades[i].pasajeros > 0) ? RGB(0, 255, 255) : RGB(150, 150, 150);
              SetTextColor(hdc, colorTxt);
-             
              char buff[32];
              sprintf(buff, "Barco Aliado (%d/3)", unidades[i].pasajeros);
              TextOut(hdc, ux, uy - 20, buff, strlen(buff));
         }
-        // -----------------------------------------------------------------
-        // CASO B: SOLDADOS/ENEMIGOS EN EL AGUA (Se convierten en botes)
-        else if (enAgua && (unidades[i].tipo == TIPO_SOLDADO || 
-                       unidades[i].tipo == TIPO_ENEMIGO_PIRATA || 
-                       unidades[i].tipo == TIPO_ENEMIGO_MAGO)) {
-            
+        
+        // =================================================================
+        // CASO B: ESTÁ EN EL AGUA (Soldados o Enemigos nadando/navegando)
+        // =================================================================
+        else if (enAgua) {
             int dirBote = (unidades[i].direccion == DIR_IZQUIERDA) ? 0 : 1;
-            if (unidades[i].bando == BANDO_ENEMIGO) {
-                 hBmpActual = hBmpBarco[dirBote]; // Barco pirata
-                 tam = (int)(48 * cam.zoom); 
+            
+            // SI ES SOLDADO O ENEMIGO -> BARCO DE GUERRA (NO BOTE DE PESCA)
+            if (unidades[i].tipo == TIPO_SOLDADO || 
+                unidades[i].tipo == TIPO_ENEMIGO_PIRATA || 
+                unidades[i].tipo == TIPO_ENEMIGO_MAGO) {
+                 
+                 hBmpActual = hBmpBarco[dirBote]; // <--- AQUÍ ESTABA EL ERROR (Antes era hBmpBote)
+                 tam = (int)(48 * cam.zoom);      // Tamaño mediano
                  ux -= 10 * cam.zoom;
-            } else {
-                 hBmpActual = hBmpBote[dirBote]; // Bote aliado (Soldados)
+            } 
+            // SI ES ALDEANO (Minero/Leñador) -> BOTE DE PESCA
+            else {
+                 hBmpActual = hBmpBote[dirBote]; 
             }
         } 
-        // -----------------------------------------------------------------
-        // CASO C: UNIDADES EN TIERRA
+        
+        // =================================================================
+        // CASO C: ESTÁ EN TIERRA (Dibujar Sprite Normal)
+        // =================================================================
         else {
             switch (unidades[i].tipo) {
                 case TIPO_MINERO: hBmpActual = hBmpMineroAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
                 case TIPO_LENADOR: hBmpActual = hBmpLenadorAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
                 case TIPO_CAZADOR: hBmpActual = hBmpCazadorAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
+                
+                // AQUÍ SE DIBUJA EL SOLDADO CON ARMADURA EN TIERRA
                 case TIPO_SOLDADO: hBmpActual = hBmpSoldadoAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
+                
                 case TIPO_ENEMIGO_PIRATA: hBmpActual = hBmpPirataAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
                 case TIPO_ENEMIGO_MAGO:   hBmpActual = hBmpMagoAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
                 
-                // Si por error cae aquí, usa el jugador, pero ya cubrimos el barco arriba
                 default: hBmpActual = hBmpJugadorAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
             }
         }
 
-        // 3. DIBUJAR IMAGEN FINAL
+        // --- DIBUJAR IMAGEN FINAL ---
         if (hBmpActual) {
             DibujarImagen(hdc, hBmpActual, ux, uy, tam, tam);
         }
 
-        // 4. SELECCIÓN
+        // --- SELECCIÓN (Círculo verde) ---
         if (unidades[i].seleccionado) {
             HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 255, 0));
             HGDIOBJ hOld = SelectObject(hdc, hPen);
@@ -544,13 +552,27 @@ void dibujarUnidades(HDC hdc, Camera cam) {
             DeleteObject(hPen);
         }
 
-        // 5. BARRA DE VIDA
+        // --- BARRA DE VIDA ---
         int maxVida = (unidades[i].vidaMax > 0) ? unidades[i].vidaMax : 100;
         dibujarBarraVidaLocal(hdc, ux, uy - 10, unidades[i].vida, maxVida, 32 * cam.zoom);
 
-        // 6. BARRA DE PROGRESO (TRABAJO)
+        // --- EFECTO VISUAL DE ATAQUE (SLASH) ---
+        if (unidades[i].estado == ESTADO_ATACANDO && unidades[i].timerAtaque > 30 && unidades[i].timerAtaque < 50) {
+             // Definir función auxiliar dibujarEfectoAtaque arriba o usar lógica simple aquí
+             HPEN hPenAtk = CreatePen(PS_SOLID, 3, RGB(255, 255, 200));
+             HGDIOBJ oldPen = SelectObject(hdc, hPenAtk);
+             MoveToEx(hdc, ux + tam/2, uy + tam/2, NULL);
+             // Dibujar línea según dirección
+             if(unidades[i].direccion == DIR_DERECHA) LineTo(hdc, ux + tam, uy + tam/2);
+             else if(unidades[i].direccion == DIR_IZQUIERDA) LineTo(hdc, ux, uy + tam/2);
+             else LineTo(hdc, ux + tam/2, uy + tam);
+             SelectObject(hdc, oldPen);
+             DeleteObject(hPenAtk);
+        }
+
+        // --- BARRA DE PROGRESO (TRABAJO) ---
         if (unidades[i].estado == ESTADO_TALANDO || unidades[i].estado == ESTADO_MINANDO || unidades[i].estado == ESTADO_CAZANDO) {
-            int limite = 300; 
+            int limite = 150; // Ajustado a 2.5 segundos
             if (limite > 0) {
                 int barraAncho = (int)(20 * cam.zoom);
                 int barraAlto = (int)(4 * cam.zoom);

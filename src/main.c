@@ -572,7 +572,68 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             SetBkMode(hdcMem, TRANSPARENT); 
             TextOut(hdcMem, cx - 100, cy + 50, "[ENTER] Guardar   [ESC] Cancelar", 32);
         }
+		else if (estadoJuego.estadoActual == ESTADO_GAME_OVER)
+        {
+            // 1. Fondo Rojo Sangre Oscuro
+            HBRUSH brFondo = CreateSolidBrush(RGB(40, 0, 0));
+            RECT rTotal = {0, 0, ancho, alto};
+            FillRect(hdcMem, &rTotal, brFondo);
+            DeleteObject(brFondo);
 
+            // 2. Mensaje Principal
+            SetBkMode(hdcMem, TRANSPARENT);
+            SetTextColor(hdcMem, RGB(255, 0, 0)); // Rojo Brillante
+            
+            // Centrar texto (aprox)
+            TextOut(hdcMem, ancho/2 - 80, alto/2 - 50, "HAS MUERTO", 10);
+
+            // 3. Subtítulo dramático
+            SetTextColor(hdcMem, RGB(200, 200, 200));
+            TextOut(hdcMem, ancho/2 - 140, alto/2, "Tu leyenda termina en estas costas...", 35);
+
+            // 4. Opciones
+            SetTextColor(hdcMem, RGB(255, 255, 255));
+            TextOut(hdcMem, ancho/2 - 120, alto/2 + 60, "[ENTER] Cargar Ultima Partida", 29);
+            TextOut(hdcMem, ancho/2 - 120, alto/2 + 90, "[ESC] Volver al Menu", 20);
+        }
+
+        // =========================================================
+        // PANTALLA: VICTORIA (CONQUISTA)
+        // =========================================================
+        else if (estadoJuego.estadoActual == ESTADO_WINNER)
+        {
+            // 1. Fondo Dorado / Azul Real
+            HBRUSH brFondo = CreateSolidBrush(RGB(25, 25, 112)); // Azul noche
+            RECT rTotal = {0, 0, ancho, alto};
+            FillRect(hdcMem, &rTotal, brFondo);
+            DeleteObject(brFondo);
+
+            // 2. Confeti (Puntos de colores aleatorios estáticos por frame)
+            for(int k=0; k<100; k++) {
+                int cx = rand() % ancho;
+                int cy = rand() % alto;
+                SetPixel(hdcMem, cx, cy, RGB(rand()%255, rand()%255, rand()%255));
+                SetPixel(hdcMem, cx+1, cy, RGB(rand()%255, rand()%255, rand()%255));
+                SetPixel(hdcMem, cx, cy+1, RGB(rand()%255, rand()%255, rand()%255));
+            }
+
+            // 3. Título Grande
+            SetBkMode(hdcMem, TRANSPARENT);
+            SetTextColor(hdcMem, RGB(255, 215, 0)); // DORADO
+            TextOut(hdcMem, ancho/2 - 100, alto/2 - 60, "VICTORIA!", 10);
+
+            // 4. Descripción
+            SetTextColor(hdcMem, RGB(255, 255, 255));
+            TextOut(hdcMem, ancho/2 - 150, alto/2, "Has destruido el Castillo Enemigo!", 33);
+            
+            // 5. Recompensas
+            SetTextColor(hdcMem, RGB(0, 255, 0));
+            TextOut(hdcMem, ancho/2 - 80, alto/2 + 40, "+500 Oro  |  +1000 XP", 21);
+
+            // 6. Botón Continuar
+            SetTextColor(hdcMem, RGB(200, 200, 255));
+            TextOut(hdcMem, ancho/2 - 100, alto/2 + 100, "[ENTER] Continuar Explorando", 28);
+        }
         // --- FINALIZAR DOBLE BUFFER ---
         BitBlt(hdc, 0, 0, ancho, alto, hdcMem, 0, 0, SRCCOPY);
 
@@ -633,7 +694,38 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 InvalidateRect(hwnd, NULL, FALSE);
             }
             break;
+            // --- CONTROLES GAME OVER ---
+		case ESTADO_GAME_OVER:
+            if (wParam == VK_RETURN) { // ENTER -> Cargar partida
+                if (CargarPartida(estadoJuego.slotJugado, &miJugador, mapaMundo)) {
+                    estadoJuego.estadoActual = ESTADO_PARTIDA;
+                    actualizarCamara(&miCamara, miJugador);
+                    MessageBox(hwnd, "Volviste a la vida (Partida Cargada)!", "ResurrecciOn", MB_OK);
+                } else {
+                    // Si no hay partida, al menú
+                    estadoJuego.estadoActual = ESTADO_MENU;
+                }
+                InvalidateRect(hwnd, NULL, FALSE);
+            }
+            else if (wParam == VK_ESCAPE) { // ESC -> Menú
+                estadoJuego.estadoActual = ESTADO_MENU;
+                InvalidateRect(hwnd, NULL, FALSE);
+            }
+            break;
 
+        // --- CONTROLES VICTORIA ---
+        case ESTADO_WINNER:
+            if (wParam == VK_RETURN || wParam == VK_ESCAPE) {
+                // Volver al juego para seguir looteando
+                estadoJuego.estadoActual = ESTADO_PARTIDA;
+                
+                // Mover al jugador un poco para que no quede encima de las ruinas
+                miJugador.x += 50; 
+                
+                crearTextoFlotante(miJugador.x, miJugador.y, "La isla es tuya!", 0, RGB(255, 215, 0));
+                InvalidateRect(hwnd, NULL, FALSE);
+            }
+            break;
         // -----------------------------------------------------
         // ESTADO: JUGANDO (PARTIDA EN CURSO)
         // -----------------------------------------------------
@@ -920,7 +1012,30 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 actualizarInvasiones(&miJugador);
                 // 2. Actualizar IA de los Enemigos
                 actualizarIAEnemigos(mapaMundo, &miJugador);
+                
+				if (miJugador.vidaActual <= 0) {
+                estadoJuego.estadoActual = ESTADO_GAME_OVER;
+            }
 
+            // 2. DETECTAR VICTORIA (Si destruyes un castillo enemigo)
+            // Revisamos el array de edificios enemigos (definido en edificios.c)
+            extern Edificio edificiosEnemigos[MAX_EDIFICIOS_ENEMIGOS];
+            
+            for(int i=0; i<MAX_EDIFICIOS_ENEMIGOS; i++) {
+                // Si estaba activo, es enemigo y su vida llegó a 0
+                if (edificiosEnemigos[i].activo && edificiosEnemigos[i].esEnemigo && edificiosEnemigos[i].vidaActual <= 0) {
+                    
+                    // ¡VICTORIA!
+                    estadoJuego.estadoActual = ESTADO_WINNER;
+                    
+                    // Desactivar el edificio para que no vuelva a activar la victoria
+                    edificiosEnemigos[i].activo = 0; 
+                    
+                    // Recompensas
+                    miJugador.oro += 500;
+                    miJugador.experiencia += 1000;
+                }
+            }
                 // --- C) ANIMACIONES AMBIENTALES ---
                 static int timerGato = 0;
                 timerGato++;
@@ -929,6 +1044,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                     estadoJuego.frameTienda = !estadoJuego.frameTienda;
                     timerGato = 0;
                 }
+                
             }
 
             // 3. Renderizado (Para TODOS los estados: Menú, Selección, Partida)
