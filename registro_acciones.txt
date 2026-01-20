@@ -1,0 +1,38 @@
+[19/01/2026 11:14] NUEVA PARTIDA INICIADA - Mapa: Islas Oceano - Slot: 0
+[19/01/2026 11:57] NUEVA PARTIDA INICIADA - Mapa: Islas Oceano - Slot: 0
+[19/01/2026 12:22] VENTA: 10 unidades de Piedra vendidas.
+[19/01/2026 12:22] VENTA: 10 unidades de Piedra vendidas.
+[19/01/2026 12:22] VENTA: 10 unidades de Piedra vendidas.
+[19/01/2026 12:22] VENTA: 10 unidades de Piedra vendidas.
+[19/01/2026 12:22] VENTA: 1 unidades de Madera vendidas.
+[19/01/2026 12:22] VENTA: 1 unidades de Madera vendidas.
+[19/01/2026 12:22] VENTA: 10 unidades de Madera vendidas.
+[19/01/2026 12:22] VENTA: 1 unidades de Madera vendidas.
+[19/01/2026 12:22] VENTA: 1 unidades de Madera vendidas.
+[19/01/2026 12:22] VENTA: 1 unidades de Madera vendidas.
+[19/01/2026 12:22] VENTA: 1 unidades de Madera vendidas.
+[19/01/2026 12:22] VENTA: 1 unidades de Madera vendidas.
+[19/01/2026 12:22] VENTA: 1 unidades de Madera vendidas.
+[19/01/2026 12:22] VENTA: 1 unidades de Madera vendidas.
+[19/01/2026 12:22] MEJORA: Mochila ampliada a Nivel 2.
+[19/01/2026 12:22] VENTA: 10 unidades de Madera vendidas.
+[19/01/2026 12:22] VENTA: 10 unidades de Madera vendidas.
+[19/01/2026 12:22] VENTA: 10 unidades de Madera vendidas.
+[19/01/2026 12:22] VENTA: 1 unidades de Madera vendidas.
+[19/01/2026 12:22] VENTA: 10 unidades de Hierro vendidas.
+[19/01/2026 12:22] VENTA: 10 unidades de Hierro vendidas.
+[19/01/2026 12:22] VENTA: 10 unidades de Hierro vendidas.
+[19/01/2026 12:22] VENTA: 10 unidades de Hierro vendidas.
+[19/01/2026 12:22] VENTA: 1 unidades de Hierro vendidas.
+[19/01/2026 12:22] VENTA: 1 unidades de Hierro vendidas.
+[19/01/2026 12:22] VENTA: 1 unidades de Hierro vendidas.
+[19/01/2026 12:22] VENTA: 1 unidades de Hierro vendidas.
+[19/01/2026 12:22] VENTA: 1 unidades de Hierro vendidas.
+[19/01/2026 12:25] COMPRA: Espada adquirida.
+[19/01/2026 12:25] COMPRA: Pico adquirido.
+[19/01/2026 12:25] COMPRA: Hacha adquirida.
+[19/01/2026 12:25] COMPRA: Cana adquirida.
+[19/01/2026 12:41] Partida cargada desde Slot 0
+[19/01/2026 20:15] Partida cargada desde Slot 0
+[19/01/2026 20:15] Partida cargada desde Slot 0
+[19/01/2026 20:16] Partida cargada desde Slot 0

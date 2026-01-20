@@ -122,8 +122,8 @@ void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     // ====================================================
     ponerArbol(30, 2910, 1095, 1);  // Grande
     ponerArbol(31, 2905, 1205, 0);  // Pequeño
-    ponerArbol(32, 2840, 1015, 1);  // Grande
-    ponerArbol(33, 2740, 1255, 0);  // Pequeño
+    ponerArbol(32, 2910, 965, 1);  // Grande
+    ponerArbol(33, 2860, 1000, 0);  // Pequeño
     ponerArbol(34, 2785, 1135, 1);  // Grande
     ponerArbol(35, 2860, 1020, 0);  // Pequeño
 
@@ -158,6 +158,9 @@ void inicializarArboles(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     ponerArbol(59, 1955, 1130, 0);
     ponerArbol(60, 1970, 1270, 1);
     ponerArbol(61, 1785, 1305, 0);
+    ponerArbol(62, 1450, 1365, 1);
+    ponerArbol(63, 1685, 1270, 0);
+    ponerArbol(64, 1885, 1280, 1);
 }
 
 void talarArbol(Jugador *j) {

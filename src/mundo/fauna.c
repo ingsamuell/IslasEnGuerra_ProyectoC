@@ -13,14 +13,31 @@ Tiburon misTiburones[MAX_TIBURONES];
 // --- VACAS ---
 
 void inicializarVacas() {
+    // 1. Limpiar todas primero
     for (int i = 0; i < MAX_VACAS; i++)
         manada[i].activa = 0;
     
+    // 2. Crear las 7 vacas ordenadas
     for (int i = 0; i < 7; i++) {
         manada[i].activa = 1;
-        manada[i].x = ESTABLO_X + (rand() % 150);
-        manada[i].y = ESTABLO_Y + ((i / 2) * 40) + (rand() % 30);
+
+        // --- LÓGICA DE POSICIÓN ORDENADA ---
+        // Calculamos fila y columna para que no se encimen
+        int columna = i % 3; // (0, 1, 2, 0, 1, 2...)
+        int fila = i / 3;    // (0, 0, 0, 1, 1, 1...)
+
+        // Espaciado: 60px de ancho y 50px de alto entre cada una
+        int separacionX = 60; 
+        int separacionY = 50;
+
+        // Posición Base + Cuadrícula + Pequeña variación aleatoria (para que no parezcan robots)
+        manada[i].x = ESTABLO_X + (columna * separacionX) + (rand() % 10);
+        manada[i].y = ESTABLO_Y + (fila * separacionY) + (rand() % 10);
+        // -----------------------------------
+
         manada[i].xInicial = manada[i].x;
+        
+        // El resto sigue igual...
         manada[i].direccion = (rand() % 2 == 0) ? 1 : -1;
         manada[i].vida = 5;
         manada[i].estadoVida = 0;
