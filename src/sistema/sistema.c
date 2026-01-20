@@ -121,8 +121,9 @@ int BorrarPartida(int slot) {
         RegistrarLog(msg);
         return 1; // Éxito
     }
+    
     RegistrarLog("ERROR: Intento fallido de borrar partida.");
-    return 0;
+    return 0; 
 }
 void ObtenerInfoPartida(int slot, char *bufferDestino) {
     char nombreArchivo[32];

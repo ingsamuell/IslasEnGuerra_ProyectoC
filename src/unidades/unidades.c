@@ -633,7 +633,7 @@ void ordenarUnidad(int mX, int mY, Camera cam) {
             if (unidades[barcoAliadoID].pasajeros < 3) {
                 unidades[i].estado = ESTADO_SUBIR_BARCO;
                 unidades[i].targetIndex = barcoAliadoID;
-                crearTextoFlotante(unidades[i].x, unidades[i].y, "¡A bordar!", 0, RGB(0, 255, 255));
+                crearTextoFlotante(unidades[i].x, unidades[i].y, "A bordar!", 0, RGB(0, 255, 255));
                 accionAsignada = true;
             } else {
                 crearTextoFlotante(unidades[i].x, unidades[i].y, "Barco Lleno", 0, RGB(255, 50, 50));
@@ -644,7 +644,7 @@ void ordenarUnidad(int mX, int mY, Camera cam) {
         if (!accionAsignada && enemigoID != -1 && unidades[i].tipo == TIPO_SOLDADO) {
             unidades[i].estado = ESTADO_PERSIGUIENDO;
             unidades[i].targetIndex = enemigoID;
-            crearTextoFlotante(unidades[i].x, unidades[i].y, "¡Al ataque!", 0, RGB(255, 0, 0));
+            crearTextoFlotante(unidades[i].x, unidades[i].y, "Al ataque!", 0, RGB(255, 0, 0));
             accionAsignada = true;
         }
 
