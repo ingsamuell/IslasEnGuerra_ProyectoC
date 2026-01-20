@@ -24,8 +24,8 @@ void inicializarEdificios()
     }
 
     // Configurar enemigos 
-    float coordsX[4] = {400, 2600, 400, 2600};
-    float coordsY[4] = {400, 400, 2600, 2600};
+    float coordsX[4] = {400, 200, 300, 600}; 
+    float coordsY[4] = {400, 1325, 2600, 2400}; 
 
     for (int i = 0; i < MAX_EDIFICIOS_ENEMIGOS; i++)
     {

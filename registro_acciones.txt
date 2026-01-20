@@ -36,3 +36,54 @@
 [19/01/2026 20:15] Partida cargada desde Slot 0
 [19/01/2026 20:15] Partida cargada desde Slot 0
 [19/01/2026 20:16] Partida cargada desde Slot 0
+[19/01/2026 20:41] NUEVA PARTIDA INICIADA - Mapa: Islas Oceano - Slot: 0
+[19/01/2026 20:43] NUEVA PARTIDA INICIADA - Mapa: Islas Oceano - Slot: 0
+[19/01/2026 20:47] VENTA: 1 unidades de Hierro vendidas.
+[19/01/2026 20:47] VENTA: 1 unidades de Hierro vendidas.
+[19/01/2026 20:47] VENTA: 1 unidades de Hierro vendidas.
+[19/01/2026 20:47] VENTA: 1 unidades de Hierro vendidas.
+[19/01/2026 20:47] VENTA: 1 unidades de Hierro vendidas.
+[19/01/2026 20:47] VENTA: 1 unidades de Hierro vendidas.
+[19/01/2026 20:47] VENTA: 1 unidades de Piedra vendidas.
+[19/01/2026 20:47] VENTA: 1 unidades de Piedra vendidas.
+[19/01/2026 20:47] MEJORA: Mochila ampliada a Nivel 2.
+[19/01/2026 20:47] VENTA: 1 unidades de Madera vendidas.
+[19/01/2026 20:47] VENTA: 10 unidades de Madera vendidas.
+[19/01/2026 20:47] VENTA: 10 unidades de Madera vendidas.
+[19/01/2026 20:47] VENTA: 10 unidades de Madera vendidas.
+[19/01/2026 20:47] VENTA: 10 unidades de Madera vendidas.
+[19/01/2026 20:47] COMPRA: Pico adquirido.
+[19/01/2026 20:47] VENTA: 10 unidades de Madera vendidas.
+[19/01/2026 20:47] VENTA: 10 unidades de Madera vendidas.
+[19/01/2026 20:47] VENTA: 10 unidades de Madera vendidas.
+[19/01/2026 20:47] VENTA: 10 unidades de Hierro vendidas.
+[19/01/2026 20:47] COMPRA: Espada adquirida.
+[19/01/2026 20:47] COMPRA: Hacha adquirida.
+[19/01/2026 20:48] VENTA: 10 unidades de Madera vendidas.
+[19/01/2026 20:48] COMPRA: Cana adquirida.
+[19/01/2026 20:48] VENTA: 10 unidades de Hierro vendidas.
+[19/01/2026 20:48] VENTA: 10 unidades de Hierro vendidas.
+[19/01/2026 20:48] VENTA: 10 unidades de Hierro vendidas.
+[19/01/2026 21:21] NUEVA PARTIDA INICIADA - Mapa: Islas Oceano - Slot: 0
+[19/01/2026 21:24] VENTA: 1 unidades de Comida vendidas.
+[19/01/2026 21:24] VENTA: 1 unidades de Comida vendidas.
+[19/01/2026 21:24] VENTA: 1 unidades de Comida vendidas.
+[19/01/2026 21:24] VENTA: 1 unidades de Comida vendidas.
+[19/01/2026 21:24] VENTA: 10 unidades de Comida vendidas.
+[19/01/2026 21:24] VENTA: 1 unidades de Comida vendidas.
+[19/01/2026 21:24] MEJORA: Mochila ampliada a Nivel 2.
+[19/01/2026 21:25] VENTA: 10 unidades de Hierro vendidas.
+[19/01/2026 21:25] VENTA: 10 unidades de Hierro vendidas.
+[19/01/2026 21:25] VENTA: 10 unidades de Hierro vendidas.
+[19/01/2026 21:25] VENTA: 10 unidades de Hierro vendidas.
+[19/01/2026 21:25] COMPRA: 1 Soldado(s) reclutado(s).
+[19/01/2026 21:25] COMPRA: 1 Soldado(s) reclutado(s).
+[19/01/2026 21:25] COMPRA: 1 Minero(s) reclutado(s).
+[19/01/2026 21:26] COMPRA: 1 Minero(s) reclutado(s).
+[19/01/2026 21:26] COMPRA: 1 Leñador(s) reclutado(s).
+[19/01/2026 21:26] COMPRA: 1 Leñador(s) reclutado(s).
+[19/01/2026 21:26] COMPRA: 1 Cazador(s) reclutado(s).
+[19/01/2026 21:30] VENTA: 10 unidades de Piedra vendidas.
+[19/01/2026 21:30] VENTA: 10 unidades de Piedra vendidas.
+[19/01/2026 21:30] VENTA: 10 unidades de Piedra vendidas.
+[19/01/2026 21:30] VENTA: 10 unidades de Piedra vendidas.
