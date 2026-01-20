@@ -1,6 +1,6 @@
 #include "tienda.h"
 #include "../recursos/recursos.h"
-#include "../unidades/unidades.h" // Necesario para spawnear soldados comprados
+#include "../unidades/unidades.h" 
 #include "../jugador/jugador.h"
 #include "../mundo/mapa.h"
 #include "../mundo/edificios.h" 
@@ -9,10 +9,9 @@
 
 // --- LÓGICA DE DIBUJO DEL EDIFICIO (MAPA) ---
 void dibujarTiendasEnIslas(HDC hdc, Camera cam, int ancho, int alto, int frameTienda) {
-    // Coordenadas fijas de la tienda principal (ajusta si tu tienda está en otro lado)
+    // Coordenadas fijas de la tienda principal 
     int mundoX = 1500; 
     int mundoY = 1900;
-    
     int tx = (mundoX - cam.x) * cam.zoom;
     int ty = (mundoY - cam.y) * cam.zoom;
     int tam = 50 * cam.zoom;
@@ -55,14 +54,11 @@ if (my >= ty && my <= ty + 40)
 
     int startY = ty + 50;
     char msg[32];
-
     // Mensaje sobre la cabeza del jugador
     float msgX = j->x;
     float msgY = j->y - 40;
 
-    // =========================================================
     // TAB 0: HERRAMIENTAS
-    // =========================================================
     if (j->modoTienda == 0)
     {
         for (int i = 0; i < 4; i++)
@@ -70,12 +66,11 @@ if (my >= ty && my <= ty + 40)
             int iy = startY + (i * 80);
             if (my >= iy && my <= iy + 60 && mx >= tx && mx <= tx + 300)
             {
-                // --- NUEVA REGLA: PRIMERO LA MOCHILA ---
+                // --- PRIMERO LA MOCHILA ---
                 // Bloqueo total si no tienes Mochila Nivel 2
                 if (j->nivelMochila < 2) 
                 {
                     crearTextoFlotante(msgX, msgY, "Req. Mochila Nvl 2", 0, RGB(255, 50, 50)); 
-                    PlaySound("SystemHand", NULL, SND_ASYNC);
                     return; // Detiene la función aquí, no compra nada.
                 }
 
@@ -90,7 +85,6 @@ if (my >= ty && my <= ty + 40)
                 {
                     sprintf(msg, "Req. Nivel %d", nivelReq);
                     crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
-                    PlaySound("SystemHand", NULL, SND_ASYNC);
                     return; 
                 }
                 
@@ -109,7 +103,7 @@ if (my >= ty && my <= ty + 40)
                         j->tieneEspada = TRUE;
                         ganarExperiencia(j, 10);
                         crearTextoFlotante(msgX, msgY, "Espada Equipada!", 0, RGB(0, 255, 0));
-                        RegistrarLog("COMPRA: Espada adquirida."); // <--- AGREGADO
+                        RegistrarLog("COMPRA: Espada adquirida.");
                     }
                 }
                 // Item 1: Pico
@@ -125,7 +119,7 @@ if (my >= ty && my <= ty + 40)
                         j->tienePico = TRUE;
                         ganarExperiencia(j, 10);
                         crearTextoFlotante(msgX, msgY, "Pico Equipado!", 0, RGB(0, 255, 0));
-                        RegistrarLog("COMPRA: Pico adquirido."); // <--- AGREGADO
+                        RegistrarLog("COMPRA: Pico adquirido.");
                     }
                 }
                 // Item 2: Hacha
@@ -141,7 +135,7 @@ if (my >= ty && my <= ty + 40)
                         j->tieneHacha = TRUE;
                         ganarExperiencia(j, 10);
                         crearTextoFlotante(msgX, msgY, "Hacha Equipada!", 0, RGB(0, 255, 0));
-                        RegistrarLog("COMPRA: Hacha adquirida."); // <--- AGREGADO
+                        RegistrarLog("COMPRA: Hacha adquirida.");
                     }
                 }
                 // Item 3: Caña
@@ -167,7 +161,7 @@ if (my >= ty && my <= ty + 40)
                         j->tieneCana = TRUE;
                         ganarExperiencia(j, 20);
                         crearTextoFlotante(msgX, msgY, "Cana Equipada!", 0, RGB(0, 255, 0));
-                        RegistrarLog("COMPRA: Cana adquirida."); // <--- AGREGADO
+                        RegistrarLog("COMPRA: Cana adquirida."); 
                     }
                 }
                 InvalidateRect(hwnd, NULL, FALSE);
@@ -175,9 +169,7 @@ if (my >= ty && my <= ty + 40)
         }
     }
 
-    // =========================================================
     // TAB 1: TROPAS
-    // =========================================================
     else if (j->modoTienda == 1)
     {
         int cant = (esClickDerecho) ? 5 : 1;
@@ -189,7 +181,6 @@ if (my >= ty && my <= ty + 40)
                 // --- BLOQUEOS TROPAS ---
                 if (i == 0 && j->nivel < 3) {
                     crearTextoFlotante(msgX, msgY, "Req. Nivel 3", 0, RGB(255, 50, 50));
-                    PlaySound("SystemHand", NULL, SND_ASYNC);
                     return;
                 }
 
@@ -270,9 +261,7 @@ if (my >= ty && my <= ty + 40)
         }
     }
 
-    // =========================================================
     // TAB 2: LOGÍSTICA / MEJORAS
-    // =========================================================
     else if (j->modoTienda == 2)
     {
         if (my >= startY && my <= startY + 60)
@@ -290,7 +279,7 @@ if (my >= ty && my <= ty + 40)
                 j->nivelMochila = 2;
                 ganarExperiencia(j, 50);
                 MessageBox(hwnd, "Mochila Mejorada (Nvl 2)!", "Mejora", MB_OK);
-                RegistrarLog("MEJORA: Mochila ampliada a Nivel 2."); // <--- AGREGADO
+                RegistrarLog("MEJORA: Mochila ampliada a Nivel 2.");
             }
         }
         else if (my >= startY + 80 && my <= startY + 140)
@@ -315,7 +304,6 @@ if (my >= ty && my <= ty + 40)
         { // Barco de Guerra (Requiere Nivel 5)
             if (j->nivel < 5) { crearTextoFlotante(msgX, msgY, "Req. Nivel 5", 0, RGB(255, 50, 50)); return; }
             if (j->cantBarcosGuerra >= 4) { crearTextoFlotante(msgX, msgY, "Flota Maxima", 0, RGB(255, 100, 100)); return; }
-            
             BOOL falta = FALSE;
             if (j->madera < 50) { sprintf(msg, "Faltan %d Mad", 50 - j->madera); crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
             if (j->oro < 100) { sprintf(msg, "Faltan %d Oro", 100 - j->oro); crearTextoFlotante(msgX, msgY - 20, msg, 0, RGB(255, 50, 50)); falta = TRUE; }
@@ -356,7 +344,7 @@ if (my >= ty && my <= ty + 40)
         else if (my >= startY + 320 && my <= startY + 380)
         { // Armadura de Placas (Requiere Nivel 3)
             if (j->nivel < 3) { crearTextoFlotante(msgX, msgY, "Req. Nivel 3", 0, RGB(255, 50, 50)); return; }
-            if (j->tieneArmadura) return; // Ya la tienes
+            if (j->tieneArmadura) return; 
 
             BOOL falta = FALSE;
             // Costo: 200 Oro + 50 Hierro
@@ -380,9 +368,7 @@ if (my >= ty && my <= ty + 40)
         InvalidateRect(hwnd, NULL, FALSE);
     }
 
-    // =========================================================
     // TAB 3: VENDER
-    // =========================================================
     else if (j->modoTienda == 3)
     {
         int precios[] = {1, 2, 5, 1, 3};
@@ -425,27 +411,23 @@ if (my >= ty && my <= ty + 40)
             }
         }
     }
-    // =========================================================
-    // TAB 4: EDIFICIOS (NUEVO)
-    // =========================================================
+    // TAB 4: EDIFICIOS 
     else if (j->modoTienda == 4)
     {
-        // Precios (Deben coincidir visualmente con la lógica de edificios.c)
         int costos[] = {100, 300, 600}; // Peq, Med, Gran
-
         for (int i = 0; i < 3; i++) // 3 tipos de edificios
         {
             int iy = startY + (i * 80);
             if (my >= iy && my <= iy + 60 && mx >= tx && mx <= tx + 300)
             {
-                // Validación básica de Dinero (Solo para avisar, el cobro real es al construir)
+                // Validación básica de Dinero 
                 if (j->oro < costos[i]) {
                     sprintf(msg, "Faltan %d Oro", costos[i] - j->oro);
                     crearTextoFlotante(msgX, msgY, msg, 0, RGB(255, 50, 50));
 
                     return;
                 }
-                // Validación de Límite (Opcional, ya se valida al colocar, pero queda bien aquí)
+                // Validación de Límite
                 if (misEdificios[i].activo) {
                     crearTextoFlotante(msgX, msgY, "Ya construido!", 0, RGB(255, 100, 100));
                     return;
@@ -453,10 +435,7 @@ if (my >= ty && my <= ty + 40)
                 // ¡ACTIVAR MODO FANTASMA!
                 j->edificioSeleccionado = i + 1; // 1=Peq, 2=Med, 3=Grande
                 j->tiendaAbierta = 0; // Cerramos la tienda automáticamente
-                
                 crearTextoFlotante(msgX, msgY, "Modo Construccion", 0, RGB(0, 255, 0));
-                
-                // Forzamos repintado para que desaparezca la tienda y aparezca el fantasma
                 InvalidateRect(hwnd, NULL, FALSE);
             }
         }
@@ -467,12 +446,9 @@ if (my >= ty && my <= ty + 40)
 // --- LÓGICA DE DIBUJO DE LA UI (PANEL) ---
 void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
 {
-    // POSICIÓN DERECHA (Para que conviva con el Inventario en la Izquierda)
+    // POSICIÓN DERECHA
     int anchoW = 340; // Ancho de la tienda
     int altoW = 480;  // Alto de la tienda
-
-    // CAMBIO DE LÓGICA:
-    // En lugar de tx = 600, calculamos: (AnchoPantalla - AnchoTienda - 20 margen)
     int tx = ancho - anchoW - 20;
     int ty = 80;
 
@@ -494,7 +470,6 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
     {
         COLORREF colorT = (j->modoTienda == i) ? RGB(255, 215, 0) : RGB(100, 100, 100);
         SetTextColor(hdc, colorT);
-        // Ajuste fino de X para centrar texto
         TextOut(hdc, tx + 5 + (i * tabW), ty + 10, tabs[i], strlen(tabs[i]));
 
         if (j->modoTienda == i)
@@ -559,7 +534,6 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
     // --- TAB 1: TROPAS (Sprites) ---
     else if (j->modoTienda == 1)
     {
-        // Usamos el frame [0][0] (De frente) de los arrays de animación
         struct TropaShop
         {
             char *nom;
@@ -658,7 +632,6 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
 
         // Armadura
         iy += 80;
-        // Usamos el icono de inventario si existe, si no, el de armadura normal
         HBITMAP iconoArm = (hBmpIconoArmaduraInv) ? hBmpIconoArmaduraInv : hBmpIconoPiedra; 
         DibujarImagen(hdc, iconoArm, startX, iy, 40, 40);
         
@@ -699,9 +672,7 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
             SetTextColor(hdc, RGB(255, 255, 255));
         }
     }
-    // =========================================================
     // TAB 4: EDIFICIOS (VISUAL)
-    // =========================================================
     else if (j->modoTienda == 4)
     {
         struct EdifUI {
@@ -721,11 +692,9 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
         for (int i = 0; i < 3; i++)
         {
             int iy = startY + (i * 80);
-            
-            // Icono del edificio (usamos el sprite del juego)
+            // Icono del edificio 
             if (lista[i].sprite)
                 DibujarImagen(hdc, lista[i].sprite, startX, iy, 48, 48);
-            
             // Nombre
             TextOut(hdc, startX + 60, iy, lista[i].nombre, strlen(lista[i].nombre));
             
@@ -739,7 +708,6 @@ void dibujarTiendaInteractiva(HDC hdc, Jugador *j, int ancho, int alto)
             }
             SetTextColor(hdc, RGB(255, 255, 255));
         }
-        
         // Instrucción
         SetTextColor(hdc, RGB(200, 200, 200));
         TextOut(hdc, startX, startY + 350, "Click para construir", 20);

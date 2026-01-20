@@ -5,7 +5,6 @@
 #include "../global.h"
 
 // --- INTERFAZ PÚBLICA DE LA TIENDA ---
-
 // Procesa los clics dentro de la ventana de la tienda (compras, pestañas, ventas)
 void procesarClickMochilaTienda(int x, int y, int clickDerecho, Jugador *j, HWND hwnd);
 

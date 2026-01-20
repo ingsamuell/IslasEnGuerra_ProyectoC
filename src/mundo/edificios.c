@@ -14,7 +14,6 @@ Edificio edificiosEnemigos[MAX_EDIFICIOS_ENEMIGOS];
 // 1. INICIALIZACIÓN
 void inicializarEdificios()
 {
-    // Limpiar jugador
     for (int i = 0; i < MAX_EDIFICIOS_JUGADOR; i++)
     {
         misEdificios[i].activo = 0;
@@ -22,11 +21,9 @@ void inicializarEdificios()
         misEdificios[i].esEnemigo = 0;
         misEdificios[i].tipo = i + 1;
     }
-
     // Configurar enemigos 
     float coordsX[4] = {400, 200, 300, 600}; 
     float coordsY[4] = {400, 1325, 2600, 2400}; 
-
     for (int i = 0; i < MAX_EDIFICIOS_ENEMIGOS; i++)
     {
         edificiosEnemigos[i].activo = 1;
@@ -84,15 +81,12 @@ void dibujarEdificio(HDC hdc, int x, int y, int tipoTamano, int esEnemigo, int m
             anchoBase = 128;
             altoBase = 128;
         }
-
         int anchoVisual = anchoBase * cam->zoom;
         int altoVisual = altoBase * cam->zoom;
-
         // 3. POSICIÓN CON CÁMARA (Mundo -> Pantalla)
         // Restamos la cámara y multiplicamos por zoom
         int pantallaX = (x - cam->x) * cam->zoom;
         int pantallaY = (y - cam->y) * cam->zoom;
-
         // 4. Dibujar
         DibujarImagen(hdc, bmpADibujar, pantallaX, pantallaY, anchoVisual, altoVisual);
     }
@@ -101,22 +95,18 @@ void dibujarEdificio(HDC hdc, int x, int y, int tipoTamano, int esEnemigo, int m
 // 3. MODO FANTASMA (LOGICA DE CONSTRUCCIÓN)
 void dibujarFantasmaConstruccion(HDC hdc, Jugador *j, int mx, int my, int mapaID, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera *cam) {
     if (j->edificioSeleccionado == 0) return; 
-
     // 1. Definir tamaño
     int tamSprite = 64; 
     if (j->edificioSeleccionado == 2) tamSprite = 96;
     if (j->edificioSeleccionado == 3) tamSprite = 128;
-
     int spriteX = mx - (tamSprite / 2);
     int spriteY = my - (tamSprite / 2);
-
     // 2. Definir HUELLA (Validación)
     int margen = 10;
     int hitX = spriteX + margen;
     int hitY = spriteY + (tamSprite / 2); 
     int hitW = tamSprite - (margen * 2);
     int hitH = (tamSprite / 2) - margen;
-
     // Variables de Estado
     int esValido = 1;     
     int costoExtra = 0;   
@@ -204,8 +194,7 @@ void intentarColocarEdificio(Jugador *j, int mx, int my, char mapa[MUNDO_FILAS][
     if (!EsSuelo(hitX, hitY, mapa) || 
         !EsSuelo(hitX + hitW, hitY, mapa) || 
         !EsSuelo(hitX, hitY + hitH, mapa) || 
-        !EsSuelo(hitX + hitW, hitY + hitH, mapa)) {
-        PlaySound("SystemHand", NULL, SND_ASYNC); 
+        !EsSuelo(hitX + hitW, hitY + hitH, mapa)) { 
         return;
     }
 
@@ -237,7 +226,6 @@ void intentarColocarEdificio(Jugador *j, int mx, int my, char mapa[MUNDO_FILAS][
     else if (j->edificioSeleccionado == 3) costoBase = 600;
 
     if (j->oro < costoBase + costoLimpieza) {
-        PlaySound("SystemHand", NULL, SND_ASYNC);
         return; 
     }
 
@@ -265,7 +253,6 @@ void intentarColocarEdificio(Jugador *j, int mx, int my, char mapa[MUNDO_FILAS][
     misEdificios[slotDeseado].vidaActual = 1;
 
     j->edificioSeleccionado = 0;
-    PlaySound("SystemAsterisk", NULL, SND_ASYNC);
 }
 
 void actualizarEdificios(float deltaTiempo)

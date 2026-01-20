@@ -1,7 +1,7 @@
 #include "unidades.h"
-#include "../mundo/mapa.h"       // Para EsSuelo
-#include "../mundo/naturaleza.h" // Para buscarArbolCercano, misArboles, etc.
-#include "../mundo/fauna.h"      // Para buscarVacaCercana, manada
+#include "../mundo/mapa.h"       
+#include "../mundo/naturaleza.h"
+#include "../mundo/fauna.h"      
 #include "../recursos/recursos.h"
 #include "../jugador/jugador.h"
 #include <math.h>
@@ -43,8 +43,8 @@ for (int i = 0; i < MAX_UNIDADES && creados < cantidad; i++) {
             
             // --- CAMBIO: VIDA SEGÚN TIPO ---
             if (tipo == TIPO_SOLDADO) {
-                unidades[i].vidaMax = 50; // ¡AHORA SON TANQUES! 
-                unidades[i].vida = 50;
+                unidades[i].vidaMax = 40; 
+                unidades[i].vida = 40;
             } else {
                 unidades[i].vidaMax = 20; // Aldeanos normales
                 unidades[i].vida = 20;
@@ -102,7 +102,6 @@ void aplicarSeparacion(int id, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     float radioPersonal = 25.0f; // Distancia mínima entre aldeanos
 
     for (int j = 0; j < MAX_UNIDADES; j++) {
-        // No compararse con uno mismo ni con unidades muertas
         if (id == j || !unidades[j].activa) continue;
 
         float dx = unidades[id].x - unidades[j].x;
@@ -125,11 +124,11 @@ void aplicarSeparacion(int id, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
 
     if (vecinos > 0) {
         // Aplicamos el empujón (Separación)
-        // El factor 1.5f controla qué tan fuerte se empujan (ajústalo si vibran mucho)
+        // El factor 1.5f controla qué tan fuerte se empujan 
         float nuevoX = unidades[id].x + (sepX * 1.5f);
         float nuevoY = unidades[id].y + (sepY * 1.5f);
 
-        // IMPORTANTE: Solo empujamos si el destino es suelo (para no tirarlos al agua)
+        // IMPORTANTE: Solo empujamos si el destino es suelo
         // Usamos +16 para verificar el centro del sprite
         if (EsSuelo((int)nuevoX + 16, (int)nuevoY + 16, mapa)) {
             unidades[id].x = nuevoX;
@@ -140,42 +139,30 @@ void aplicarSeparacion(int id, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
 void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
     for (int i = 0; i < MAX_UNIDADES; i++) {
         if (!unidades[i].activa) continue;
-        // La IA enemiga va por separado (enemigos.c)
         if (unidades[i].bando == BANDO_ENEMIGO) continue; 
 
-        // ---------------------------------------------------------
-        // 1. LÓGICA ESPECIAL: BARCO ALIADO (FLOTA)
-        // ---------------------------------------------------------
- if (unidades[i].tipo == TIPO_BARCO_ALIADO) {
-            
-            // SOLO SI TIENE SOLDADOS DENTRO SE MUEVE Y DISPARA
+        // BARCO ALIADO
+        if (unidades[i].tipo == TIPO_BARCO_ALIADO) {
             if (unidades[i].pasajeros > 0) {
-                
-                // A) SEGUIR AL JUGADOR
                 float distJ = sqrt(pow(j->x - unidades[i].x, 2) + pow(j->y - unidades[i].y, 2));
                 if (distJ > 120) { 
                     float dx = (j->x - 60) - unidades[i].x;
                     float dy = j->y - unidades[i].y;
                     float dist = sqrt(dx*dx + dy*dy);
                     if(dist > 5.0f) {
-                        unidades[i].x += (dx / dist) * 1.8f; // Un poco más rápido con tripulación
+                        unidades[i].x += (dx / dist) * 1.8f;
                         unidades[i].y += (dy / dist) * 1.8f;
                     }
                     actualizarAnimacionUnidad(&unidades[i], dx, dy);
                 }
-
-                // B) DISPARAR CAÑONES AUTOMÁTICAMENTE
                 if (unidades[i].timerAtaque > 0) unidades[i].timerAtaque--;
-                
                 if (unidades[i].timerAtaque == 0) {
                     for(int k=0; k<MAX_UNIDADES; k++) {
                         if(unidades[k].activa && unidades[k].bando == BANDO_ENEMIGO) {
                             float distE = sqrt(pow(unidades[k].x - unidades[i].x, 2) + pow(unidades[k].y - unidades[i].y, 2));
                             if(distE < 400) { 
                                 crearBalaCanon(unidades[i].x, unidades[i].y, unidades[k].x, unidades[k].y);
-                                
-                                // Más pasajeros = Recarga más rápida
-                                int recarga = 180 - (unidades[i].pasajeros * 30); 
+                                int recarga = 180 - (unidades[i].pasajeros * 30);
                                 unidades[i].timerAtaque = recarga; 
                                 break; 
                             }
@@ -183,107 +170,75 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
                     }
                 }
             }
-            continue; // Fin lógica barco
+            continue;
         }
 
-        // ---------------------------------------------------------
-        // 2. LÓGICA ESTÁNDAR (SOLDADOS Y ALDEANOS)
-        // ---------------------------------------------------------
-        
         aplicarSeparacion(i, mapa);
 
-        // Calcular distancia al destino actual
         float dx = unidades[i].destinoX - unidades[i].x;
         float dy = unidades[i].destinoY - unidades[i].y;
         float dist = sqrt(dx * dx + dy * dy);
 
         switch (unidades[i].estado) {
-            
-            // --- COMBATE: PERSEGUIR ---
-            case ESTADO_PERSIGUIENDO: {
-                int target = unidades[i].targetIndex;
-                if (target == -1 || !unidades[target].activa) {
-                    unidades[i].estado = ESTADO_IDLE;
-                    break;
-                }
-
-                float dxE = unidades[target].x - unidades[i].x;
-                float dyE = unidades[target].y - unidades[i].y;
-                float distE = sqrt(dxE * dxE + dyE * dyE);
-
-                // Si está lejos, correr hacia él
-                if (distE > 40.0f) { 
-                    float velocidad = (unidades[i].tipo == TIPO_SOLDADO) ? 2.5f : 2.0f; // Soldados corren más
-                    float nuevoX = unidades[i].x + (dxE / distE) * velocidad;
-                    float nuevoY = unidades[i].y + (dyE / distE) * velocidad;
-
-                    BOOL puedeMover = FALSE;
-                    if (unidades[i].tipo == TIPO_SOLDADO) puedeMover = TRUE;
-                    else if (EsSuelo((int)nuevoX + 16, (int)nuevoY + 16, mapa)) puedeMover = TRUE;
-
-                    if (puedeMover) {
-                        unidades[i].x = nuevoX;
-                        unidades[i].y = nuevoY;
-                    }
-                    actualizarAnimacionUnidad(&unidades[i], dxE, dyE);
+            case ESTADO_SUBIR_BARCO: {
+                int idBarco = unidades[i].targetIndex;
+                if (idBarco == -1 || !unidades[idBarco].activa) { unidades[i].estado = ESTADO_IDLE; break; }
+                float dxB = unidades[idBarco].x - unidades[i].x;
+                float dyB = unidades[idBarco].y - unidades[i].y;
+                float distB = sqrt(dxB*dxB + dyB*dyB);
+                if (distB > 30.0f) {
+                    unidades[i].x += (dxB / distB) * 2.0f;
+                    unidades[i].y += (dyB / distB) * 2.0f;
+                    actualizarAnimacionUnidad(&unidades[i], dxB, dyB);
                 } else {
-                    // Llegó al rango melee
-                    unidades[i].estado = ESTADO_ATACANDO;
-                    unidades[i].timerAtaque = 40; // Casi listo para golpear
+                    if (unidades[idBarco].pasajeros < 3) {
+                        unidades[idBarco].pasajeros++;
+                        unidades[i].activa = 0; 
+                        crearTextoFlotante(unidades[idBarco].x, unidades[idBarco].y, "+1 Tripulante", 0, RGB(0, 255, 0));
+                    } else { unidades[i].estado = ESTADO_IDLE; }
                 }
                 break;
             }
-
-            // --- COMBATE: ATACAR ---
-            case ESTADO_ATACANDO: {
+            case ESTADO_PERSIGUIENDO: {
                 int target = unidades[i].targetIndex;
-                if (target == -1 || !unidades[target].activa) {
-                    unidades[i].estado = ESTADO_IDLE;
-                    break;
-                }
-                
-                // Si el enemigo huye, volver a perseguir
+                if (target == -1 || !unidades[target].activa) { unidades[i].estado = ESTADO_IDLE; break; }
                 float dxE = unidades[target].x - unidades[i].x;
                 float dyE = unidades[target].y - unidades[i].y;
-                if (sqrt(dxE*dxE + dyE*dyE) > 55.0f) {
-                    unidades[i].estado = ESTADO_PERSIGUIENDO;
-                    break;
-                }
-
+                float distE = sqrt(dxE * dxE + dyE * dyE);
+                if (distE > 40.0f) { 
+                    float velocidad = (unidades[i].tipo == TIPO_SOLDADO) ? 1.6f : 1.1f;
+                    float nuevoX = unidades[i].x + (dxE / distE) * velocidad;
+                    float nuevoY = unidades[i].y + (dyE / distE) * velocidad;
+                    BOOL pase = FALSE;
+                    if (EsSuelo((int)nuevoX + 16, (int)nuevoY + 16, mapa)) pase = TRUE;
+                    else if (unidades[i].tipo == TIPO_SOLDADO) pase = TRUE;
+                    if (pase) { unidades[i].x = nuevoX; unidades[i].y = nuevoY; }
+                    actualizarAnimacionUnidad(&unidades[i], dxE, dyE);
+                } else { unidades[i].estado = ESTADO_ATACANDO; unidades[i].timerAtaque = 40; }
+                break;
+            }
+            case ESTADO_ATACANDO: {
+                int target = unidades[i].targetIndex;
+                if (target == -1 || !unidades[target].activa) { unidades[i].estado = ESTADO_IDLE; break; }
+                float dxE = unidades[target].x - unidades[i].x;
+                float dyE = unidades[target].y - unidades[i].y;
+                if (sqrt(dxE*dxE + dyE*dyE) > 55.0f) { unidades[i].estado = ESTADO_PERSIGUIENDO; break; }
                 unidades[i].timerAtaque++;
-                if (unidades[i].timerAtaque >= 60) { // Velocidad de ataque (1 seg)
+                if (unidades[i].timerAtaque >= 60) { 
                     unidades[i].timerAtaque = 0;
-                    
                     int dano = (unidades[i].tipo == TIPO_SOLDADO) ? 15 : 5;
                     unidades[target].vida -= dano;
-                    
-                    // --- EFECTOS DE "JUGO" (JUICINESS) ---
-                    crearSangre(unidades[target].x, unidades[target].y); // ¡Sangre!
-                    screenShake = 3; // Pequeño temblor
-                    
-                    // --- EMPUJE (KNOCKBACK) ---
-                    // El enemigo sale despedido hacia atrás
-                    float fuerzaEmpuje = 10.0f;
-                    float pushX = unidades[target].x + (dxE / sqrt(dxE*dxE + dyE*dyE)) * fuerzaEmpuje;
-                    float pushY = unidades[target].y + (dyE / sqrt(dxE*dxE + dyE*dyE)) * fuerzaEmpuje;
-                    
-                    // Validar que no lo empujemos dentro de una pared (o dejar caer al agua si es pirata)
-                    unidades[target].x = pushX;
-                    unidades[target].y = pushY;
-
-                    // MUERTE DEL ENEMIGO
+                    crearSangre(unidades[target].x, unidades[target].y); 
                     if (unidades[target].vida <= 0) {
                         unidades[target].activa = 0;
                         ganarExperiencia(j, 50);
-                        RegistrarLog("EVENTO: Enemigo eliminado. +50 XP ganada.");
                         crearTextoFlotante(unidades[i].x, unidades[i].y, "+50 XP", 0, RGB(0, 255, 255));
-                        crearSangre(unidades[target].x, unidades[target].y); // Más sangre al morir
                         unidades[i].estado = ESTADO_IDLE;
                     }
                 }
                 break;
             }
-            // --- LÓGICA DE TRABAJO (SIN CAMBIOS) ---
+            // --- LÓGICA DE TRABAJO---
             case ESTADO_TALANDO: {
                 int a = unidades[i].targetIndex;
                 if (a == -1 || !misArboles[a].activa) { 
@@ -460,7 +415,7 @@ void actualizarAnimacionUnidad(Unidad *u, float dx, float dy) {
     }
 }
 
-void dibujarUnidades(HDC hdc, Camera cam) {
+void dibujarUnidades(HDC hdc, Camera cam, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     for (int i = 0; i < MAX_UNIDADES; i++) {
         if (!unidades[i].activa) continue;
 
@@ -468,81 +423,81 @@ void dibujarUnidades(HDC hdc, Camera cam) {
         int uy = (int)((unidades[i].y - cam.y) * cam.zoom);
         int tam = (int)(TAMANO_CELDA * cam.zoom);
 
-        // 1. DETECCIÓN DE AGUA
-        int col = (int)((unidades[i].x + 16) / TAMANO_CELDA_BASE);
-        int fila = (int)((unidades[i].y + 16) / TAMANO_CELDA_BASE);
-        BOOL enAgua = FALSE;
-        if (col >= 0 && col < MUNDO_COLUMNAS && fila >= 0 && fila < MUNDO_FILAS) {
-            if (mapa[fila][col] == 0) enAgua = TRUE;
-        }
+        // 1. DETECTAR TIERRA USANDO EsSuelo
+        BOOL esTierra = EsSuelo((int)unidades[i].x + 16, (int)unidades[i].y + 16, mapa);
+
+        BOOL enAgua = !esTierra; 
 
         HBITMAP hBmpActual = NULL;
+        int dir = (unidades[i].direccion == DIR_IZQUIERDA) ? 0 : 1;
 
-        // =================================================================
-        // CASO A: ES UN BARCO DE FLOTA (Comprado como Barco)
-        // =================================================================
+        // CASO 1: BARCO ALIADO 
         if (unidades[i].tipo == TIPO_BARCO_ALIADO) {
-             int dirBote = (unidades[i].direccion == DIR_IZQUIERDA) ? 0 : 1;
-             hBmpActual = hBmpBarco[dirBote]; // SIEMPRE Barco de Guerra
-             tam = (int)(64 * cam.zoom);      // Tamaño Grande
+             hBmpActual = hBmpBarco[dir]; 
+             tam = (int)(64 * cam.zoom);
              ux -= 15 * cam.zoom;             
              uy -= 15 * cam.zoom;
-             
-             // Texto de Tripulación
-             SetBkMode(hdc, TRANSPARENT);
-             COLORREF colorTxt = (unidades[i].pasajeros > 0) ? RGB(0, 255, 255) : RGB(150, 150, 150);
-             SetTextColor(hdc, colorTxt);
+             // Texto de la cantidad de tripulación
              char buff[32];
-             sprintf(buff, "Barco Aliado (%d/3)", unidades[i].pasajeros);
-             TextOut(hdc, ux, uy - 20, buff, strlen(buff));
+             sprintf(buff, "(%d/3)", unidades[i].pasajeros);
+             SetBkMode(hdc, TRANSPARENT); SetTextColor(hdc, RGB(0,255,255));
+             TextOut(hdc, ux, uy-20, buff, strlen(buff));
         }
         
-        // =================================================================
-        // CASO B: ESTÁ EN EL AGUA (Soldados o Enemigos nadando/navegando)
-        // =================================================================
-        else if (enAgua) {
-            int dirBote = (unidades[i].direccion == DIR_IZQUIERDA) ? 0 : 1;
+        // CASO 2: UNIDADES MILITARES (SOLDADOS, PIRATAS, MAGOS)
+        else if (unidades[i].tipo == TIPO_SOLDADO || 
+                 unidades[i].tipo == TIPO_ENEMIGO_PIRATA || 
+                 unidades[i].tipo == TIPO_ENEMIGO_MAGO) {
             
-            // SI ES SOLDADO O ENEMIGO -> BARCO DE GUERRA (NO BOTE DE PESCA)
-            if (unidades[i].tipo == TIPO_SOLDADO || 
-                unidades[i].tipo == TIPO_ENEMIGO_PIRATA || 
-                unidades[i].tipo == TIPO_ENEMIGO_MAGO) {
-                 
-                 hBmpActual = hBmpBarco[dirBote]; // <--- AQUÍ ESTABA EL ERROR (Antes era hBmpBote)
-                 tam = (int)(48 * cam.zoom);      // Tamaño mediano
-                 ux -= 10 * cam.zoom;
+            // SOLO si están REALMENTE en el agua -> BARCO
+            if (enAgua) {
+                hBmpActual = hBmpBarco[dir]; // Barco de Guerra
+                tam = (int)(48 * cam.zoom);
+                ux -= 10 * cam.zoom;
             } 
-            // SI ES ALDEANO (Minero/Leñador) -> BOTE DE PESCA
+            // SI ESTÁN EN TIERRA -> SU SPRITE ORIGINAL
             else {
-                 hBmpActual = hBmpBote[dirBote]; 
+                if (unidades[i].tipo == TIPO_SOLDADO) {
+                    hBmpActual = hBmpSoldadoAnim[unidades[i].direccion][unidades[i].frameAnim];
+                } else if (unidades[i].tipo == TIPO_ENEMIGO_PIRATA) {
+                    hBmpActual = hBmpPirataAnim[unidades[i].direccion][unidades[i].frameAnim];
+                } else {
+                    hBmpActual = hBmpMagoAnim[unidades[i].direccion][unidades[i].frameAnim];
+                }
             }
-        } 
-        
-        // =================================================================
-        // CASO C: ESTÁ EN TIERRA (Dibujar Sprite Normal)
-        // =================================================================
+        }
+
+        // CASO 3: ENEMIGOS (Piratas en Tierra, Barcos en Agua)
+        else if (unidades[i].bando == BANDO_ENEMIGO) {
+            if (enAgua) {
+                hBmpActual = hBmpBarco[dir]; // Barco Pirata
+                tam = (int)(48 * cam.zoom);
+                ux -= 10 * cam.zoom;
+            } else {
+                if(unidades[i].tipo == TIPO_ENEMIGO_PIRATA)
+                    hBmpActual = hBmpPirataAnim[unidades[i].direccion][unidades[i].frameAnim];
+                else
+                    hBmpActual = hBmpMagoAnim[unidades[i].direccion][unidades[i].frameAnim];
+            }
+        }
+
+        // CASO 4: ALDEANOS (Mineros, Leñadores, Cazadores)
         else {
+            // NUNCA USAN BOTE, SIEMPRE SU SPRITE
             switch (unidades[i].tipo) {
                 case TIPO_MINERO: hBmpActual = hBmpMineroAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
                 case TIPO_LENADOR: hBmpActual = hBmpLenadorAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
                 case TIPO_CAZADOR: hBmpActual = hBmpCazadorAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
-                
-                // AQUÍ SE DIBUJA EL SOLDADO CON ARMADURA EN TIERRA
-                case TIPO_SOLDADO: hBmpActual = hBmpSoldadoAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
-                
-                case TIPO_ENEMIGO_PIRATA: hBmpActual = hBmpPirataAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
-                case TIPO_ENEMIGO_MAGO:   hBmpActual = hBmpMagoAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
-                
                 default: hBmpActual = hBmpJugadorAnim[unidades[i].direccion][unidades[i].frameAnim]; break;
             }
         }
 
-        // --- DIBUJAR IMAGEN FINAL ---
+        // --- DIBUJADO ---
         if (hBmpActual) {
             DibujarImagen(hdc, hBmpActual, ux, uy, tam, tam);
         }
 
-        // --- SELECCIÓN (Círculo verde) ---
+        // --- SELECCIÓN ---
         if (unidades[i].seleccionado) {
             HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 255, 0));
             HGDIOBJ hOld = SelectObject(hdc, hPen);
@@ -551,18 +506,15 @@ void dibujarUnidades(HDC hdc, Camera cam) {
             SelectObject(hdc, hOld);
             DeleteObject(hPen);
         }
-
         // --- BARRA DE VIDA ---
         int maxVida = (unidades[i].vidaMax > 0) ? unidades[i].vidaMax : 100;
         dibujarBarraVidaLocal(hdc, ux, uy - 10, unidades[i].vida, maxVida, 32 * cam.zoom);
 
-        // --- EFECTO VISUAL DE ATAQUE (SLASH) ---
+        // --- EFECTO VISUAL DE ATAQUE ---
         if (unidades[i].estado == ESTADO_ATACANDO && unidades[i].timerAtaque > 30 && unidades[i].timerAtaque < 50) {
-             // Definir función auxiliar dibujarEfectoAtaque arriba o usar lógica simple aquí
              HPEN hPenAtk = CreatePen(PS_SOLID, 3, RGB(255, 255, 200));
              HGDIOBJ oldPen = SelectObject(hdc, hPenAtk);
              MoveToEx(hdc, ux + tam/2, uy + tam/2, NULL);
-             // Dibujar línea según dirección
              if(unidades[i].direccion == DIR_DERECHA) LineTo(hdc, ux + tam, uy + tam/2);
              else if(unidades[i].direccion == DIR_IZQUIERDA) LineTo(hdc, ux, uy + tam/2);
              else LineTo(hdc, ux + tam/2, uy + tam);
@@ -678,8 +630,6 @@ void ordenarUnidad(int mX, int mY, Camera cam) {
 
         // A) SUBIR AL BARCO (Solo soldados)
         if (barcoAliadoID != -1 && unidades[i].tipo == TIPO_SOLDADO) {
-            // Verificar si cabe gente (Máximo 3)
-            // Nota: La verificación final se hace al llegar, pero aquí damos la orden
             if (unidades[barcoAliadoID].pasajeros < 3) {
                 unidades[i].estado = ESTADO_SUBIR_BARCO;
                 unidades[i].targetIndex = barcoAliadoID;
@@ -744,17 +694,16 @@ void ordenarUnidad(int mX, int mY, Camera cam) {
             }
         }
 
-        // PRIORIDAD C: MOVIMIENTO SIMPLE (Si no hubo ataque ni trabajo)
+        // PRIORIDAD C: MOVIMIENTO SIMPLE 
         if (!accionAsignada) {
             unidades[i].estado = ESTADO_MOVIENDO;
             unidades[i].destinoX = (int)mundoX;
             unidades[i].destinoY = (int)mundoY;
-            // Opcional: limpiar targets previos
             unidades[i].targetIndex = -1; 
         }
     }
 }
-// Función para que el JUGADOR pegue con la Espada (Space)
+// Función para que el JUGADOR pegue con la Espada 
 void golpearEnemigoCercano(Jugador *j) {
     int rango = 60; // Distancia de la espada
     BOOL golpeoAlguien = FALSE;
@@ -781,7 +730,7 @@ void golpearEnemigoCercano(Jugador *j) {
             crearSangre(unidades[i].x, unidades[i].y);
             crearTextoFlotante(unidades[i].x, unidades[i].y - 20, "-HIT!", 0, RGB(255, 0, 0));
             
-            // EMPUJE (Knockback) para que se sienta el golpe
+            // EMPUJE para que se sienta el golpe
             float fuerza = 15.0f;
             unidades[i].x += (dx / dist) * fuerza;
             unidades[i].y += (dy / dist) * fuerza;

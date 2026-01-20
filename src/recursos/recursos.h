@@ -16,17 +16,13 @@ extern HBITMAP hBmpBotonSel;
 
 // --- 2. JUGADOR Y ANIMACIONES ---
 
-// Imagen estática (si se usa)
+// Imagen estática 
 extern HBITMAP hBmpJugador;
-
 // MATRICES DE ANIMACIÓN DEL JUGADOR
-// [Dirección][Frame] -> 0:Abajo, 1:Arriba, 2:Izq, 3:Der
-// Frames: 0=Quieto, 1=Pie1, 2=Pie2
-
 extern HBITMAP hBmpJugadorAnim[4][3];  // Base (Sin nada)
 extern HBITMAP hBmpArmaduraAnim[4][3]; // Con Armadura (Prioridad Visual)
 
-// Nuevas Herramientas (Agregadas para jugador.c)
+// Nuevas Herramientas 
 extern HBITMAP hBmpEspadaAnim[4][3]; // Jugador con Espada
 extern HBITMAP hBmpPicoAnim[4][3];   // Jugador con Pico
 extern HBITMAP hBmpHachaAnim[4][3];  // Jugador con Hacha
@@ -112,9 +108,7 @@ extern HBITMAP hBmpIslaSec4Mapa3;
 extern HBITMAP hBmpArbolChicoMapa3;
 extern HBITMAP hBmpArbolGrandeMapa3;
 
-// ====================================================
-// NUEVAS: ISLAS ENEMIGAS (3 por mapa × 3 mapas = 9 imágenes)
-// ====================================================
+// ISLAS ENEMIGAS 
 
 // Mapa 1 (ISLAS DEL MAR)
 extern HBITMAP hBmpIslaEnemigaGrandeMapa1;
@@ -143,8 +137,6 @@ extern HBITMAP hBmpEstablo;
 extern HBITMAP hBmpHierroPicar;
 extern HBITMAP hBmpPiedraPicar;
 extern HBITMAP hBmpMuelle;
-
-// (Opcional: Matriz visual del mapa si la necesitas)
 extern char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
 
 // Mouse Debug
@@ -164,13 +156,10 @@ extern HBITMAP hBmpCuadroMapa3Sel;
 // --- EDIFICIOS (Arrays de 3 frames: mapa1, mapa2, mapa3) ---
 extern HBITMAP hBmpEdificioPeq[3];          // Jugador Pequeño
 extern HBITMAP hBmpEdificioPeqEnemigo[3];   // Enemigo Pequeño
-
 extern HBITMAP hBmpEdificioMed[3];          // Jugador Mediano
 extern HBITMAP hBmpEdificioMedEnemigo[3];   // Enemigo Mediano
-
 extern HBITMAP hBmpEdificioGrande[3];       // Jugador Grande
 extern HBITMAP hBmpEdificioGrandeEnemigo[3];// Enemigo Grande
-
 extern HBITMAP hBmpBanderaEnemiga;          // Bandera
 
 // --- 7. ARRAYS GLOBALES (Objetos del juego) ---
@@ -179,7 +168,7 @@ extern Mina minas[MAX_MINAS];
 extern Vaca manada[MAX_VACAS];
 extern Unidad unidades[MAX_UNIDADES];
 extern Particula particulas[MAX_PARTICULAS];
-extern TextoFlotante textos[MAX_TEXTOS]; // Usamos MAX_TEXTOS de global.h
+extern TextoFlotante textos[MAX_TEXTOS];
 
 // --- FUNCIONES ---
 void CargarRecursos();
@@ -187,7 +176,7 @@ void LiberarRecursos();
 void DibujarImagen(HDC hdcDestino, HBITMAP hBitmap, int x, int y, int ancho, int alto);
 void reclutarTrabajador(Jugador *j, int tipo);
 extern void RegistrarLog(const char* texto);
-extern int screenShake; // Intensidad del temblor
+extern int screenShake; 
 
 extern float barcoGuardadoX;
 extern float barcoGuardadoY;

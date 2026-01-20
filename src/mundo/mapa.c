@@ -92,9 +92,7 @@ void inicializarIslas(int mapaId)
     for (int i = 0; i < MAX_ISLAS; i++)
         misIslas[i].activa = 0;
 
-    // ====================================================
     // ISLAS DEL JUGADOR (5 islas originales - CENTRO/NORTE)
-    // ====================================================
 
     // ISLA CENTRAL (Grande) - BASE DEL JUGADOR
     misIslas[0].activa = 1;
@@ -136,9 +134,7 @@ void inicializarIslas(int mapaId)
     misIslas[4].alto = 500;
     misIslas[4].esEnemiga = 0;
 
-    // ====================================================
     // ISLAS ENEMIGAS (3 nuevas - ESQUINAS/EXTREMOS)
-    // ====================================================
 
     // 1. ISLA ENEMIGA GRANDE (Esquina INFERIOR DERECHA)
     misIslas[5].activa = 1;
@@ -248,14 +244,11 @@ void dibujarInterfazGuerra(HDC hdc, int ancho) {
         HBRUSH brochaAlerta = CreateSolidBrush(RGB(150, 0, 0));
         FillRect(hdc, &r, brochaAlerta);
         DeleteObject(brochaAlerta);
-
         // Texto "MODO BATALLA"
         SetBkMode(hdc, TRANSPARENT);
         SetTextColor(hdc, RGB(255, 255, 0)); // Amarillo
-        
         char texto[128];
         sprintf(texto, " MODO BATALLA  Enemigos: %d   |   Tus Soldados: %d", enemigosVivos, soldadosVivos);
-        
         // Centrar texto (aprox)
         TextOut(hdc, (ancho / 2) - 150, 10, texto, strlen(texto));
         
@@ -345,10 +338,7 @@ void crearChispaBlanca(float x, float y) { crearChispas((int)x, (int)y, RGB(255,
 // Usamos 'particulas' para TODO (sangre, magia, chispas, cañones)
 extern Particula particulas[MAX_PARTICULAS]; 
 
-// ---------------------------------------------------------
 // SISTEMA DE PARTÍCULAS UNIFICADO
-// ---------------------------------------------------------
-
 // 1. CHISPAS 
 void crearChispas(int x, int y, COLORREF color) {
     for (int i = 0; i < 5; i++) { // 5 chispas por impacto
@@ -455,9 +445,7 @@ void crearExplosionAgua(float x, float y) {
     }
 }
 
-// ---------------------------------------------------------
 // ACTUALIZACIÓN Y DIBUJADO UNIFICADO
-// ---------------------------------------------------------
 void actualizarYDibujarParticulas(HDC hdc, Camera cam) {
     for (int i = 0; i < MAX_PARTICULAS; i++) {
         if (!particulas[i].activo) continue;
@@ -591,7 +579,6 @@ void actualizarLogicaSistema(Jugador *j)
 void actualizarRegeneracionRecursos()
 {
     actualizarRegeneracionNaturaleza();
-
     actualizarRegeneracionFauna();
 }
 
@@ -608,7 +595,6 @@ void dibujarMuelleYFlota(HDC hdc, Camera cam, Jugador *j)
     }
     else
     {
-        // Fallback si no tienes la imagen aún: Un cuadro marrón
         HBRUSH madera = CreateSolidBrush(RGB(100, 50, 0));
         RECT r = {mx, my, mx + tamMuelle, my + (tamMuelle / 2)};
         FillRect(hdc, &r, madera);
@@ -642,7 +628,7 @@ void dibujarMuelleYFlota(HDC hdc, Camera cam, Jugador *j)
     }
 }
 
-// --- 8. INITIALIZACIÓN JUEGO ---
+// --- 6. INITIALIZACIÓN JUEGO ---
 
 void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int mapaId)
 {
@@ -673,7 +659,7 @@ void inicializarJuego(Jugador *jugador, EstadoJuego *estado, char mapa[MUNDO_FIL
     estado->mapaSeleccionado = mapaId;
 }
 
-// --- 9. MENÚ Y UI GENERAL ---
+// --- 7. MENÚ Y UI GENERAL ---
 void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
 {
     RECT rect;
@@ -681,7 +667,7 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
     int ancho = rect.right;
     int alto = rect.bottom;
 
-    // 1. DIBUJAR FONDO (sin cambios)
+    // 1. DIBUJAR FONDO
     if (hBmpFondoMenu)
     {
         BITMAP bm;
@@ -748,7 +734,7 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
     HBITMAP imgSalir = (hBmpBtnSalir) ? hBmpBtnSalir : hBmpBoton;
     DibujarImagen(hdc, imgSalir, salirX, salirY, btnAncho, btnAlto);
 
-    // 5. TEXTO EN LOS BOTONES (si usas botones genéricos)
+    // 5. TEXTO EN LOS BOTONES 
     if (hBmpBoton == imgJugar || hBmpBoton == imgPartidas ||
         hBmpBoton == imgInstr || hBmpBoton == imgSalir)
     {
@@ -761,7 +747,6 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
 
         // Texto para cada botón
         SetTextColor(hdc, RGB(255, 255, 255));
-
         // Botón Partidas
         const char *txtPartidas = "PARTIDAS";
         SIZE sizePartidas;
@@ -775,7 +760,7 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
         SIZE sizeJugar;
         GetTextExtentPoint32(hdc, txtJugar, strlen(txtJugar), &sizeJugar);
         int txtJX = jugarX + (btnAncho - sizeJugar.cx) / 2;
-        int txtJY = jugarY + (btnAlto - sizeJugar.cy) / 2; // ← USAR jugarY
+        int txtJY = jugarY + (btnAlto - sizeJugar.cy) / 2; 
         TextOut(hdc, txtJX, txtJY, txtJugar, strlen(txtJugar));
 
         // Botón Instrucciones
@@ -791,7 +776,7 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
         SIZE sizeSalir;
         GetTextExtentPoint32(hdc, txtSalir, strlen(txtSalir), &sizeSalir);
         int txtSX = salirX + (btnAncho - sizeSalir.cx) / 2;
-        int txtSY = salirY + (btnAlto - sizeSalir.cy) / 2; // ← USAR salirY
+        int txtSY = salirY + (btnAlto - sizeSalir.cy) / 2;
         TextOut(hdc, txtSX, txtSY, txtSalir, strlen(txtSalir));
 
         SelectObject(hdc, hOldFont);
@@ -799,7 +784,7 @@ void dibujarMenuConSprites(HDC hdc, HWND hwnd, EstadoJuego *estado)
     }
 }
 
-// Función auxiliar para detectar colisión simple (Local)
+// Función auxiliar para detectar colisión simple 
 int puntoEnRect(int x, int y, int rx, int ry, int rw, int rh)
 {
     return (x >= rx && x <= rx + rw && y >= ry && y <= ry + rh);
@@ -813,16 +798,15 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
     int ancho = rc.right;
     int alto = rc.bottom;
 
-    // Configuración de botones (DEBE COINCIDIR con dibujarMenuConSprites)
+    // Configuración de botones
     int btnAncho = 500;
     int btnAlto = 200;
-    int separacion = 200; // ← IMPORTANTE: usar 200 como en dibujar
+    int separacion = 200; 
     int centroY = alto / 2;
     int startY = centroY - (btnAlto / 2);
-    
-    // Márgenes para SALIR (DEBE COINCIDIR)
-    int margenHorizontal = 0;  // ← Mismo que en dibujar
-    int margenVertical = 0;    // ← Mismo que en dibujar
+    // Márgenes para SALIR 
+    int margenHorizontal = 0;  
+    int margenVertical = 0;   
 
     // --- BOTÓN "PARTIDAS" (Izquierda) ---
     int partidasX = (ancho / 2) - btnAncho - separacion;
@@ -834,7 +818,7 @@ void procesarClickMenu(int x, int y, HWND hwnd, EstadoJuego *estado)
 
     // --- BOTÓN "JUGAR" (Centro - 150px más abajo) ---
     int jugarX = (ancho - btnAncho) / 2;
-    int jugarY = startY + 230; // ← MISMO VALOR que en dibujar
+    int jugarY = startY + 230; 
     if (puntoEnRect(x, y, jugarX, jugarY, btnAncho, btnAlto))
     {
         estado->estadoActual = ESTADO_SELECCION_MAPA;
@@ -902,7 +886,6 @@ void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
 
     // 2. TÍTULO SUPERIOR
     SetBkMode(hdc, TRANSPARENT);
-
     // Fuente Grande para el Título
     HFONT hFontTitulo = CreateFont(48, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
                                    DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
@@ -912,7 +895,7 @@ void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
     SetTextColor(hdc, RGB(255, 215, 0)); // Dorado
     const char *titulo = " ";
 
-    // Centrar texto (cálculo aproximado o usando GetTextExtentPoint32)
+    // Centrar texto
     SIZE size;
     GetTextExtentPoint32(hdc, titulo, strlen(titulo), &size);
     TextOut(hdc, (ancho - size.cx) / 2, 50, titulo, strlen(titulo));
@@ -936,7 +919,7 @@ void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
         int y = startY;
         BOOL seleccionado = (estado->opcionSeleccionada == i);
 
-        // A. Seleccionar Imagen (Normal vs Seleccionada)
+        // A. Seleccionar Imagen 
         HBITMAP img = NULL;
         switch (i)
         {
@@ -950,7 +933,6 @@ void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
             img = seleccionado ? hBmpCuadroMapa3Sel : hBmpCuadroMapa3Normal;
             break;
         }
-
         // B. Dibujar Imagen
         if (img)
         {
@@ -958,7 +940,6 @@ void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
         }
         else
         {
-            // Placeholder si falla la imagen
             HBRUSH pBrush = CreateSolidBrush(seleccionado ? RGB(100, 100, 200) : RGB(50, 50, 50));
             RECT rP = {x, y, x + cuadroAncho, y + cuadroAlto};
             FillRect(hdc, &rP, pBrush);
@@ -968,13 +949,10 @@ void dibujarSeleccionMapa(HDC hdc, HWND hwnd, EstadoJuego *estado)
         // C. Dibujar Marco (Dorado si seleccionado, Gris si no)
         int bordeGrosor = seleccionado ? 4 : 2;
         COLORREF colorBorde = seleccionado ? RGB(255, 215, 0) : RGB(100, 100, 100);
-
         HPEN hPen = CreatePen(PS_SOLID, bordeGrosor, colorBorde);
         HGDIOBJ hOldPen = SelectObject(hdc, hPen);
         HGDIOBJ hOldBrush = SelectObject(hdc, GetStockObject(NULL_BRUSH));
-
         Rectangle(hdc, x - bordeGrosor, y - bordeGrosor, x + cuadroAncho + bordeGrosor, y + cuadroAlto + bordeGrosor);
-
         SelectObject(hdc, hOldBrush);
         SelectObject(hdc, hOldPen);
         DeleteObject(hPen);
@@ -1016,7 +994,7 @@ void procesarClickSeleccionMapa(int x, int y, HWND hwnd, EstadoJuego *estado)
     int ancho = rc.right;
     int alto = rc.bottom;
 
-    // Configuración de dimensiones (Debe ser IDÉNTICA a dibujarSeleccionMapa)
+    // Configuración de dimensiones 
     int cuadroAncho = 300;
     int cuadroAlto = 200;
     int separacion = 50;
@@ -1151,7 +1129,6 @@ void dibujarMiniMapa(HDC hdc, Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]
     // 5. TEXTOS Y PUNTOS CARDINALES
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, RGB(0, 0, 0)); // Letras Negras
-    // Dibujamos N, S, E, O dentro del marco o justo afuera
     TextOut(hdc, xBase + (tamMapa/2) - 4, yBase + 2, "N", 1); 
     TextOut(hdc, xBase + (tamMapa/2) - 4, yBase + tamMapa - 14, "S", 1); 
     TextOut(hdc, xBase + tamMapa - 12, yBase + (tamMapa/2) - 8, "E", 1); 
@@ -1166,7 +1143,6 @@ void dibujarMiniMapa(HDC hdc, Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]
     if (jX > xBase + tamMapa) jX = xBase + tamMapa;
     if (jY < yBase) jY = yBase;
     if (jY > yBase + tamMapa) jY = yBase + tamMapa;
-
     HBRUSH puntoRojo = CreateSolidBrush(RGB(255, 0, 0));
     RECT rJug = {jX - 3, jY - 3, jX + 4, jY + 4}; // Punto un poco más grande
     FillRect(hdc, &rJug, puntoRojo);
@@ -1191,8 +1167,7 @@ void dibujarMiniMapa(HDC hdc, Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]
     DeleteObject(plumaFlecha);
 }
 
-// --- 10. RENDERIZADO FINAL ---
-
+// --- 8. RENDERIZADO FINAL ---
 void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera cam, int ancho, int alto, int frameTienda, int mapaId)
 {
 	
@@ -1209,9 +1184,7 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
     Camera camEfecto = cam;
     camEfecto.x += shakeX;
     camEfecto.y += shakeY;
-    // ---------------------------------------------------------
     // 1. CAPA FONDO: AGUA
-    // ---------------------------------------------------------
     // A) Agua Profunda
     HBRUSH aguaProfunda = CreateSolidBrush(RGB(0, 0, 100));
     RECT r = {0, 0, ancho, alto};
@@ -1235,9 +1208,7 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
     SelectObject(hdc, oldPen); SelectObject(hdc, oldBrush);
     DeleteObject(aguaCosta); DeleteObject(nullPen);
 
-    // ---------------------------------------------------------
-    // 2. CAPA SUELO: ISLAS
-    // ---------------------------------------------------------
+    // CAPA SUELO: ISLAS
         for (int i = 0; i < MAX_ISLAS; i++) {
         if (!misIslas[i].activa) continue;
         int sx = (misIslas[i].x - cam.x) * cam.zoom;
@@ -1250,7 +1221,6 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
                          misIslas[i].ancho * cam.zoom, 
                          misIslas[i].alto * cam.zoom);
             
-            // Opcional: Dibujar overlay rojo para islas enemigas
             if (misIslas[i].esEnemiga) {
                 HBRUSH hRedOverlay = CreateSolidBrush(RGB(255, 0, 0));
                 HBRUSH hOldBrush = SelectObject(hdc, hRedOverlay);
@@ -1269,36 +1239,25 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
         }
     }
 
-    // ---------------------------------------------------------
-    // 3. CAPA OBJETOS: NATURALEZA Y FAUNA
-    // ---------------------------------------------------------
+    // CAPA OBJETOS: NATURALEZA Y FAUNA
     // (Aquí dibujamos todo lo que debe poder ser tapado por la niebla)
     dibujarTiendasEnIslas(hdc, cam, ancho, alto, frameTienda);
     dibujarTesoros(hdc, cam, ancho, alto);
     dibujarMinas(hdc, cam, ancho, alto);
     dibujarArboles(hdc, cam, ancho, alto, mapaId);
-    
     dibujarTiburones(hdc, cam, ancho, alto);
     dibujarBarcoAnclado(hdc, cam);
-    dibujarVacas(hdc, cam, ancho, alto); // Ahora las vacas se dibujan ANTES de la niebla
-    
-    // Muelle y Tienda
+    dibujarVacas(hdc, cam, ancho, alto);
     dibujarMuelleYFlota(hdc, cam, &miJugador); 
-    // ---------------------------------------------------------
-    // 4. CAPA PERSONAJES: JUGADOR Y UNIDADES
-    // ---------------------------------------------------------
-    dibujarUnidades(hdc, cam);
+    dibujarUnidades(hdc, cam, mapaMundo);
     dibujarJugador(hdc, &miJugador, cam);
-    // ---------------------------------------------------------
-    // 5. CAPA SUPERIOR: NIEBLA DE GUERRA
-    // ---------------------------------------------------------
+    // CAPA SUPERIOR: NIEBLA DE GUERRA
     // Al dibujarla al final, tapará todo lo anterior (vacas, arboles, etc)
     // donde neblina == 0.
-
     HBRUSH brochaNiebla = CreateSolidBrush(RGB(220, 220, 230)); // Gris nube
     HPEN sinBorde = CreatePen(PS_NULL, 0, 0);
-	oldBrush = SelectObject(hdc, brochaNiebla); // Reutilizamos la variable existente
-	oldPen = SelectObject(hdc, sinBorde);       // Reutilizamos la variable existente
+	oldBrush = SelectObject(hdc, brochaNiebla); 
+	oldPen = SelectObject(hdc, sinBorde);      
     // Optimización: Solo recorrer lo que ve la cámara
     int inicioCol = max(0, (int)(cam.x / TAMANO_CELDA_BASE) - 2);
     int inicioFila = max(0, (int)(cam.y / TAMANO_CELDA_BASE) - 2);
@@ -1314,7 +1273,6 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
                 int x = (int)(((c * TAMANO_CELDA_BASE) - cam.x) * cam.zoom);
                 int y = (int)(((f * TAMANO_CELDA_BASE) - cam.y) * cam.zoom);
                 int celdaTam = (int)(TAMANO_CELDA_BASE * cam.zoom);
-                
                 // Dibujar círculo expandido para efecto "nube esponjosa"
                 int expansion = celdaTam / 2; 
                 Ellipse(hdc, x - expansion, y - expansion, 
@@ -1326,9 +1284,7 @@ void dibujarMapaConZoom(HDC hdc, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Camera 
     SelectObject(hdc, oldPen); SelectObject(hdc, oldBrush);
     DeleteObject(brochaNiebla); DeleteObject(sinBorde);
 
-    // ---------------------------------------------------------
-    // 6. CAPA INTERFAZ: HUD (Siempre visible sobre la niebla)
-    // ---------------------------------------------------------
+    //CAPA INTERFAZ: HUD (Siempre visible sobre la niebla)
     if (miJugador.tieneMapa) {
         dibujarMiniMapa(hdc, &miJugador, mapa, ancho, alto);
     }

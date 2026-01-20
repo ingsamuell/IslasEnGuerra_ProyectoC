@@ -1,7 +1,7 @@
-/* src/main.c - VERSIÓN CORREGIDA FINAL (SISTEMA COMPLETO) */
+/* src/main.c */
 #include <windows.h>
 #include <stdio.h>
-#include <math.h> // Necesario para sqrt y pow
+#include <math.h> 
 #include <time.h>
 #include "global.h"
 #include "mundo/mapa.h"
@@ -21,9 +21,9 @@ char mapaMundo[MUNDO_FILAS][MUNDO_COLUMNAS];
 Jugador miJugador;
 Camera miCamara;
 EstadoJuego estadoJuego;
-int mouseActualX, mouseActualY; // Posición actual mientras arrastras
+int mouseActualX, mouseActualY; 
 bool dibujandoCuadro = false;
-int mouseStartX, mouseStartY; // Punto donde hiciste clic
+int mouseStartX, mouseStartY; 
 TextoFlotante textos[MAX_TEXTOS];
 Arbol arboles[MAX_ARBOLES];
 Mina minas[MAX_MINAS];
@@ -56,31 +56,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         int mx = LOWORD(lParam);
         int my = HIWORD(lParam);
 
-        // =========================================================
-        // 🔴 DEBUG DE COORDENADAS (ACTIVADO TEMPORALMENTE)
-        // =========================================================
-        // Esta ventana te dirá dónde estás haciendo clic.
-        // Úsala para anotar los números y luego BORRA estas 3 líneas.
-        //char coordenadas[64];
-        //sprintf(coordenadas, "Clic en X: %d, Y: %d", mx, my);
-        //MessageBox(hwnd, coordenadas, "Debug Coordenadas", MB_OK);
-        // --- PRIORIDAD A: COMBATE NAVAL (Si el jugador está en barco de guerra) ---
-        // ---------------------------------------------------------
         // 1. ESTADO: JUGANDO
-        // ---------------------------------------------------------
+
         if (estadoJuego.estadoActual == ESTADO_PARTIDA)
         {
-            // === [NUEVO] COMBATE NAVAL (Disparo del Jugador) ===
+            // === COMBATE NAVAL (Disparo del Jugador) ===
             // Solo si estás en el Barco de Guerra (Tipo 2)
             if (miJugador.estadoBarco == 2) {
                 
-                // 1. Verificar si el cañón está frío (listo)
+                // 1. Verificar si el cañón está listo
                 if (miJugador.cooldownCanon <= 0) {
-                    
                     // Calcular destino del disparo (Mouse en el mundo)
                     float targetX = (mx / miCamara.zoom) + miCamara.x;
                     float targetY = (my / miCamara.zoom) + miCamara.y;
-
                     // 2. CREAR BALA (Visual)
                     crearBalaCanon(miJugador.x, miJugador.y, targetX, targetY);
                     
@@ -93,7 +81,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                             float dist = sqrt(dx*dx + dy*dy);
                             
                             if (dist < 60) { // Radio de explosión grande
-                                unidades[i].vida -= 50; // ¡DAÑO MASIVO!
+                                unidades[i].vida -= 20; 
                                 crearTextoFlotante(unidades[i].x, unidades[i].y, "BOOM!", 0, RGB(255, 100, 0));
                                 crearSangre(unidades[i].x, unidades[i].y);
                                 
@@ -111,11 +99,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 } else {
                     crearTextoFlotante(miJugador.x, miJugador.y - 50, "Recargando...", 0, RGB(200, 200, 200));
                 }
-                
-                // IMPORTANTE: Return 0 aquí evita que te muevas o selecciones cosas al disparar
                 return 0; 
             }
-            // ===================================================
+
 
         // --- PRIORIDAD B: CLIC EN TIENDA ---
         BOOL clicEnUI = FALSE;
@@ -154,20 +140,16 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         }
     }
 
-        // ---------------------------------------------------------
-        // 2. ESTADO: MENÚ PRINCIPAL (Aquí es donde debes ajustar)
-        // ---------------------------------------------------------
+        // 2. ESTADO: MENÚ PRINCIPAL 
         else if (estadoJuego.estadoActual == ESTADO_MENU)
         {
             // BOTÓN JUGAR
-            // [AJUSTAR]: Cambia los números 340, 460, 200, 240 por los tuyos
             if (mx >= 642 && mx <= 942 && my >= 595 && my <= 678) {
                  estadoJuego.estadoActual = ESTADO_SELECCION_MAPA;
                  InvalidateRect(hwnd, NULL, FALSE);
             }
 
             // BOTÓN PARTIDAS / CARGAR
-            // [AJUSTAR]: Cambia los números según donde dibujaste el botón
             if (mx >= 220 && mx <= 450 && my >= 340 && my <= 480) 
             {
                 estadoJuego.estadoActual = ESTADO_MENU_CARGAR;
@@ -182,8 +164,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 InvalidateRect(hwnd, NULL, FALSE);
             }
 
-            // BOTÓN INSTRUCCIONES (¡NUEVO!)
-            // [AJUSTAR] Coordenadas (Usualmente debajo de Partidas)
+            // BOTÓN INSTRUCCIONES 
             if (mx >= 1100 && mx <= 1390 && my >= 350 && my <= 455) 
             {
                 estadoJuego.estadoActual = ESTADO_INSTRUCCIONES;
@@ -191,22 +172,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
 
             // BOTÓN SALIR
-            // [AJUSTAR]: Cambia los números
             if (mx >= 1178 && mx <= 1500 && my >= 688 && my <= 768) {
                  PostQuitMessage(0);
             }
         }
 
-        // ---------------------------------------------------------
         // 3. ESTADO: PANTALLA CARGAR PARTIDA
-        // ---------------------------------------------------------
         else if (estadoJuego.estadoActual == ESTADO_MENU_CARGAR)
         {
 // DETECTAR CLIC EN SLOTS Y BOTONES DE BORRAR
     for (int i = 1; i <= 3; i++) {
         int yBase = 100 + ((i-1) * 110);
         
-        // 1. CLIC EN EL SLOT (CARGAR / CREAR) - (Coordenadas originales)
+        // 1. CLIC EN EL SLOT (CARGAR / CREAR) 
         if (mx >= 250 && mx <= 650 && my >= yBase && my <= yBase + 90) {
             if (ExistePartida(i)) {
                 if (CargarPartida(i, &miJugador, mapaMundo)) {
@@ -223,10 +201,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             return 0;
         }
 
-        // 2. CLIC EN BOTÓN BORRAR [X] (Coordenadas nuevas: 660-700)
+        // 2. CLIC EN BOTÓN BORRAR [X] 
         // Solo si existe la partida
         if (ExistePartida(i) && mx >= 660 && mx <= 700 && my >= yBase + 25 && my <= yBase + 65) {
-            
             // Preguntar confirmación
             int resp = MessageBox(hwnd, 
                 "Estas seguro de que quieres BORRAR esta partida permanentemente?", 
@@ -256,15 +233,26 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
     
         }
-        
-        // ---------------------------------------------------------
         // 4. OTROS ESTADOS
-        // ---------------------------------------------------------
         else if (estadoJuego.estadoActual == ESTADO_SELECCION_MAPA)
         {
             procesarClickSeleccionMapa(mx, my, hwnd, &estadoJuego);
         }
-
+        
+else if (estadoJuego.estadoActual == ESTADO_INSTRUCCIONES)
+        {
+            // Coordenadas del botón "VOLVER" 
+            RECT rect;
+    GetClientRect(hwnd, &rect);
+    int ancho = rect.right - rect.left;
+    int alto = rect.bottom - rect.top;
+            if (mx >= (ancho / 2) - 100 && mx <= (ancho / 2) + 100 &&
+                my >= (alto - 80) && my <= (alto - 30))
+            {
+                estadoJuego.estadoActual = ESTADO_MENU;
+                InvalidateRect(hwnd, NULL, FALSE); // Redibujar menú
+            }
+        }
         InvalidateRect(hwnd, NULL, FALSE);
         return 0;
     }
@@ -302,14 +290,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         if (estadoJuego.estadoActual == ESTADO_PARTIDA && seleccionando)
         {
             seleccionando = FALSE; // Apagamos el cuadro verde
-
             // Actualizamos la coordenada final
             finSel.x = LOWORD(lParam);
             finSel.y = HIWORD(lParam);
-
-            // ¡AQUÍ ESTÁ LA CLAVE! Llamamos a la lógica de selección
             seleccionarUnidadesGrupo(inicioSel.x, inicioSel.y, finSel.x, finSel.y, miCamara);
-
             // También revisamos si soltó el click sobre un botón de la tienda
             procesarClickMochilaTienda(finSel.x, finSel.y, 0, &miJugador, hwnd);
 
@@ -375,25 +359,17 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         HBITMAP hbmMem = CreateCompatibleBitmap(hdc, ancho, alto);
         HGDIOBJ hbmOld = SelectObject(hdcMem, hbmMem);
 
-        // =========================================================
         // ESTADO: MENÚ PRINCIPAL
-        // =========================================================
         if (estadoJuego.estadoActual == ESTADO_MENU)
         {
-            // NOTA: Si quieres mover los botones del menú principal (Jugar, Partidas, Salir),
-            // tienes que entrar a esta función 'dibujarMenuConSprites' y ajustarlos ahí.
             dibujarMenuConSprites(hdcMem, hwnd, &estadoJuego);
         }
-        // =========================================================
         // ESTADO: SELECCIÓN DE MAPA
-        // =========================================================
         else if (estadoJuego.estadoActual == ESTADO_SELECCION_MAPA)
         {
             dibujarSeleccionMapa(hdcMem, hwnd, &estadoJuego);
         }
-        // =========================================================
         // ESTADO: PARTIDA EN JUEGO
-        // =========================================================
         else if (estadoJuego.estadoActual == ESTADO_PARTIDA || estadoJuego.estadoActual == ESTADO_GUARDANDO)
         {
             // --- CAPA 1: MUNDO (Fondo) ---
@@ -403,13 +379,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             dibujarMinas(hdcMem, miCamara, ancho, alto);
             dibujarEstablo(hdcMem, miCamara);
             dibujarVacas(hdcMem, miCamara, ancho, alto);
-
             // Unidades
-            dibujarUnidades(hdcMem, miCamara);
-
+            dibujarUnidades(hdcMem, miCamara, mapaMundo);
             // --- CAPA 2: JUGADOR ---
             dibujarJugador(hdcMem, &miJugador, miCamara);
-
             // --- CAPA 3: SELECCIÓN RTS ---
             if (seleccionando)
             {
@@ -453,9 +426,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             actualizarYDibujarTextos(hdcMem, miCamara);
         }
         
-        // =========================================================
         // ESTADO: PANTALLA DE CARGAR PARTIDA (Historial)
-        // =========================================================
         else if (estadoJuego.estadoActual == ESTADO_MENU_CARGAR)
         {
            // 1. Fondo Oscuro
@@ -490,7 +461,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         ObtenerInfoPartida(i, info);
         SetTextColor(hdcMem, RGB(255, 255, 255));
         TextOut(hdcMem, 270, yBase + 35, info, strlen(info));
-        // --- NUEVO: BOTÓN DE BORRAR [X] (Solo si existe partida) ---
+        // --- BOTÓN DE BORRAR [X] (Solo si existe partida) ---
         if (existePartida) {
             HBRUSH brBorrar = CreateSolidBrush(RGB(200, 50, 50)); // Rojo
             // Lo dibujamos a la derecha del slot (x: 660 a 700)
@@ -524,9 +495,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     TextOut(hdcMem, 510, 465, "VOLVER", 6);
 }
 
-        // =========================================================
         // OVERLAY: PANTALLA DE GUARDADO (Caja Negra con Nombre)
-        // =========================================================
         if (estadoJuego.estadoActual == ESTADO_GUARDANDO)
         {
             // Calculamos centro exacto de la pantalla
@@ -535,7 +504,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
             // Fondo semitransparente (simulado con rect gris oscuro)
             HBRUSH brFondo = CreateSolidBrush(RGB(20, 20, 20));
-            // [AJUSTAR]: Tamaño de la caja de guardado (200px a cada lado del centro)
             RECT rMsg = {cx - 200, cy - 100, cx + 200, cy + 100};
             FillRect(hdcMem, &rMsg, brFondo);
             DeleteObject(brFondo);
@@ -552,7 +520,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
             // Caja de Texto (Blanca donde escribes)
             HBRUSH brCaja = CreateSolidBrush(RGB(255, 255, 255));
-            // [AJUSTAR]: Tamaño del campo de texto
             RECT rCaja = {cx - 150, cy - 20, cx + 150, cy + 20};
             FillRect(hdcMem, &rCaja, brCaja);
             DeleteObject(brCaja);
@@ -560,8 +527,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             // Lo que escribe el usuario
             SetTextColor(hdcMem, RGB(0, 0, 0)); 
             TextOut(hdcMem, cx - 140, cy - 10, nombreGuardadoInput, strlen(nombreGuardadoInput));
-
-            // Cursor parpadeante
             if ((clock() / 500) % 2 == 0)
             {
                 TextOut(hdcMem, cx - 140 + (lenNombre * 8), cy - 10, "|", 1);
@@ -572,34 +537,41 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             SetBkMode(hdcMem, TRANSPARENT); 
             TextOut(hdcMem, cx - 100, cy + 50, "[ENTER] Guardar   [ESC] Cancelar", 32);
         }
-		else if (estadoJuego.estadoActual == ESTADO_GAME_OVER)
+        else if (estadoJuego.estadoActual == ESTADO_GAME_OVER)
         {
-            // 1. Fondo Rojo Sangre Oscuro
+            // 1. Fondo Rojo Sangre 
             HBRUSH brFondo = CreateSolidBrush(RGB(40, 0, 0));
             RECT rTotal = {0, 0, ancho, alto};
             FillRect(hdcMem, &rTotal, brFondo);
             DeleteObject(brFondo);
 
-            // 2. Mensaje Principal
+            // 2. Título 
             SetBkMode(hdcMem, TRANSPARENT);
-            SetTextColor(hdcMem, RGB(255, 0, 0)); // Rojo Brillante
-            
-            // Centrar texto (aprox)
-            TextOut(hdcMem, ancho/2 - 80, alto/2 - 50, "HAS MUERTO", 10);
+            SetTextColor(hdcMem, RGB(255, 0, 0)); 
+            // Usamos una fuente grande para el impacto
+            HFONT hFontMuerte = CreateFont(60, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, "Arial");
+            HFONT hOld = (HFONT)SelectObject(hdcMem, hFontMuerte);
+            RECT rTitulo = {0, alto/2 - 100, ancho, alto/2};
+            DrawText(hdcMem, "HAS MUERTO", -1, &rTitulo, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            SelectObject(hdcMem, hOld);
+            DeleteObject(hFontMuerte);
 
-            // 3. Subtítulo dramático
+            // 3. Subtítulo
             SetTextColor(hdcMem, RGB(200, 200, 200));
-            TextOut(hdcMem, ancho/2 - 140, alto/2, "Tu leyenda termina en estas costas...", 35);
+            RECT rSub = {0, alto/2, ancho, alto/2 + 50};
+            DrawText(hdcMem, "Tu historia termina aqui...", -1, &rSub, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
-            // 4. Opciones
+            // 4. OPCIONES 
             SetTextColor(hdcMem, RGB(255, 255, 255));
-            TextOut(hdcMem, ancho/2 - 120, alto/2 + 60, "[ENTER] Cargar Ultima Partida", 29);
-            TextOut(hdcMem, ancho/2 - 120, alto/2 + 90, "[ESC] Volver al Menu", 20);
+
+            RECT rOpcion1 = {0, alto/2 + 80, ancho, alto/2 + 110};
+            DrawText(hdcMem, "[ENTER] Iniciar Nueva Conquista", -1, &rOpcion1, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            
+            RECT rOpcion2 = {0, alto/2 + 120, ancho, alto/2 + 150};
+            DrawText(hdcMem, "[ESC] Volver al Menu Principal", -1, &rOpcion2, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
         }
 
-        // =========================================================
         // PANTALLA: VICTORIA (CONQUISTA)
-        // =========================================================
         else if (estadoJuego.estadoActual == ESTADO_WINNER)
         {
             // 1. Fondo Dorado / Azul Real
@@ -634,6 +606,77 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             SetTextColor(hdcMem, RGB(200, 200, 255));
             TextOut(hdcMem, ancho/2 - 100, alto/2 + 100, "[ENTER] Continuar Explorando", 28);
         }
+        else if (estadoJuego.estadoActual == ESTADO_INSTRUCCIONES)
+        {
+            // 1. Fondo Oscuro (Azul Noche)
+            HBRUSH brFondo = CreateSolidBrush(RGB(20, 20, 40));
+            RECT rTotal = {0, 0, ancho, alto};
+            FillRect(hdcMem, &rTotal, brFondo);
+            DeleteObject(brFondo);
+
+            // 2. Título "MANUAL DE GUERRA"
+            HFONT hFontTitulo = CreateFont(48, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, 
+                                           DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, 
+                                           DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Arial");
+            HFONT hOldFont = (HFONT)SelectObject(hdcMem, hFontTitulo);
+            
+            SetBkMode(hdcMem, TRANSPARENT);
+            SetTextColor(hdcMem, RGB(255, 215, 0)); // Dorado
+            
+            RECT rTitulo = {0, 40, ancho, 100};
+            DrawText(hdcMem, "MANUAL DE COMANDANTE", -1, &rTitulo, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+
+            // 3. Cuerpo del Texto 
+            HFONT hFontTexto = CreateFont(24, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, 
+                                          DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, 
+                                          DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Consolas");
+            SelectObject(hdcMem, hFontTexto);
+            SetTextColor(hdcMem, RGB(220, 220, 220)); // Blanco humo
+
+            const char* textoInstrucciones = 
+                "--- CONTROLES DEL JUGADOR ---\n"
+                "W, A, S, D: Mover al personaje\n"
+                "ESPACIO: Accion (Atacar, Talar, Minar, Cofres)\n"
+                "I: Abrir/Cerrar Mochila\n"
+                "T: Abrir Tienda (Cerca del edificio)\n"
+                "1, 2, 3: Equipar Herramientas (Hacha, Pico, Espada)\n"
+                "R: Curar vida (Consume 1 Hoja)\n\n"
+                "--- ESTRATEGIA (RTS) ---\n"
+                "Clic Izq (Arrastrar) : Seleccionar Tropas (Cuadro Verde)\n"
+                "Clic Der (Terreno)   : Mover Tropas seleccionadas\n"
+                "Clic Der (Enemigo)   : Ordenar Ataque\n"
+                "Clic Der (Barco)     : Ordenar Subir al Barco (Abordaje)\n\n"
+                "--- COMBATE NAVAL ---\n"
+                "ESPACIO (En Muelle)  : Subir/Bajar del Barco\n"
+                "Clic Izq (En Barco)  : Disparar Canones\n\n"
+                "OBJETIVO FINAL: Destruye los castillos enemigos y conquista el archipielago!";
+
+            RECT rTexto = {100, 130, ancho - 100, alto - 100};
+            DrawText(hdcMem, textoInstrucciones, -1, &rTexto, DT_CENTER | DT_WORDBREAK);
+
+            // 4. Botón "VOLVER"
+            HBRUSH brBoton = CreateSolidBrush(RGB(150, 50, 50)); // Rojo desaturado
+            RECT rBoton = {ancho/2 - 100, alto - 80, ancho/2 + 100, alto - 30};
+            FillRect(hdcMem, &rBoton, brBoton);
+            DeleteObject(brBoton);
+            
+            // Borde del botón
+            HBRUSH brBorde = CreateSolidBrush(RGB(255, 255, 255));
+            FrameRect(hdcMem, &rBoton, brBorde);
+            DeleteObject(brBorde);
+
+            SetTextColor(hdcMem, RGB(255, 255, 255));
+            SelectObject(hdcMem, hFontTitulo); // Reusamos fuente grande pero podríamos achicarla
+            
+            HFONT hFontBoton = CreateFont(30, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, 0, 0, "Arial");
+            SelectObject(hdcMem, hFontBoton);
+            DrawText(hdcMem, "VOLVER", -1, &rBoton, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            DeleteObject(hFontBoton);
+
+            SelectObject(hdcMem, hOldFont);
+            DeleteObject(hFontTitulo);
+            DeleteObject(hFontTexto);
+        }
         // --- FINALIZAR DOBLE BUFFER ---
         BitBlt(hdc, 0, 0, ancho, alto, hdcMem, 0, 0, SRCCOPY);
 
@@ -650,23 +693,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         switch (estadoJuego.estadoActual)
         {
-        // -----------------------------------------------------
         // ESTADO: MENÚ PRINCIPAL
-        // -----------------------------------------------------
         case ESTADO_MENU:
             if (wParam == VK_RETURN)
                 procesarEnterMenu(hwnd, &estadoJuego);
             break;
 
-        // -----------------------------------------------------
         // ESTADO: SELECCIÓN DE MAPA
-        // -----------------------------------------------------
         case ESTADO_SELECCION_MAPA:
             if (wParam == VK_RETURN)
             {
                 // --- INICIAR PARTIDA NUEVA ---
                 estadoJuego.mapaSeleccionado = estadoJuego.opcionSeleccionada;
-                //REGISTRAR EN EL LOG (Añade esto aquí)
+                //REGISTRAR EN EL LOG 
         char bufferLog[128];
         const char* nombreMapa = (estadoJuego.mapaSeleccionado == 0) ? "Islas Oceano" : 
                                  (estadoJuego.mapaSeleccionado == 1) ? "Archipielago" : "Continente";
@@ -695,16 +734,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
             break;
             // --- CONTROLES GAME OVER ---
-		case ESTADO_GAME_OVER:
-            if (wParam == VK_RETURN) { // ENTER -> Cargar partida
-                if (CargarPartida(estadoJuego.slotJugado, &miJugador, mapaMundo)) {
-                    estadoJuego.estadoActual = ESTADO_PARTIDA;
-                    actualizarCamara(&miCamara, miJugador);
-                    MessageBox(hwnd, "Volviste a la vida (Partida Cargada)!", "ResurrecciOn", MB_OK);
-                } else {
-                    // Si no hay partida, al menú
-                    estadoJuego.estadoActual = ESTADO_MENU;
-                }
+        case ESTADO_GAME_OVER:
+            if (wParam == VK_RETURN) { 
+                estadoJuego.estadoActual = ESTADO_SELECCION_MAPA;
                 InvalidateRect(hwnd, NULL, FALSE);
             }
             else if (wParam == VK_ESCAPE) { // ESC -> Menú
@@ -718,7 +750,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             if (wParam == VK_RETURN || wParam == VK_ESCAPE) {
                 // Volver al juego para seguir looteando
                 estadoJuego.estadoActual = ESTADO_PARTIDA;
-                
                 // Mover al jugador un poco para que no quede encima de las ruinas
                 miJugador.x += 50; 
                 
@@ -726,13 +757,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 InvalidateRect(hwnd, NULL, FALSE);
             }
             break;
-        // -----------------------------------------------------
         // ESTADO: JUGANDO (PARTIDA EN CURSO)
-        // -----------------------------------------------------
         case ESTADO_PARTIDA:
             switch (wParam)
             {
-            // --- NUEVO: GUARDADO RÁPIDO (F5) ---
+            // ---GUARDADO RÁPIDO (F5) ---
             case VK_F5:
                 estadoJuego.estadoActual = ESTADO_GUARDANDO;
                 strcpy(nombreGuardadoInput, "MiPartida"); // Nombre sugerido
@@ -740,7 +769,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 InvalidateRect(hwnd, NULL, FALSE);
                 break;
 
-            // --- MODIFICADO: SALIDA SEGURA (ESC) ---
+            // --- SALIDA SEGURA (ESC) ---
             case VK_ESCAPE:
             {
                 int msg = MessageBox(hwnd,
@@ -784,14 +813,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
             // --- INTERFAZ: TIENDA (T) ---
             case 'T':
-            // case 't':
                 if (miJugador.tiendaAbierta)
                 {
                     miJugador.tiendaAbierta = 0;
                 }
                 else
                 {
-                    // Verificar distancia a la tienda (Coord: 1450, 1900)
                     float dist = sqrt(pow(miJugador.x - 1450, 2) + pow(miJugador.y - 1900, 2));
                     if (dist < 150)
                     {
@@ -855,12 +882,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
             // --- ZOOM ---
             case VK_ADD:
-            case 0xBB: // Tecla + estándar
+            case 0xBB: 
                 if (miCamara.zoom < 5)
                     miCamara.zoom++;
                 break;
             case VK_SUBTRACT:
-            case 0xBD: // Tecla - estándar
+            case 0xBD: 
                 if (miCamara.zoom > 1)
                     miCamara.zoom--;
                 break;
@@ -882,15 +909,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             InvalidateRect(hwnd, NULL, FALSE);
             break;
 
-        // -----------------------------------------------------
-        // NUEVO ESTADO: ESCRIBIENDO NOMBRE DEL GUARDADO
-        // -----------------------------------------------------
+        //bbESCRIBIENDO NOMBRE DEL GUARDADO
         case ESTADO_GUARDANDO:
             if (wParam == VK_RETURN) // ENTER -> Confirmar Guardado
             {
                 if (lenNombre > 0)
 {
-    // Si no tenemos slot asignado (ej. pruebas), usar el 1 por defecto
     if (estadoJuego.slotJugado == 0) estadoJuego.slotJugado = 1;
 
     GuardarPartida(estadoJuego.slotJugado, nombreGuardadoInput, &miJugador, mapaMundo);
@@ -920,7 +944,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             {
                 nombreGuardadoInput[--lenNombre] = '\0';
             }
-            // Escribir letras/números (y evitar desbordamiento)
+            // Escribir letras/números
             else if (lenNombre < 20 && wParam >= 32 && wParam <= 126)
             {
                 nombreGuardadoInput[lenNombre++] = (char)wParam;
@@ -993,14 +1017,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
         else
         {
-            // 2. Lógica del Juego (Solo si estamos jugando)
+            // 2. Lógica del Juego 
             if (estadoJuego.estadoActual == ESTADO_PARTIDA)
             {
             	
             	if (miJugador.cooldownCanon > 0) {
         miJugador.cooldownCanon--;
     }
-                // --- A) UNIDADES RTS (Lo más importante) ---
+                // --- A) UNIDADES RTS  ---
                 actualizarUnidades(mapaMundo, &miJugador);
 
                 // --- B) FAUNA Y SISTEMAS ---
@@ -1008,7 +1032,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 actualizarLogicaSistema(&miJugador); // Tiburones, Pesca, etc.
                 actualizarRegeneracionRecursos();    // Respawn de árboles/minas/vacas
                 actualizarEdificios(0.016f);
-                // 1. Actualizar Invasiones (El Director)
+                // 1. Actualizar Invasiones 
                 actualizarInvasiones(&miJugador);
                 // 2. Actualizar IA de los Enemigos
                 actualizarIAEnemigos(mapaMundo, &miJugador);
@@ -1047,12 +1071,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
                 
             }
 
-            // 3. Renderizado (Para TODOS los estados: Menú, Selección, Partida)
-            // Lo sacamos del 'if' para que el Menú también se anime y redibuje
             InvalidateRect(hwnd, NULL, FALSE);
 
-            // 4. Control de Frames (Evitar 100% CPU)
-            // También lo sacamos fuera para que el PC descanse en el menú
             Sleep(16); // Aprox 60 FPS
         }
     }

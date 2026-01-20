@@ -1,6 +1,6 @@
 #include "fauna.h"
-#include "mapa.h"       // Para usar EsSuelo(), crearChispas(), crearTextoFlotante()
-#include "../recursos/recursos.h" // Para acceder a las imágenes (hBmpVaca, etc.)
+#include "mapa.h"      
+#include "../recursos/recursos.h" 
 #include "../jugador/jugador.h"
 #include "../global.h"
 #include <math.h>
@@ -11,7 +11,6 @@ Vaca manada[MAX_VACAS];
 Tiburon misTiburones[MAX_TIBURONES];
 
 // --- VACAS ---
-
 void inicializarVacas() {
     // 1. Limpiar todas primero
     for (int i = 0; i < MAX_VACAS; i++)
@@ -30,14 +29,10 @@ void inicializarVacas() {
         int separacionX = 60; 
         int separacionY = 50;
 
-        // Posición Base + Cuadrícula + Pequeña variación aleatoria (para que no parezcan robots)
+        // Posición Base + Cuadrícula + Pequeña variación aleatoria 
         manada[i].x = ESTABLO_X + (columna * separacionX) + (rand() % 10);
         manada[i].y = ESTABLO_Y + (fila * separacionY) + (rand() % 10);
-        // -----------------------------------
-
         manada[i].xInicial = manada[i].x;
-        
-        // El resto sigue igual...
         manada[i].direccion = (rand() % 2 == 0) ? 1 : -1;
         manada[i].vida = 5;
         manada[i].estadoVida = 0;
@@ -91,31 +86,23 @@ void golpearVaca(Jugador *j) {
     for (int i = 0; i < MAX_VACAS; i++) {
         // Ignorar vacas inactivas o ya muertas
         if (!manada[i].activa || manada[i].estadoVida == 1) continue;
-        
         // Detección de golpe
         if (abs((j->x + 16) - (manada[i].x + 16)) < rango && 
             abs((j->y + 16) - (manada[i].y + 16)) < rango) {
-            
             manada[i].vida--;
             crearChispas(manada[i].x + 16, manada[i].y + 16, RGB(200, 0, 0)); // Sangre
-            
-            // --- AQUÍ OCURRE LA MUERTE ---
             if (manada[i].vida <= 0) {
                 manada[i].estadoVida = 1; // Marcar como muerta
                 manada[i].tiempoMuerte = 300; // Tiempo para desaparecer
-                
                 // 1. Dar recursos (Comida)
                 int ant = j->comida;
                 agregarRecurso(&j->comida, 10, j->nivelMochila);
                 int gan = j->comida - ant;
-                
                 if (gan > 0) crearTextoFlotante(manada[i].x, manada[i].y, "Carne", gan, RGB(255, 100, 100));
                 else crearTextoFlotante(j->x, j->y - 40, "Mochila Llena!", 0, RGB(255, 50, 50));
-
-                // 2. [NUEVO] Dar Experiencia
+                // 2. Dar Experiencia
                 ganarExperiencia(j, XP_VACA); // +15 XP
                 crearTextoFlotante(manada[i].x, manada[i].y - 25, "+15 XP", 0, RGB(0, 255, 255)); // Texto Cyan
-                
             }
             return; // Solo golpear una vaca a la vez
         }
@@ -126,14 +113,12 @@ void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto) {
     for (int i = 0; i < MAX_VACAS; i++) {
         // 1. Omitir si la vaca no existe
         if (!manada[i].activa) continue;
-
-        // 2. FILTRO DE NIEBLA (Imprescindible para el estilo Age of Empires)
+        // 2. FILTRO DE NIEBLA 
         int col = (int)(manada[i].x / TAMANO_CELDA_BASE);
         int fila = (int)(manada[i].y / TAMANO_CELDA_BASE);
 
         // Validar que estamos dentro de los límites de la matriz neblina
         if (col >= 0 && col < MUNDO_COLUMNAS && fila >= 0 && fila < MUNDO_FILAS) {
-            // Si la celda es 0 (oscuridad), no se dibuja nada
             if (neblina[fila][col] == 0) continue; 
         }
 
@@ -153,13 +138,10 @@ void dibujarVacas(HDC hdc, Camera cam, int ancho, int alto) {
             } 
             else { 
                 // CASO: VACA VIVA
-                // Dibujar el sprite animado
                 if (hBmpVaca[manada[i].frameAnim]) {
                     DibujarImagen(hdc, hBmpVaca[manada[i].frameAnim], sx, sy, tam, tam);
                 }
-                
                 // DIBUJAR BARRA DE VIDA (Justo encima de la vaca)
-                // Usamos 5 como vida máxima (según tu código anterior)
                 dibujarBarraVidaLocal(hdc, sx, sy - 10, manada[i].vida, 5, tam);
             }
         }
@@ -190,7 +172,6 @@ int buscarVacaCercana(float x, float y, float rango) {
 void inicializarTiburones(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     // Inicializar array
     for(int i=0; i<MAX_TIBURONES; i++) misTiburones[i].activa = 0;
-
     int tiburonesCreados = 0;
     int intentos = 0;
     while (tiburonesCreados < MAX_TIBURONES && intentos < 2000) {
@@ -198,7 +179,6 @@ void inicializarTiburones(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
         int ty = rand() % (MUNDO_FILAS * TAMANO_CELDA_BASE);
 
         float distCentro = sqrt(pow(tx - 1600, 2) + pow(ty - 1600, 2));
-
         // Usamos EsSuelo (función de mapa.h) para verificar que sea agua
         if (!EsSuelo(tx, ty, mapa) && distCentro > 1100) {
             misTiburones[tiburonesCreados].x = (float)tx;
@@ -216,10 +196,8 @@ void inicializarTiburones(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
 void actualizarTiburones(Jugador *j) {
     // Timer de inmunidad del jugador
     if (j->timerInmunidadBarco > 0) j->timerInmunidadBarco--;
-
     for (int i = 0; i < MAX_TIBURONES; i++) {
         if (!misTiburones[i].activa) continue;
-
         // Animación
         misTiburones[i].timerAnim++;
         if (misTiburones[i].timerAnim >= 8) { 
@@ -229,7 +207,6 @@ void actualizarTiburones(Jugador *j) {
                 misTiburones[i].frameAnim = 0; 
             }
         }
-
         // Colisión con Barco de Guerra
         if (j->estadoBarco == 2 && j->timerInmunidadBarco == 0) { 
             float dist = sqrt(pow(j->x - misTiburones[i].x, 2) + pow(j->y - misTiburones[i].y, 2));
@@ -237,7 +214,6 @@ void actualizarTiburones(Jugador *j) {
             if (dist < 40.0f) { 
                 j->vidaActual -= 10; 
                 if (j->vidaActual < 0) j->vidaActual = 0;
-
                 crearTextoFlotante(j->x, j->y, "-10 VIDA!", 0, RGB(255, 0, 0));
                 crearChispas(j->x + 16, j->y + 16, RGB(200, 0, 0)); 
                 j->timerInmunidadBarco = 60; 
@@ -250,16 +226,13 @@ void dibujarTiburones(HDC hdc, Camera cam, int ancho, int alto) {
     for (int i = 0; i < MAX_TIBURONES; i++) {
         if (!misTiburones[i].activa) continue;
 
-        // Culling (No dibujar si está fuera de cámara)
+        // No dibujar si está fuera de cámara
         if (misTiburones[i].x > cam.x - 100 && misTiburones[i].x < cam.x + (ancho/cam.zoom) + 100 &&
             misTiburones[i].y > cam.y - 100 && misTiburones[i].y < cam.y + (alto/cam.zoom) + 100) {
-            
             int screenX = (int)((misTiburones[i].x - cam.x) * cam.zoom);
             int screenY = (int)((misTiburones[i].y - cam.y) * cam.zoom);
             int tam = 48 * cam.zoom;
-
             HBITMAP hBmpTibu = hBmpTiburonAnim[misTiburones[i].direccion][misTiburones[i].frameAnim];
-            
             if (hBmpTibu) {
                  // Usamos un fondo rosa transparente estándar
                  HDC hdcMem = CreateCompatibleDC(hdc);
@@ -292,5 +265,4 @@ void actualizarRegeneracionFauna() {
             }
         }
     }
-    // (Aquí podrías agregar regeneración de tiburones si quisieras que reaparezcan)
 }

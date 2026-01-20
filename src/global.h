@@ -5,11 +5,11 @@
 #include <stdbool.h> // Para el tipo bool en C
 
 // --- DEFINICIONES GLOBALES ---
-#define MUNDO_FILAS 200      // Aumentado para mayor precisión (antes 100)
-#define MUNDO_COLUMNAS 200   // Aumentado para mayor precisión (antes 100)
-#define TAMANO_CELDA_BASE 16 // Reducido a 16px (antes 32) para detectar mejor las curvas
+#define MUNDO_FILAS 200    
+#define MUNDO_COLUMNAS 200 
+#define TAMANO_CELDA_BASE 16 
 
-// Esto define el tamaño de los sprites en pantalla (visual), no la física.
+// Esto define el tamaño de los sprites en pantalla (visual)
 #define PANTALLA_FILAS 60    // 600 / 10 = 60
 #define PANTALLA_COLUMNAS 80 // 800 / 10 = 80
 #define TAMANO_CELDA 32
@@ -86,9 +86,9 @@
 // Definición de la Cueva
 #define CUEVA_X 1800
 #define CUEVA_Y 1250
-#define TIEMPO_RESPAWN_RECURSOS 1200 // 30 segundos si el juego corre a 60 FPS
+#define TIEMPO_RESPAWN_RECURSOS 1200 
 
-// --- SISTEMA DE EXPERIENCIA (NUEVO) ---
+// --- SISTEMA DE EXPERIENCIA  ---
 #define XP_ARBOL 15
 #define XP_PIEDRA 10
 #define XP_HIERRO 15
@@ -147,7 +147,7 @@ typedef struct
     int activa;
     // Movimiento
     int destinoX, destinoY;
-    bool moviendo; // true si se está desplazando
+    bool moviendo; 
     int vidaMax;
     // Stats y Visual
     int vida;
@@ -157,7 +157,7 @@ typedef struct
     int timerTrabajo; // Para la barra de progreso de caza/mina
     int targetIndex;  // Para saber a qué vaca está siguiendo
     int contadorAnim; // Para la animación de caminar
-    // --- SISTEMA DE COMBATE (NUEVO) ---
+    // --- SISTEMA DE COMBATE ---
     int bando;           // 0 = Aliado, 1 = Enemigo
     int damage;          // Daño por golpe
     int rangoAtaque;     // Distancia para atacar
@@ -176,7 +176,7 @@ typedef struct
     int alto;      // Alto de la imagen
     int margen;    // Borde de agua
     int activa;    // 1 = Existe
-    int esEnemiga; // 1 = Isla Enemiga, 0 = Isla del Jugador (NUEVO)
+    int esEnemiga; // 1 = Isla Enemiga, 0 = Isla del Jugador 
 } Isla;
 
 typedef struct
@@ -210,14 +210,12 @@ typedef struct
 
     // Inventario y Estados
     int nivelMochila;
-    int inventarioAbierto; // <--- SOLO UNA VEZ
-    int tiendaAbierta;     // <--- ESTA ES LA NUEVA
+    int inventarioAbierto; 
+    int tiendaAbierta;     
     int modoTienda;        // 0=Comprar, 1=Vender
-
     // Recursos
     int madera, piedra, oro, hierro;
     int comida, hojas, carne, pescado;
-
     // Herramientas y Equipo
     BOOL tieneEspada;
     BOOL tienePico;
@@ -225,10 +223,10 @@ typedef struct
     BOOL tieneArmadura;
     BOOL tieneCana;
     BOOL tieneBotePesca;
-    int cantBarcosGuerra; // <--- CAMBIO: Ahora es un contador (0 a 4)
+    int cantBarcosGuerra; 
     int timerInmunidadBarco;
     int cooldownCanon;     // Tiempo para el próximo disparo
-    int maxCooldownCanon;  // Tiempo total de recarga (ej. 120 frames)
+    int maxCooldownCanon;  // Tiempo total de recarga 
 int timerAtaque;
     // Estados de Equipo
     BOOL armaduraEquipada;
@@ -236,25 +234,20 @@ int timerAtaque;
     int estadoBarco;       // 0=Pie, 1=Bote, 2=Barco
     int timerPesca;
     BOOL tieneMapa;
-
     // Contadores de Unidades (RTS)
     int cantMineros;
     int cantLenadores;
     int cantCazadores;
     int cantSoldados;
-    int cantHachas; // (Si usas esto como contador de items)
-
+    int cantHachas; 
     // Animación
     int direccion;
     int frameAnim;
     int pasoAnimacion;
     int frameDestello;
-
-    // --- MODO CONSTRUCCIÓN (NUEVO) ---
+    // --- MODO CONSTRUCCIÓN ---
     int edificioSeleccionado;    // 0 = Nada, 1 = Peq, 2 = Med, 3 = Grande
     int costoConstruccionActual; // Para recordar cuánto cobrar
-    // ---------------------------------
-
 } Jugador;
 
 // --- OTRAS ESTRUCTURAS ---
@@ -299,7 +292,7 @@ typedef struct
 {
     float x, y;
     char texto[32];
-    int vida; // Duración del texto (ej. 40 frames)
+    int vida; // Duración del texto 
     COLORREF color;
     int activo;
 } TextoFlotante;

@@ -27,7 +27,7 @@ void obtenerFechaHora(char *buffer) {
 
 // --- LOG DE TEXTO (.txt) ---
 void RegistrarLog(const char *mensaje) {
-    FILE *f = fopen("registro_acciones.txt", "a"); // "a" = Append (añadir al final)
+    FILE *f = fopen("registro_acciones.txt", "a"); // "a" = Append 
     if (f) {
         char fecha[32];
         obtenerFechaHora(fecha);
@@ -90,7 +90,6 @@ int CargarPartida(int slot, Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) 
     fread(misMinas, sizeof(Mina), MAX_MINAS, f);
     fread(misTesoros, sizeof(Tesoro), MAX_TESOROS, f);
     fread(misEdificios, sizeof(Edificio), MAX_EDIFICIOS_JUGADOR, f);
-    
     fclose(f);
 
     char msg[100];
@@ -122,9 +121,8 @@ int BorrarPartida(int slot) {
         RegistrarLog(msg);
         return 1; // Éxito
     }
-    
     RegistrarLog("ERROR: Intento fallido de borrar partida.");
-    return 0; // Fallo (quizás estaba abierto o no existía)
+    return 0;
 }
 void ObtenerInfoPartida(int slot, char *bufferDestino) {
     char nombreArchivo[32];

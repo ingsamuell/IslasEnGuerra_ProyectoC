@@ -22,7 +22,7 @@ void darOrdenMovimiento(Unidad unidades[], int max, int clickX, int clickY); // 
 void ordenarUnidad(int mX, int mY, Camera cam); // Lógica inteligente (Cazar/Talar/Mover)
 
 // Renderizado
-void dibujarUnidades(HDC hdc, Camera cam);
+void dibujarUnidades(HDC hdc, Camera cam, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 void golpearEnemigoCercano(Jugador *j);
 
 #endif

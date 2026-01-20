@@ -1,11 +1,9 @@
 #ifndef MAPA_H
 #define MAPA_H
-
 #include <windows.h>
 #include <wingdi.h>
 #include <stdbool.h>
 #include "../global.h"
-
 
   // 1. VARIABLES EXTERNAS Y ESTRUCTURAS
 extern char mapa[MUNDO_FILAS][MUNDO_COLUMNAS];
@@ -75,7 +73,7 @@ void dibujarItemRejilla(HDC hdc, HBITMAP icono, int cantidad, int maximo, int x,
 
    //8. SISTEMA RTS (UNIDADES Y NIEBLA)
 void seleccionarUnidades(int mouseX, int mouseY, Camera cam);
-void dibujarUnidades(HDC hdc, Camera cam);
+void dibujarUnidades(HDC hdc, Camera cam, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 void dibujarEstablo(HDC hdc, Camera cam);
 void reclutarTrabajador(Jugador *j, int tipo);
 void crearUnidadEnMapa(int tipo);
