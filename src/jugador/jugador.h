@@ -19,8 +19,6 @@ void alternarInventario(Jugador *j);
 void procesarClickMochila(int x, int y, Jugador *j, HWND hwnd);
 void alternarInventario(Jugador *j);
 void intentarCurar(Jugador *j);
-
-// --- CORRECCIÓN AQUÍ: Volvemos a la firma que mapa.c necesita ---
 void agregarRecurso(int *recurso, int cantidad, int nivelMochila);
 
 // Visuales
@@ -37,11 +35,9 @@ extern float barcoGuardadoY;
 extern int barcoGuardadoTipo;
 extern int barcoGuardadoActivo;
 extern int barcoGuardadoIsla; // 0 = muelle central, 1-4 = islas secundarias
-
-// Funciones nuevas
 int desembarcarEnPlaya(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 int reembarcarDesdePlaya(Jugador *j);
 void dibujarBarcoAnclado(HDC hdc, Camera cam);
-void manejarBarcos(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]); // <-- ¡AGREGAR ESTA LÍNEA!
+void manejarBarcos(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]);
 
 #endif

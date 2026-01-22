@@ -68,10 +68,7 @@ void alternarInventario(Jugador *j) {
     j->inventarioAbierto = !j->inventarioAbierto;
 }
 
-// =========================================================
 // 2. FUNCIONES VISUALES
-// =========================================================
-
 void dibujarItemRejilla(HDC hdc, HBITMAP icono, int cantidad, int maximo, int x, int y, const char *nombre)
 {
     if (icono) DibujarImagen(hdc, icono, x, y, 32, 32);
@@ -167,8 +164,6 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
         // --- FILA 2: CONSUMIBLES Y PESCA ---
         dibujarItemRejilla(hdc, hBmpIconoHoja, jugador->hojas, maxCap, startX, startY + rowH, "Hojas");
         dibujarItemRejilla(hdc, hBmpIconoComida, jugador->comida, maxCap, startX + colW, startY + rowH, "Comida");
-        
-        // ¡AQUÍ ESTÁ TU PESCADO!
         dibujarItemRejilla(hdc, hBmpIconoPescado, jugador->pescado, maxCap, startX + colW*2, startY + rowH, "Pescado");
 
         // --- SECCIÓN INFERIOR: HERRAMIENTAS GRANDES ---
@@ -235,12 +230,12 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
         TextOut(hdc, px + 20, py + alturaFondo - 25, tNivel, strlen(tNivel));
     }
 
-    // F. BARRA XP (CORREGIDO)
+    // F. BARRA XP 
     if (hBmpBarraXPVacia && hBmpBarraXPLlena) {
         BITMAP bm; 
         GetObject(hBmpBarraXPVacia, sizeof(BITMAP), &bm);
         
-        // F. BARRA XP (DISEÑO POR CÓDIGO - SIN BMP)
+        // F. BARRA XP 
     
     // 1. Configuración de dimensiones
     int anchoBarra = 400; // Largo de la barra
@@ -255,7 +250,6 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
     DeleteObject(brFondo);
 
     // 3. Dibujar RELLENO (Cyan Brillante)
-    // Prevenimos división por cero
     int metaXP = (jugador->experienciaSiguienteNivel > 0) ? jugador->experienciaSiguienteNivel : 100;
     
     float pct = (float)jugador->experiencia / metaXP;
@@ -266,7 +260,6 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
     
     if (fillW > 0) {
         RECT rRelleno = {xpX, xpY, xpX + fillW, xpY + altoBarra};
-        // Puedes cambiar este color RGB(0, 200, 255) a Amarillo o Verde si prefieres
         HBRUSH brRelleno = CreateSolidBrush(RGB(0, 200, 255)); 
         FillRect(hdc, &rRelleno, brRelleno);
         DeleteObject(brRelleno);
@@ -290,8 +283,6 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
     // Texto real (Dorado)
     SetTextColor(hdc, RGB(255, 215, 0)); 
     TextOut(hdc, xpX - 65, xpY + 1, tNivel, strlen(tNivel));
-
-    // --- Texto "XX / 100" dentro de la barra ---
     char tProgreso[32];
     sprintf(tProgreso, "%d / %d", jugador->experiencia, metaXP);
     
@@ -316,8 +307,6 @@ void dibujarHUD(HDC hdc, Jugador *jugador, int ancho, int alto)
     // Usamos color MAGENTA brillante para que resalte sobre cualquier fondo
     SetTextColor(hdc, RGB(255, 27, 45)); 
     SetBkMode(hdc, TRANSPARENT);
-    
-    // Lo dibujamos arriba a la derecha (ancho - 150px)
     TextOut(hdc, ancho - 150, 20, tDebug, strlen(tDebug));
 }
 
@@ -331,38 +320,27 @@ void dibujarJugador(HDC hdc, Jugador *jugador, Camera cam)
     int cx = (r.right / 2) - (tam / 2);
     int cy = (r.bottom / 2) - (tam / 2);
 
-    // =========================================================
     // CASO 1: ESTADO NAVEGACIÓN (Barco o Bote)
-    // =========================================================
 if (jugador->estadoBarco > 0) {
     HBITMAP imgBarco = NULL;
     
-    // A) Barra de Vida (Siempre arriba)
+    // A) Barra de Vida
     dibujarBarraVidaLocal(hdc, cx - 10, cy - 25, jugador->vidaActual, jugador->vidaMax, 50 * cam.zoom);
     
     int dir = (jugador->direccion == DIR_IZQUIERDA) ? 0 : 1; 
-    
-    // ============================================
-    // ¡DIFERENCIAR TAMAÑOS! 
-    // ============================================
     if (jugador->estadoBarco == 1) { 
-        // BOTE DE PESCA - MÁS PEQUEÑO
+        // BOTE DE PESCA
         imgBarco = hBmpBote[dir];
         if (imgBarco) {
-            // Tamaño reducido: 60x48 en lugar de 80x64
             DibujarImagen(hdc, imgBarco, cx - 8, cy - 6, 50 * cam.zoom, 40 * cam.zoom);
-            //                          ↑ajuste X  ↑ajuste Y  ↑ancho menor ↑alto menor
         }
         SetTextColor(hdc, RGB(0, 255, 255));
         TextOut(hdc, cx, cy - 40, "PESCANDO", 8);
     } 
     else if (jugador->estadoBarco == 2) { 
-        // BARCO DE GUERRA - TAMAÑO ORIGINAL
         imgBarco = hBmpBarco[dir];
         if (imgBarco) {
-            // Tamaño original: 80x64
             DibujarImagen(hdc, imgBarco, cx - 16, cy - 16, 80 * cam.zoom, 64 * cam.zoom);
-            //                          ↑original   ↑original   ↑ancho orig ↑alto orig
         }
         
         // === BARRA DE RECARGA DE CAÑÓN ===
@@ -396,9 +374,7 @@ if (jugador->estadoBarco > 0) {
     }
     return; 
 }
-    // =========================================================
     // CASO 2: ESTADO A PIE
-    // =========================================================
     
     // --- A) LÓGICA DE EMBESTIDA ---
     if (jugador->timerAtaque > 10) {
@@ -458,9 +434,7 @@ if (jugador->estadoBarco > 0) {
     DibujarImagen(hdc, spriteFinal, cx, cy, tam, tam);
 }
 
-// =========================================================
 // MOVIMIENTO Y CÁMARA (Migrado de mapa.c)
-// =========================================================
 
 void moverJugador(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, int dy) {
     // 1. Orientación
@@ -483,10 +457,8 @@ void moverJugador(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, in
 
     // --- EJE X ---
     int futuroX = j->x + (dx * j->velocidad);
-    
-    // VERIFICACIÓN CON 2 PUNTOS (PIES y CABEZA)
-    int esTierraPiesX = EsSuelo(futuroX + 16, j->y + 16, mapa);  // Punto actual (pies)
-    int esTierraCabezaX = EsSuelo(futuroX + 8, j->y + 1, mapa);  // Nuevo punto (cabeza)
+    int esTierraPiesX = EsSuelo(futuroX + 16, j->y + 16, mapa);  
+    int esTierraCabezaX = EsSuelo(futuroX + 8, j->y + 1, mapa); 
     
     // Para estar en tierra: AMBOS puntos deben ser tierra
     BOOL puedeX = (j->estadoBarco == 0 && esTierraPiesX && esTierraCabezaX) || 
@@ -515,7 +487,7 @@ void moverJugador(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], int dx, in
     
     if (puedeY) j->y = futuroY;
 
-    // --- ¡NUEVO! Aplicar sistema de corrientes ---
+    // --- Aplicar sistema de corrientes ---
     mantenerDentroDelMapa(j);
 }
 
@@ -528,7 +500,7 @@ void actualizarCamara(Camera *cam, Jugador j) {
     cam->y = j.y - (altoPantalla / 2 / cam->zoom);
     
     // --- LÍMITES CON 100px DE MARGEN ---
-    int margen = 700;  // ¡CAMBIADO DE 700 A 100!
+    int margen = 700; 
     
     // Mínimos: -100px
     if (cam->x < -margen) cam->x = -margen;
@@ -557,10 +529,8 @@ void mantenerDentroDelMapa(Jugador *j) {
     
     // Fuerza de la corriente (ajustable)
     float fuerza = 2.5f;
-    
-    // -----------------------------------------------------
+
     // 1. OESTE (x < 0)
-    // -----------------------------------------------------
     if (j->x < minX - zonaCorriente) {
         // No permitir ir más allá de -100px
         j->x = minX - zonaCorriente;
@@ -570,9 +540,7 @@ void mantenerDentroDelMapa(Jugador *j) {
         j->x += fuerza;
     }
     
-    // -----------------------------------------------------
     // 2. NORTE (y < 0)
-    // -----------------------------------------------------
     if (j->y < minY - zonaCorriente) {
         j->y = minY - zonaCorriente;
     }
@@ -581,9 +549,7 @@ void mantenerDentroDelMapa(Jugador *j) {
         j->y += fuerza;
     }
     
-    // -----------------------------------------------------
     // 3. ESTE (x > 3168)
-    // -----------------------------------------------------
     if (j->x > maxX + zonaCorriente) {
         j->x = maxX + zonaCorriente;
     }
@@ -591,10 +557,8 @@ void mantenerDentroDelMapa(Jugador *j) {
         // Corriente hacia adentro (OESTE)
         j->x -= fuerza;
     }
-    
-    // -----------------------------------------------------
+
     // 4. SUR (y > 3168)
-    // -----------------------------------------------------
     if (j->y > maxY + zonaCorriente) {
         j->y = maxY + zonaCorriente;
     }
@@ -613,10 +577,8 @@ void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     float dx = j->x - MUELLE_X;
     float dy = j->y - MUELLE_Y;
     float distancia = sqrt(dx*dx + dy*dy);
-    
-    // ============================================
+
     // 1. CASO: ESTÁ EN BARCO → BAJAR (Desembarcar)
-    // ============================================
     if (j->estadoBarco > 0) {
         if (distancia < RADIO_PERMITIDO) {
             j->estadoBarco = 0;  // Pie
@@ -628,10 +590,8 @@ void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
         }
         return;
     }
-    
-    // ============================================
+
     // 2. CASO: ESTÁ A PIE → ELEGIR BARCO
-    // ============================================
     if (distancia < RADIO_PERMITIDO) {
         
         // A) TIENE LOS DOS BARCOS -> PREGUNTAR
@@ -683,31 +643,27 @@ void intentarMontarBarco(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     } 
 }
 
-// =========================================================
-// 1. DIBUJAR BARCO ANCLADO (Visible donde lo dejaste)
-// =========================================================
+// 1. DIBUJAR BARCO ANCLADO 
 void dibujarBarcoAnclado(HDC hdc, Camera cam) {
     if (!barcoGuardadoActivo) return;
     
     // Calcular posición en pantalla
     int sx = (int)((barcoGuardadoX - cam.x) * cam.zoom);
     int sy = (int)((barcoGuardadoY - cam.y) * cam.zoom);
-    
-    // ¡DIFERENCIAR TAMAÑOS TAMBIÉN AQUÍ!
     int tamAncho = 0, tamAlto = 0;
     int offsetX = 0, offsetY = 0;
     HBITMAP imgBarco = NULL;
     int dir = 1; // Derecha por defecto
     
     if (barcoGuardadoTipo == 1) {
-        // BOTE DE PESCA ANCLADO - MUY PEQUEÑO (50×40)
+        // BOTE DE PESCA ANCLADO
         imgBarco = hBmpBote[dir];
         tamAncho = 50 * cam.zoom;  // Ancho 50px
         tamAlto = 40 * cam.zoom;   // Alto 40px
         offsetX = tamAncho / 2;    // 25
         offsetY = tamAlto / 2;     // 20
     } else if (barcoGuardadoTipo == 2) {
-        // BARCO DE GUERRA ANCLADO - GRANDE (80×64)
+        // BARCO DE GUERRA ANCLADO
         imgBarco = hBmpBarco[dir];
         tamAncho = 80 * cam.zoom;  // Ancho 80px
         tamAlto = 64 * cam.zoom;   // Alto 64px
@@ -718,13 +674,10 @@ void dibujarBarcoAnclado(HDC hdc, Camera cam) {
     // Dibujar el barco si está en pantalla
     if (imgBarco && sx > -tamAncho && sx < 2000 && sy > -tamAlto && sy < 1500) {
         DibujarImagen(hdc, imgBarco, sx - offsetX, sy - offsetY, tamAncho, tamAlto);
-        //                    ↑centrado según tamaño diferente ancho/alto
     }
 }
 
-// =========================================================
 // 2. DESEMBARCAR EN PLAYA (Nueva función separada)
-// =========================================================
 int desembarcarEnPlaya(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     // Solo si está en barco
     if (j->estadoBarco == 0) return 0;
@@ -732,7 +685,7 @@ int desembarcarEnPlaya(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
     // Referencia a las islas (de mapa.c)
     extern Isla misIslas[MAX_ISLAS];
     
-    // 1. Verificar si está cerca de alguna isla secundaria (1-4)
+    // 1. Verificar si está cerca de alguna isla secundaria 
     for (int i = 1; i <= 4; i++) {
         if (!misIslas[i].activa) continue;
         
@@ -789,15 +742,11 @@ int desembarcarEnPlaya(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
             }
         }
     }
-    
-    // Si no encontró playa, mostrar mensaje
-    // crearTextoFlotante(j->x, j->y, "Acercate a una playa para anclar", 0, RGB(255, 100, 100));
+
     return 0;
 }
 
-// =========================================================
 // 3. RE-EMBARCAR DESDE PLAYA
-// =========================================================
 int reembarcarDesdePlaya(Jugador *j) {
     // Solo si está a pie y hay barco guardado
     if (j->estadoBarco != 0) return 0;
@@ -831,13 +780,9 @@ int reembarcarDesdePlaya(Jugador *j) {
     return 0;
 }
 
-// =========================================================
-// 4. FUNCIÓN UNIFICADA PARA MANEJAR BARCOS (MODIFICAR)
-// =========================================================
+// 4. FUNCIÓN UNIFICADA PARA MANEJAR BARCOS
 void manejarBarcos(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
-    // ============================================
     // A. SI ESTÁ A PIE
-    // ============================================
     if (j->estadoBarco == 0) {
         // 1. Primero ver si puede subir a su barco anclado
         if (barcoGuardadoActivo) {
@@ -845,17 +790,14 @@ void manejarBarcos(Jugador *j, char mapa[MUNDO_FILAS][MUNDO_COLUMNAS]) {
                 return; // Subió a su barco anclado
             }
         }
-        
         // 2. Si no, usar la lógica original (muelle central)
         intentarMontarBarco(j, mapa);
         return;
     }
-    
-    // ============================================
+
     // B. SI ESTÁ EN BARCO
-    // ============================================
     if (j->estadoBarco > 0) {
-        // 1. Intentar desembarcar en playa (nuevo)
+        // 1. Intentar desembarcar en playa
         if (desembarcarEnPlaya(j, mapa)) {
             return; // Desembarcó en playa
         }

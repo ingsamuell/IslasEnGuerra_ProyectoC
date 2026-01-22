@@ -1,17 +1,17 @@
 #include "enemigos.h"
 #include "../unidades/unidades.h"
 #include "../mundo/mapa.h" 
-#include "../mundo/edificios.h" // Para ver si los castillos siguen vivos
+#include "../mundo/edificios.h" 
 #include <math.h>
 #include <stdio.h>
 
 extern Unidad unidades[MAX_UNIDADES];
 extern Edificio edificiosEnemigos[MAX_EDIFICIOS_ENEMIGOS];
-extern int screenShake; // Al inicio del archivo
+extern int screenShake; 
 
 // Configuración de Oleadas
 int timerInvasion = 0;
-int tiempoProximaOleada = 3600; // 1 minuto (a 60fps)
+int tiempoProximaOleada = 3000; // 1 minuto (a 60fps)
 
 // --- 1. SPAWNEAR ENEMIGO ---
 void spawnearEnemigo(int tipo, float x, float y) {
@@ -27,16 +27,16 @@ void spawnearEnemigo(int tipo, float x, float y) {
             
             // CONFIGURACIÓN DE CLASES
             if (tipo == TIPO_ENEMIGO_PIRATA) {
-                unidades[i].vidaMax = 30;
-                unidades[i].vida = 30;
-                unidades[i].damage = 2;
+                unidades[i].vidaMax = 40;
+                unidades[i].vida = 40;
+                unidades[i].damage = 20;
                 unidades[i].rangoAtaque = 40; // Cuerpo a cuerpo (Espada)
-                unidades[i].cooldownAtaque = 60; // 1 segundo
+                unidades[i].cooldownAtaque = 60; 
             } 
             else if (tipo == TIPO_ENEMIGO_MAGO) {
-                unidades[i].vidaMax = 30; // Menos vida
-                unidades[i].vida = 30;
-                unidades[i].damage = 5;
+                unidades[i].vidaMax = 40; 
+                unidades[i].vida = 40;
+                unidades[i].damage = 15;
                 unidades[i].rangoAtaque = 150; // ¡MAGIA A DISTANCIA!
                 unidades[i].cooldownAtaque = 100; // Dispara lento
             }
@@ -47,7 +47,7 @@ void spawnearEnemigo(int tipo, float x, float y) {
     }
 }
 
-// --- 2. IA DE COMBATE (CEREBRO) ---
+// --- 2. COMBATE (CEREBRO) ---
 void actualizarIAEnemigos(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
     for (int i = 0; i < MAX_UNIDADES; i++) {
         if (!unidades[i].activa || unidades[i].bando != BANDO_ENEMIGO) continue;
@@ -81,7 +81,7 @@ void actualizarIAEnemigos(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
                 u->estado = ESTADO_ATACANDO;
                 u->timerAtaque++;
 
-                // --- EFECTO VISUAL DE CARGA (NUEVO) ---
+                // --- EFECTO VISUAL DE CARGA  ---
                 if (u->tipo == TIPO_ENEMIGO_MAGO && u->timerAtaque == u->cooldownAtaque - 20) {
                     crearProyectilMagico(u->x, u->y, objX, objY); 
 
@@ -93,12 +93,12 @@ void actualizarIAEnemigos(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
                     
                     if (targetId != -1) {
                         unidades[targetId].vida -= u->damage;
-                        crearSangre(objX, objY); // <--- Efecto de sangre
+                        crearSangre(objX, objY); // Efecto de sangre
                         if(unidades[targetId].vida <= 0) unidades[targetId].activa = 0;
                         screenShake = 5; // Un temblor pequeño para golpes normales
                     } else {
                         j->vidaActual -= u->damage;
-                        crearSangre(j->x, j->y); // <--- Efecto de sangre
+                        crearSangre(j->x, j->y); // Efecto de sangre
                         crearTextoFlotante(j->x, j->y - 30, "-VIDA", 0, RGB(255, 50, 50));
                         screenShake = 5; // Un temblor pequeño para golpes normales
                         if(j->vidaActual < 0) j->vidaActual = 0;
@@ -130,7 +130,7 @@ void actualizarIAEnemigos(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
 void actualizarInvasiones(Jugador *j) {
     if (j->nivel < 5) return; // Solo nivel 5+
 
-    // A) INVASIÓN A TU ISLA (Defensa)
+    // A) INVASIÓN A TU ISLA 
     timerInvasion++;
     if (timerInvasion >= tiempoProximaOleada) {
         timerInvasion = 0;
