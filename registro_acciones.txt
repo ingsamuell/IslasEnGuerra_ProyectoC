@@ -87,3 +87,75 @@
 [19/01/2026 21:30] VENTA: 10 unidades de Piedra vendidas.
 [19/01/2026 21:30] VENTA: 10 unidades de Piedra vendidas.
 [19/01/2026 21:30] VENTA: 10 unidades de Piedra vendidas.
+[21/01/2026 08:49] NUEVA PARTIDA INICIADA - Mapa: Islas Oceano - Slot: 0
+[21/01/2026 08:50] NUEVA PARTIDA INICIADA - Mapa: Archipielago - Slot: 0
+[21/01/2026 08:53] MEJORA: Mochila ampliada a Nivel 2.
+[21/01/2026 08:54] VENTA: 1 unidades de Madera vendidas.
+[21/01/2026 08:54] VENTA: 1 unidades de Madera vendidas.
+[21/01/2026 08:54] VENTA: 1 unidades de Madera vendidas.
+[21/01/2026 08:54] VENTA: 1 unidades de Madera vendidas.
+[21/01/2026 08:54] VENTA: 10 unidades de Madera vendidas.
+[21/01/2026 08:54] COMPRA: 1 Soldado(s) reclutado(s).
+[21/01/2026 08:54] VENTA: 1 unidades de Hierro vendidas.
+[21/01/2026 08:54] VENTA: 10 unidades de Hierro vendidas.
+[21/01/2026 08:54] VENTA: 10 unidades de Hierro vendidas.
+[21/01/2026 08:54] VENTA: 1 unidades de Hierro vendidas.
+[21/01/2026 08:54] COMPRA: 1 Minero(s) reclutado(s).
+[21/01/2026 08:54] COMPRA: 1 Leñador(s) reclutado(s).
+[21/01/2026 08:54] COMPRA: 1 Cazador(s) reclutado(s).
+[21/01/2026 08:55] VENTA: 10 unidades de Piedra vendidas.
+[21/01/2026 08:55] VENTA: 10 unidades de Madera vendidas.
+[21/01/2026 08:55] VENTA: 1 unidades de Hierro vendidas.
+[21/01/2026 08:55] VENTA: 1 unidades de Hierro vendidas.
+[21/01/2026 08:55] VENTA: 10 unidades de Comida vendidas.
+[21/01/2026 08:55] VENTA: 10 unidades de Comida vendidas.
+[21/01/2026 08:55] VENTA: 10 unidades de Comida vendidas.
+[21/01/2026 08:55] VENTA: 10 unidades de Comida vendidas.
+[21/01/2026 08:55] VENTA: 10 unidades de Hojas vendidas.
+[21/01/2026 08:55] VENTA: 10 unidades de Hojas vendidas.
+[21/01/2026 08:55] VENTA: 10 unidades de Hojas vendidas.
+[21/01/2026 08:55] VENTA: 10 unidades de Hojas vendidas.
+[21/01/2026 08:55] VENTA: 10 unidades de Hojas vendidas.
+[21/01/2026 08:55] VENTA: 10 unidades de Hojas vendidas.
+[21/01/2026 08:56] COMPRA: Espada adquirida.
+[21/01/2026 08:56] COMPRA: Pico adquirido.
+[21/01/2026 08:56] COMPRA: Hacha adquirida.
+[21/01/2026 11:40] NUEVA PARTIDA INICIADA - Mapa: Islas Oceano - Slot: 0
+[21/01/2026 11:43] VENTA: 1 unidades de Madera vendidas.
+[21/01/2026 11:43] VENTA: 1 unidades de Madera vendidas.
+[21/01/2026 11:43] VENTA: 1 unidades de Madera vendidas.
+[21/01/2026 11:43] VENTA: 1 unidades de Madera vendidas.
+[21/01/2026 11:43] VENTA: 10 unidades de Madera vendidas.
+[21/01/2026 11:43] VENTA: 1 unidades de Piedra vendidas.
+[21/01/2026 11:43] VENTA: 1 unidades de Piedra vendidas.
+[21/01/2026 11:43] VENTA: 1 unidades de Piedra vendidas.
+[21/01/2026 11:43] VENTA: 1 unidades de Piedra vendidas.
+[21/01/2026 11:43] VENTA: 1 unidades de Piedra vendidas.
+[21/01/2026 11:43] MEJORA: Mochila ampliada a Nivel 2.
+[21/01/2026 11:43] VENTA: 1 unidades de Madera vendidas.
+[21/01/2026 11:43] VENTA: 10 unidades de Piedra vendidas.
+[21/01/2026 11:43] VENTA: 10 unidades de Hierro vendidas.
+[21/01/2026 11:44] COMPRA: Espada adquirida.
+[21/01/2026 11:44] VENTA: 10 unidades de Comida vendidas.
+[21/01/2026 11:44] VENTA: 10 unidades de Comida vendidas.
+[21/01/2026 11:44] VENTA: 10 unidades de Comida vendidas.
+[21/01/2026 11:44] VENTA: 10 unidades de Comida vendidas.
+[21/01/2026 11:44] COMPRA: Pico adquirido.
+[21/01/2026 11:44] COMPRA: Hacha adquirida.
+[21/01/2026 11:47] VENTA: 10 unidades de Piedra vendidas.
+[21/01/2026 11:47] VENTA: 10 unidades de Piedra vendidas.
+[21/01/2026 11:47] VENTA: 10 unidades de Piedra vendidas.
+[21/01/2026 11:47] VENTA: 10 unidades de Piedra vendidas.
+[21/01/2026 11:47] VENTA: 10 unidades de Madera vendidas.
+[21/01/2026 11:47] VENTA: 10 unidades de Madera vendidas.
+[21/01/2026 11:47] VENTA: 10 unidades de Madera vendidas.
+[21/01/2026 11:47] VENTA: 10 unidades de Madera vendidas.
+[21/01/2026 11:47] VENTA: 10 unidades de Madera vendidas.
+[21/01/2026 11:47] VENTA: 10 unidades de Madera vendidas.
+[21/01/2026 11:47] VENTA: 10 unidades de Madera vendidas.
+[21/01/2026 11:47] VENTA: 10 unidades de Madera vendidas.
+[21/01/2026 11:47] VENTA: 10 unidades de Madera vendidas.
+[21/01/2026 11:47] VENTA: 10 unidades de Madera vendidas.
+[21/01/2026 11:48] COMPRA: Cana adquirida.
+[21/01/2026 11:51] VENTA: 10 unidades de Hierro vendidas.
+[21/01/2026 11:51] VENTA: 10 unidades de Hierro vendidas.
