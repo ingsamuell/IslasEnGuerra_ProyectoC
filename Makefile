@@ -16,7 +16,7 @@ SRC = src/main.c \
       src/mundo/edificios.c
 
 # 3. Nombre del ejecutable final
-TARGET = IslasEnGuerra
+TARGET = HorizonteDeGuerra
 
 # 4. Banderas del Compilador (Flags)
 # -Isrc permite que main.c encuentre #include "mapa/mapa.h"

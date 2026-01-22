@@ -976,7 +976,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     int ancho = GetSystemMetrics(SM_CXSCREEN);
     int alto = GetSystemMetrics(SM_CYSCREEN);
-    HWND hwnd = CreateWindow("ClaseIslasGuerra", "Islas en Guerra", WS_OVERLAPPEDWINDOW,
+    HWND hwnd = CreateWindow("ClaseIslasGuerra", "Horizonte De Guerra", WS_OVERLAPPEDWINDOW,
                              CW_USEDEFAULT, CW_USEDEFAULT, ancho, alto, NULL, NULL, hInstance, NULL);
 
     if (!hwnd)

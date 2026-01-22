@@ -1435,3 +1435,53 @@
 [20/01/2026 00:23] NUEVA PARTIDA INICIADA - Mapa: Archipielago - Slot: 2
 [20/01/2026 00:24] NUEVA PARTIDA INICIADA - Mapa: Islas Oceano - Slot: 0
 >>>>>>> bf82896e79659a4af6d7ae8b76bc3e39c943bf53
+[22/01/2026 08:20] NUEVA PARTIDA INICIADA - Mapa: Islas Oceano - Slot: 0
+[22/01/2026 08:29] VENTA: 10 unidades de Madera vendidas.
+[22/01/2026 08:29] VENTA: 10 unidades de Madera vendidas.
+[22/01/2026 08:29] VENTA: 10 unidades de Madera vendidas.
+[22/01/2026 08:29] VENTA: 1 unidades de Madera vendidas.
+[22/01/2026 08:29] VENTA: 10 unidades de Madera vendidas.
+[22/01/2026 08:29] VENTA: 1 unidades de Madera vendidas.
+[22/01/2026 08:29] VENTA: 1 unidades de Madera vendidas.
+[22/01/2026 08:29] VENTA: 1 unidades de Madera vendidas.
+[22/01/2026 08:29] VENTA: 1 unidades de Madera vendidas.
+[22/01/2026 08:29] VENTA: 1 unidades de Madera vendidas.
+[22/01/2026 08:29] MEJORA: Mochila ampliada a Nivel 2.
+[22/01/2026 08:30] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:30] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:30] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:30] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:30] COMPRA: 1 Minero(s) reclutado(s).
+[22/01/2026 08:36] COMPRA: Bote adquirido.
+[22/01/2026 08:36] COMPRA: Espada adquirida.
+[22/01/2026 08:36] COMPRA: Hacha adquirida.
+[22/01/2026 08:36] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:36] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:36] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:36] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:36] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:36] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:36] COMPRA: Pico adquirido.
+[22/01/2026 08:36] COMPRA: Cana adquirida.
+[22/01/2026 08:38] VENTA: 1 unidades de Piedra vendidas.
+[22/01/2026 08:38] VENTA: 1 unidades de Piedra vendidas.
+[22/01/2026 08:38] VENTA: 1 unidades de Piedra vendidas.
+[22/01/2026 08:38] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:38] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:38] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:38] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:38] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:38] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:38] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:38] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:39] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:39] VENTA: 10 unidades de Piedra vendidas.
+[22/01/2026 08:39] VENTA: 10 unidades de Madera vendidas.
+[22/01/2026 08:39] VENTA: 10 unidades de Madera vendidas.
+[22/01/2026 08:39] VENTA: 10 unidades de Madera vendidas.
+[22/01/2026 08:39] VENTA: 10 unidades de Madera vendidas.
+[22/01/2026 08:39] VENTA: 10 unidades de Madera vendidas.
+[22/01/2026 08:40] VENTA: 10 unidades de Hojas vendidas.
+[22/01/2026 08:40] VENTA: 10 unidades de Hojas vendidas.
+[22/01/2026 08:40] VENTA: 1 unidades de Hojas vendidas.
+[22/01/2026 08:40] VENTA: 1 unidades de Hojas vendidas.
