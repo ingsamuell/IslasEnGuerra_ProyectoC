@@ -1,8 +1,8 @@
-/* src/jugador/jugador.c */
+/* src/jugador/jugador.c Samuel Revollo */
 #include "jugador.h"
 #include "../recursos/recursos.h"
-#include "../mundo/mapa.h" // <--- AGREGAR ESTO (Para colisiones)
-#include <math.h>          // <--- AGREGAR ESTO (Para distancias)
+#include "../mundo/mapa.h" 
+#include <math.h>         
 #include <stdio.h>
 
 // Variables globales para el barco anclado

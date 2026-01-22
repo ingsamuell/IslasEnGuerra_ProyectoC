@@ -1,4 +1,4 @@
-/* src/recursos/recursos.c - VERSIÓN FINAL CORREGIDA */
+/* src/recursos/recursos.c - Samuel Revollo */
 #include "recursos.h"
 #include <stdio.h>
 

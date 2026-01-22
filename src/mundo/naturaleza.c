@@ -1,3 +1,5 @@
+// Samuel Revollo
+
 #include "naturaleza.h"
 #include "mapa.h"            
 #include "../recursos/recursos.h" 

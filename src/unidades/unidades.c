@@ -1,3 +1,5 @@
+// Andrea Sanchez
+
 #include "unidades.h"
 #include "../mundo/mapa.h"       
 #include "../mundo/naturaleza.h"

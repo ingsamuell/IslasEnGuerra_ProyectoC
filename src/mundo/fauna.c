@@ -1,3 +1,5 @@
+//Barbara Martinez
+
 #include "fauna.h"
 #include "mapa.h"      
 #include "../recursos/recursos.h" 

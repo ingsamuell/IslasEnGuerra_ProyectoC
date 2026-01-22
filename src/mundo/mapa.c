@@ -1,4 +1,4 @@
-/* src/mapa/mapa.c */
+/* src/mapa/mapa.c Barbara Martinez */
 #include "mapa.h"
 #include "fauna.h"
 #include "naturaleza.h"

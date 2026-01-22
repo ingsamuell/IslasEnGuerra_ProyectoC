@@ -1,3 +1,5 @@
+// Andrea Sanchez
+
 #include "sistema.h"
 #include <stdio.h>
 #include <time.h>

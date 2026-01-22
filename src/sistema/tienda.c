@@ -1,3 +1,5 @@
+// Samuel Revollo
+
 #include "tienda.h"
 #include "../recursos/recursos.h"
 #include "../unidades/unidades.h" 
