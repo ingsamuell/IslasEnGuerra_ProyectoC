@@ -319,7 +319,7 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
                     actualizarAnimacionUnidad(&unidades[i], dxM, dyM);
                 } else {
                     unidades[i].timerTrabajo++;
-                    if (unidades[i].timerTrabajo >= 400) { 
+                    if (unidades[i].timerTrabajo >= 250) { 
                         unidades[i].timerTrabajo = 0;
                         if (misMinas[m].tipo == 0) { // Piedra
                             int ant = j->piedra;
@@ -364,7 +364,7 @@ void actualizarUnidades(char mapa[MUNDO_FILAS][MUNDO_COLUMNAS], Jugador *j) {
                     actualizarAnimacionUnidad(&unidades[i], dvx, dvy);
                 } else {
                     unidades[i].timerTrabajo++;
-                    if (unidades[i].timerTrabajo >= 300) { 
+                    if (unidades[i].timerTrabajo >= 250) { 
                         manada[v].estadoVida = 1; 
                         manada[v].tiempoMuerte = 300; 
                         int ant = j->comida;
